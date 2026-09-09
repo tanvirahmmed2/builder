@@ -1,8 +1,10 @@
 -- ============================================================================
 -- Platform: Multi-Tenant Drag-and-Drop SaaS Portfolio Builder
 -- Database Engine: PostgreSQL 14+
--- Clean Architectural Schema with Security Rows, Package Features, Subscriptions,
--- Payments, Reports, Creator/Manager Roles, Portfolios, and Specialized Modules.
+-- Clean Architectural DDL Schema: Security Rows, Package Features, Subscriptions,
+-- Payments, Reports, Creator/Manager Roles, Portfolios, Specialized Modules,
+-- Themes, Contacts, Users, Comments, and Spam Defense.
+-- (ALL INSERT SEED DATA HAS BEEN REMOVED)
 -- ============================================================================
 
 -- 1. EXTENSIONS
@@ -324,7 +326,7 @@ CREATE TABLE IF NOT EXISTS portfolio_appointments (
     client_name VARCHAR(255) NOT NULL,
     client_email CITEXT NOT NULL,
     appointment_date DATE NOT NULL,
-    time_slot VARCHAR(50) NOT NULL, -- e.g. "10:00 AM - 10:45 AM"
+    time_slot VARCHAR(50) NOT NULL,
     status appointment_status NOT NULL DEFAULT 'PENDING',
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -340,8 +342,8 @@ CREATE TABLE IF NOT EXISTS portfolio_experiences (
     company VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL,
     location VARCHAR(255),
-    start_date VARCHAR(50) NOT NULL, -- e.g. "Jan 2022"
-    end_date VARCHAR(50),           -- e.g. "Present"
+    start_date VARCHAR(50) NOT NULL,
+    end_date VARCHAR(50),
     is_current BOOLEAN NOT NULL DEFAULT FALSE,
     description TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
@@ -367,166 +369,109 @@ CREATE TABLE IF NOT EXISTS portfolio_reviews (
 CREATE INDEX IF NOT EXISTS idx_portfolio_reviews_port ON portfolio_reviews (portfolio_id, status, created_at DESC);
 
 -- ============================================================================
--- 10. IDEMPOTENT SEED DATA
+-- 10. THEMES GALLERY & TEMPLATES TABLE
 -- ============================================================================
 
--- 10.1 Default Admin
-INSERT INTO admins (
-    id,
-    name,
-    email,
-    password_hash,
-    role,
-    is_verified,
-    is_active
-) VALUES (
-    'a0000000-0000-0000-0000-000000000001',
-    'Platform Chief Admin',
-    'admin@saasplatform.com',
-    '$2b$10$X8m1d16/171O0w6x01oA2.t0j/gT6qH86.4xG8e4C9bBw9l8tqSXe',
-    'SUPER_ADMIN',
-    TRUE,
-    TRUE
-) ON CONFLICT (email) DO NOTHING;
+CREATE TABLE IF NOT EXISTS themes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    category VARCHAR(50) NOT NULL DEFAULT 'Modern',
+    preview_image TEXT,
+    theme_config JSONB NOT NULL DEFAULT '{
+        "primaryColor": "#6366f1",
+        "backgroundColor": "#090d16",
+        "textColor": "#f8fafc",
+        "fontFamily": "Inter"
+    }'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 10.2 Master Features
-INSERT INTO features (id, name, key, description) VALUES
-('f0000000-0000-0000-0000-000000000001', 'Drag & Drop Canvas', 'drag_drop_builder', 'Full visual section reordering and live customizer'),
-('f0000000-0000-0000-0000-000000000002', 'Blogging System', 'blog_module', 'Publish full case studies, articles, and updates'),
-('f0000000-0000-0000-0000-000000000003', 'Appointment Booking', 'appointment_module', 'Enable clients to schedule consultation sessions'),
-('f0000000-0000-0000-0000-000000000004', 'Experience Timeline', 'experience_module', 'Structured career history and achievements roadmap'),
-('f0000000-0000-0000-0000-000000000005', 'Custom Domain Access', 'custom_domain', 'Connect your personal domain with edge SSL')
-ON CONFLICT (key) DO NOTHING;
+CREATE TRIGGER trg_themes_updated_at
+BEFORE UPDATE ON themes
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
--- 10.3 Default Packages
-INSERT INTO packages (
-    id, name, slug, description, price_in_cents, currency, billing_interval, max_portfolios, is_active
-) VALUES
-('b0000000-0000-0000-0000-000000000001', 'Starter Creator', 'starter-creator', 'Essential toolkit for emerging independent talent.', 1500, 'USD', 'MONTHLY', 1, TRUE),
-('b0000000-0000-0000-0000-000000000002', 'Pro Studio', 'pro-studio', 'Complete power with appointments, blogging, and custom domains.', 3500, 'USD', 'MONTHLY', 5, TRUE)
-ON CONFLICT (slug) DO NOTHING;
+-- ============================================================================
+-- 11. CONTACT INQUIRIES & PUBLIC MESSAGES TABLE
+-- ============================================================================
 
--- 10.4 Package Features Linking
-INSERT INTO package_features (package_id, feature_id, value, is_enabled) VALUES
-('b0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000001', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000004', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000001', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000002', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000003', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000004', 'true', TRUE),
-('b0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000005', 'true', TRUE)
-ON CONFLICT (package_id, feature_id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+    replied_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    admin_reply TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 10.5 Creator (Role: 'creator') & Manager (Role: 'manager')
-INSERT INTO creators (
-    id, name, email, password_hash, role, is_verified
-) VALUES
-('c0000000-0000-0000-0000-000000000001', 'Alex Vance', 'alex.creator@designcraft.com', '$2b$10$X8m1d16/171O0w6x01oA2.t0j/gT6qH86.4xG8e4C9bBw9l8tqSXe', 'creator', TRUE),
-('c0000000-0000-0000-0000-000000000002', 'Sarah Jenkins', 'sarah.manager@designcraft.com', '$2b$10$X8m1d16/171O0w6x01oA2.t0j/gT6qH86.4xG8e4C9bBw9l8tqSXe', 'manager', TRUE)
-ON CONFLICT (email) DO NOTHING;
+CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts (status, created_at DESC);
 
--- 10.6 Portfolio Tenant
-INSERT INTO portfolios (
-    id, creator_id, title, subdomain, custom_domain, is_published
-) VALUES (
-    'd0000000-0000-0000-0000-000000000001',
-    'c0000000-0000-0000-0000-000000000001',
-    'Alex Vance – Design Architect & Engineer',
-    'alex-design',
-    'alexvance.design',
-    TRUE
-) ON CONFLICT (subdomain) DO NOTHING;
+CREATE TRIGGER trg_contacts_updated_at
+BEFORE UPDATE ON contacts
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
--- 10.7 Subscription & Payment
-INSERT INTO subscriptions (
-    id, creator_id, package_id, status, current_period_start, current_period_end
-) VALUES (
-    's0000000-0000-0000-0000-000000000001',
-    'c0000000-0000-0000-0000-000000000001',
-    'b0000000-0000-0000-0000-000000000002',
-    'ACTIVE',
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP + INTERVAL '30 days'
-) ON CONFLICT DO NOTHING;
+-- ============================================================================
+-- 12. REGISTERED USERS (COMMENTERS & PORTFOLIO REVIEWERS)
+-- ============================================================================
 
-INSERT INTO payments (
-    id, creator_id, package_id, subscription_id, amount_in_cents, transaction_id, status
-) VALUES (
-    'p0000000-0000-0000-0000-000000000001',
-    'c0000000-0000-0000-0000-000000000001',
-    'b0000000-0000-0000-0000-000000000002',
-    's0000000-0000-0000-0000-000000000001',
-    3500,
-    'txn_demo_99881',
-    'COMPLETED'
-) ON CONFLICT (transaction_id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email CITEXT UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    avatar_url TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_banned BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 10.8 Sample Report
-INSERT INTO reports (
-    id, reporter_name, reporter_email, subject, description, status, priority, admin_response
-) VALUES (
-    'r0000000-0000-0000-0000-000000000001',
-    'David Miller',
-    'david@startup.io',
-    'Appointment reminder webhook delivery',
-    'Can we receive automated calendar invites via Google Calendar when an appointment is booked?',
-    'RESOLVED',
-    'MEDIUM',
-    'Google Calendar integration is now activated in settings.'
-) ON CONFLICT DO NOTHING;
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
--- 10.9 Canvas Sections for Tenant
-INSERT INTO portfolio_sections (
-    portfolio_id, module_type, sort_order, is_visible, title, content_data
-) VALUES
-('d0000000-0000-0000-0000-000000000001', 'HERO', 0, TRUE, 'Hero Introduction', '{"headline": "Engineering High-Impact Web Software", "subheadline": "Full-stack developer and design architect specializing in scalable web systems.", "ctaText": "Book an Appointment", "ctaLink": "#appointment"}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'ABOUT', 1, TRUE, 'About Alex', '{"bio": "Over 8 years crafting digital products from high-concurrency cloud backends to fluid drag-and-drop interfaces."}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'EXPERIENCE', 2, TRUE, 'Career Timeline', '{"heading": "Work History & Milestones"}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'BLOG', 3, TRUE, 'Case Studies & Blog', '{"heading": "Articles & Architecture Breakdown"}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'APPOINTMENT', 4, TRUE, 'Schedule Consultation', '{"heading": "Book a 1-on-1 Strategy Session"}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'REVIEWS', 5, TRUE, 'Client Feedback', '{"heading": "Verified Reviews & Ratings"}'::jsonb),
-('d0000000-0000-0000-0000-000000000001', 'CONTACT', 6, TRUE, 'Get in Touch', '{"email": "alex@alexvance.design"}'::jsonb)
-ON CONFLICT DO NOTHING;
+-- ============================================================================
+-- 13. PORTFOLIO COMMENTS (USERS COMMENTING ON PORTFOLIO POSTS)
+-- ============================================================================
 
--- 10.10 Modules Seed
-INSERT INTO portfolio_experiences (
-    portfolio_id, company, role, location, start_date, end_date, is_current, description, sort_order
-) VALUES
-('d0000000-0000-0000-0000-000000000001', 'CloudScale Technologies', 'Principal Software Architect', 'San Francisco, CA', '2023', 'Present', TRUE, 'Lead development of distributed multi-tenant cloud platforms serving 4M+ daily active sessions.', 0),
-('d0000000-0000-0000-0000-000000000001', 'Studio Precision', 'Senior Frontend Engineer', 'New York, NY', '2020', '2023', FALSE, 'Spearheaded canvas drag-and-drop interactions, component libraries, and GraphQL API orchestration.', 1)
-ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS portfolio_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    blog_id UUID NOT NULL REFERENCES portfolio_blogs(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    author_name VARCHAR(255) NOT NULL,
+    author_email CITEXT NOT NULL,
+    comment_text TEXT NOT NULL,
+    is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    is_spam BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
-INSERT INTO portfolio_blogs (
-    portfolio_id, creator_id, title, slug, summary, content
-) VALUES (
-    'd0000000-0000-0000-0000-000000000001',
-    'c0000000-0000-0000-0000-000000000001',
-    'Designing Low-Latency Canvas Engines for the Modern Web',
-    'low-latency-canvas-engines',
-    'How we achieved 60fps drag-and-drop performance without blocking the main browser thread.',
-    'Optimistic UI mutations combined with virtualized section trees enable interactive web applications to feel instantaneous. In this post, we explore state reconciliation patterns and PostgreSQL JSONB storage.'
-) ON CONFLICT (portfolio_id, slug) DO NOTHING;
+CREATE INDEX IF NOT EXISTS idx_comments_blog ON portfolio_comments (blog_id, created_at DESC);
 
-INSERT INTO portfolio_appointments (
-    portfolio_id, client_name, client_email, appointment_date, time_slot, status, notes
-) VALUES (
-    'd0000000-0000-0000-0000-000000000001',
-    'Sarah Lin',
-    'sarah.lin@fintech.co',
-    CURRENT_DATE + 3,
-    '02:00 PM - 02:45 PM',
-    'CONFIRMED',
-    'Discussion on SaaS MVP development and architecture review.'
-) ON CONFLICT DO NOTHING;
+-- ============================================================================
+-- 14. SPAM MODERATION & SECURITY LOGS TABLE
+-- ============================================================================
 
-INSERT INTO portfolio_reviews (
-    portfolio_id, client_name, client_email, rating, review_title, review_text, status
-) VALUES (
-    'd0000000-0000-0000-0000-000000000001',
-    'Marcus Thorne',
-    'marcus@vc.com',
-    5,
-    'Unsurpassed technical and design execution',
-    'Alex delivered our complete startup portfolio and appointment booking engine with perfection.',
-    'APPROVED'
-) ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS spams (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    target_type VARCHAR(50) NOT NULL,
+    target_id VARCHAR(255),
+    reporter_ip VARCHAR(45),
+    content_snippet TEXT NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'FLAGGED',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_spams_status ON spams (status, created_at DESC);

@@ -9,6 +9,9 @@ import {
   BoxIcon,
   UsersIcon,
   AlertCircleIcon,
+  CreditCardIcon,
+  StarIcon,
+  MessageSquareIcon,
   ExternalLinkIcon,
 } from '@/components/ui/Icons';
 
@@ -16,12 +19,20 @@ export default function AdminNavbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
+  const primaryLinks = [
     { href: '/admin', label: 'Overview', icon: LayoutGridIcon, exact: true },
-    { href: '/admin/admins', label: 'Admin Team', icon: UsersIcon },
-    { href: '/admin/packages', label: 'Packages & Features', icon: BoxIcon },
-    { href: '/admin/subscriptions', label: 'Subscriptions & Pay', icon: ShieldCheckIcon },
-    { href: '/admin/reports', label: 'Reports Helpdesk', icon: AlertCircleIcon },
+    { href: '/admin/team', label: 'Admin Team', icon: UsersIcon },
+    { href: '/admin/features', label: 'Features', icon: BoxIcon },
+    { href: '/admin/packages', label: 'Packages', icon: BoxIcon },
+    { href: '/admin/themes', label: 'Themes', icon: BoxIcon },
+    { href: '/admin/subscription', label: 'Subscriptions', icon: ShieldCheckIcon },
+    { href: '/admin/payments', label: 'Payments', icon: CreditCardIcon },
+    { href: '/admin/reports', label: 'Reports', icon: AlertCircleIcon },
+    { href: '/admin/contact', label: 'Contact', icon: MessageSquareIcon },
+    { href: '/admin/spams', label: 'Spams', icon: AlertCircleIcon },
+    { href: '/admin/creators', label: 'Creators', icon: UsersIcon },
+    { href: '/admin/users', label: 'Users', icon: UsersIcon },
+    { href: '/admin/reviews', label: 'Reviews', icon: StarIcon },
   ];
 
   const isLinkActive = (link) => {
@@ -32,7 +43,8 @@ export default function AdminNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-rose-500/20 bg-slate-950/90 backdrop-blur-xl shadow-lg shadow-rose-950/20">
+    <header className="sticky top-0 z-50 w-full border-b border-rose-500/20 bg-slate-950/95 backdrop-blur-xl shadow-lg shadow-rose-950/20">
+      {/* Top row */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand & Badge */}
         <div className="flex items-center gap-6">
@@ -52,35 +64,13 @@ export default function AdminNavbar() {
               </span>
             </div>
           </Link>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 text-xs font-medium">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const active = isLinkActive(link);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                    active
-                      ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold shadow-sm shadow-rose-500/10'
-                      : 'text-slate-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 text-rose-400" />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
         {/* Right CTA & Switcher */}
         <div className="hidden sm:flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-rose-950/40 border border-rose-500/30 px-2.5 py-1 rounded-full text-[11px] text-rose-300">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-            <span className="font-mono font-bold">ROOT ADMIN</span>
+            <span className="font-mono font-bold">ROOT PRIVILEGES</span>
           </div>
 
           <Link
@@ -127,10 +117,35 @@ export default function AdminNavbar() {
         </div>
       </div>
 
+      {/* Subnav links row for all admin modules */}
+      <div className="border-t border-white/5 bg-slate-950/80 px-4 sm:px-6 lg:px-8 hidden lg:block overflow-x-auto">
+        <div className="max-w-7xl mx-auto flex items-center gap-1 py-1.5">
+          {primaryLinks.map((link) => {
+            const Icon = link.icon;
+            const active = isLinkActive(link);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  active
+                    ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold shadow-sm shadow-rose-500/10'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon className="w-3 h-3 text-rose-400/80" />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-white/10 bg-slate-950 px-4 py-3 space-y-2">
-          {navLinks.map((link) => {
+        <div className="lg:hidden border-t border-white/10 bg-slate-950 px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto">
+          <div className="text-[10px] uppercase font-bold text-slate-500 px-3 py-1">Admin Panel Modules</div>
+          {primaryLinks.map((link) => {
             const Icon = link.icon;
             const active = isLinkActive(link);
             return (

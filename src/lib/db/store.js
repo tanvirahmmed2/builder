@@ -292,12 +292,135 @@ const initialData = {
       createdAt: '2026-09-03T16:00:00Z',
     },
   ],
+  themes: [
+    {
+      id: 't0000000-0000-0000-0000-000000000001',
+      name: 'Obsidian Slate',
+      slug: 'obsidian-slate',
+      description: 'Sleek dark-mode aesthetic tailored for high-end digital architects and lead engineers.',
+      category: 'Dark Mode',
+      previewImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
+      themeConfig: { primaryColor: '#6366f1', backgroundColor: '#090d16', textColor: '#f8fafc', fontFamily: 'Inter' },
+      isActive: true,
+      isPremium: false,
+      portfoliosCount: 14,
+    },
+    {
+      id: 't0000000-0000-0000-0000-000000000002',
+      name: 'Cyber Neon',
+      slug: 'cyber-neon',
+      description: 'High-voltage cyberpunk aesthetics with glowing neon accents and glassmorphic cards.',
+      category: 'Creative',
+      previewImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600',
+      themeConfig: { primaryColor: '#06b6d4', backgroundColor: '#050814', textColor: '#e2e8f0', fontFamily: 'JetBrains Mono' },
+      isActive: true,
+      isPremium: true,
+      portfoliosCount: 8,
+    },
+    {
+      id: 't0000000-0000-0000-0000-000000000003',
+      name: 'Nordic Minimal',
+      slug: 'nordic-minimal',
+      description: 'Clean, high-whitespace editorial layout designed for creative directors and authors.',
+      category: 'Minimal',
+      previewImage: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600',
+      themeConfig: { primaryColor: '#10b981', backgroundColor: '#0a0f12', textColor: '#f1f5f9', fontFamily: 'Outfit' },
+      isActive: true,
+      isPremium: false,
+      portfoliosCount: 22,
+    },
+    {
+      id: 't0000000-0000-0000-0000-000000000004',
+      name: 'Studio Vanguard',
+      slug: 'studio-vanguard',
+      description: 'Bold editorial typography with dynamic portfolio carousels and smooth micro-interactions.',
+      category: 'Agency',
+      previewImage: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600',
+      themeConfig: { primaryColor: '#ec4899', backgroundColor: '#0f0715', textColor: '#faf5ff', fontFamily: 'Inter' },
+      isActive: true,
+      isPremium: true,
+      portfoliosCount: 19,
+    },
+  ],
+  contacts: [
+    {
+      id: 'm0000000-0000-0000-0000-000000000001',
+      name: 'Elena Rostova',
+      email: 'elena@vanguard-design.de',
+      subject: 'Enterprise Custom Domain SLA',
+      message: 'Inquiring about multi-tenant custom domain provisioning with dedicated reverse proxy.',
+      status: 'REPLIED',
+      adminReply: 'Our enterprise tiers support custom SSL edge certificates and dedicated wildcard routing.',
+      createdAt: '2026-09-05T14:30:00Z',
+    },
+    {
+      id: 'm0000000-0000-0000-0000-000000000002',
+      name: 'Kenji Sato',
+      email: 'kenji@tokyocreative.jp',
+      subject: 'Team Collaboration and Manager Roles',
+      message: 'Can two managers edit the drag and drop canvas simultaneously?',
+      status: 'NEW',
+      adminReply: null,
+      createdAt: '2026-09-08T09:15:00Z',
+    },
+  ],
+  users: [
+    {
+      id: 'u0000000-0000-0000-0000-000000000001',
+      name: 'Liam Parker',
+      email: 'liam.reviewer@gmail.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      isActive: true,
+      isBanned: false,
+      reviewsCount: 3,
+      commentsCount: 5,
+      createdAt: '2026-09-02T12:00:00Z',
+    },
+    {
+      id: 'u0000000-0000-0000-0000-000000000002',
+      name: 'Sophia Chen',
+      email: 'sophia.designer@gmail.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
+      isActive: true,
+      isBanned: false,
+      reviewsCount: 1,
+      commentsCount: 2,
+      createdAt: '2026-09-04T15:20:00Z',
+    },
+  ],
+  spams: [
+    {
+      id: 'sp-1',
+      targetType: 'REVIEW',
+      targetId: 'rev_fake_1',
+      reporterIp: '192.168.1.105',
+      contentSnippet: 'Earn $5000 working from home click this link http://spam.crypto.link',
+      reason: 'Automated crypto phishing scam link',
+      status: 'BLOCKED',
+      createdAt: '2026-09-07T18:00:00Z',
+    },
+    {
+      id: 'sp-2',
+      targetType: 'CONTACT',
+      targetId: 'm-spam-2',
+      reporterIp: '45.33.32.156',
+      contentSnippet: 'Bulk backlink sales offer for ranking portfolios fast',
+      reason: 'Promotional bulk SEO unsolicited outreach',
+      status: 'FLAGGED',
+      createdAt: '2026-09-08T11:45:00Z',
+    },
+  ],
 };
 
-if (!globalThis.__saasStoreV2) {
-  globalThis.__saasStoreV2 = JSON.parse(JSON.stringify(initialData));
+if (!globalThis.__saasStoreV3) {
+  globalThis.__saasStoreV3 = JSON.parse(JSON.stringify(initialData));
 }
-const store = globalThis.__saasStoreV2;
+for (const key of Object.keys(initialData)) {
+  if (!globalThis.__saasStoreV3[key]) {
+    globalThis.__saasStoreV3[key] = JSON.parse(JSON.stringify(initialData[key]));
+  }
+}
+const store = globalThis.__saasStoreV3;
 
 export const dbStore = {
   // --- ADMINS ---
@@ -688,6 +811,155 @@ export const dbStore = {
       rev.status = status;
       return rev;
     }
+    return null;
+  },
+  getAllReviews: () => store.portfolioReviews,
+  deleteReview: (id) => {
+    const idx = store.portfolioReviews.findIndex((r) => r.id === id);
+    if (idx !== -1) return store.portfolioReviews.splice(idx, 1)[0];
+    return null;
+  },
+
+  // --- ADMIN TEAM MANAGEMENT ---
+  removeAdmin: (id) => {
+    const admins = store.admins;
+    if (admins.length <= 1) {
+      throw new Error('Cannot remove the last platform administrator.');
+    }
+    const idx = admins.findIndex((a) => a.id === id);
+    if (idx !== -1) return admins.splice(idx, 1)[0];
+    return null;
+  },
+  toggleAdminStatus: (id) => {
+    const admin = store.admins.find((a) => a.id === id);
+    if (admin) {
+      admin.isActive = !admin.isActive;
+      return admin;
+    }
+    return null;
+  },
+
+  // --- FEATURES ---
+  addFeature: (featData) => {
+    const feat = {
+      id: 'f' + Math.random().toString(36).substring(2, 9),
+      createdAt: new Date().toISOString(),
+      ...featData,
+    };
+    store.features.push(feat);
+    return feat;
+  },
+  deleteFeature: (id) => {
+    const idx = store.features.findIndex((f) => f.id === id);
+    if (idx !== -1) return store.features.splice(idx, 1)[0];
+    return null;
+  },
+
+  // --- THEMES ---
+  getThemes: () => store.themes || [],
+  addTheme: (themeData) => {
+    const theme = {
+      id: 't' + Math.random().toString(36).substring(2, 9),
+      slug: themeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      isActive: true,
+      portfoliosCount: 0,
+      createdAt: new Date().toISOString(),
+      ...themeData,
+    };
+    store.themes.push(theme);
+    return theme;
+  },
+  toggleTheme: (id) => {
+    const theme = store.themes.find((t) => t.id === id);
+    if (theme) {
+      theme.isActive = !theme.isActive;
+      return theme;
+    }
+    return null;
+  },
+  deleteTheme: (id) => {
+    const idx = store.themes.findIndex((t) => t.id === id);
+    if (idx !== -1) return store.themes.splice(idx, 1)[0];
+    return null;
+  },
+
+  // --- CONTACTS ---
+  getContacts: () => store.contacts || [],
+  addContact: (contactData) => {
+    const contact = {
+      id: 'm' + Math.random().toString(36).substring(2, 9),
+      status: 'NEW',
+      adminReply: null,
+      createdAt: new Date().toISOString(),
+      ...contactData,
+    };
+    store.contacts.unshift(contact);
+    return contact;
+  },
+  replyContact: (id, replyText, adminId) => {
+    const contact = store.contacts.find((c) => c.id === id);
+    if (contact) {
+      contact.adminReply = replyText;
+      contact.status = 'REPLIED';
+      contact.repliedAt = new Date().toISOString();
+      return contact;
+    }
+    return null;
+  },
+  archiveContact: (id) => {
+    const contact = store.contacts.find((c) => c.id === id);
+    if (contact) {
+      contact.status = 'ARCHIVED';
+      return contact;
+    }
+    return null;
+  },
+
+  // --- REGISTERED USERS ---
+  getUsers: () => store.users || [],
+  toggleUserStatus: (id) => {
+    const user = store.users.find((u) => u.id === id);
+    if (user) {
+      user.isActive = !user.isActive;
+      return user;
+    }
+    return null;
+  },
+  banUser: (id, isBanned) => {
+    const user = store.users.find((u) => u.id === id);
+    if (user) {
+      user.isBanned = isBanned;
+      return user;
+    }
+    return null;
+  },
+  deleteUser: (id) => {
+    const idx = store.users.findIndex((u) => u.id === id);
+    if (idx !== -1) return store.users.splice(idx, 1)[0];
+    return null;
+  },
+
+  // --- SPAMS ---
+  getSpams: () => store.spams || [],
+  resolveSpam: (id) => {
+    const spam = store.spams.find((s) => s.id === id);
+    if (spam) {
+      spam.status = 'RESOLVED';
+      return spam;
+    }
+    return null;
+  },
+  blockSpam: (id) => {
+    const spam = store.spams.find((s) => s.id === id);
+    if (spam) {
+      spam.status = 'BLOCKED';
+      return spam;
+    }
+    return null;
+  },
+  deleteSpam: (id) => {
+    const idx = store.spams.findIndex((s) => s.id === id);
+    if (idx !== -1) return store.spams.splice(idx, 1)[0];
     return null;
   },
 };

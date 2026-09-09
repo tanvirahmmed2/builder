@@ -23,18 +23,22 @@ export default function HomeNavbar() {
           </Link>
 
           {/* Marketing Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300">
-            <Link href="/sites/alex-design" target="_blank" className="hover:text-white transition-colors flex items-center gap-1">
-              <span>Live Tenant Demo</span>
+          <nav className="hidden lg:flex items-center gap-5 text-xs font-medium text-slate-300">
+            <Link href="/about" className="hover:text-white transition-colors">
+              About
+            </Link>
+            <Link href="/packages" className="hover:text-white transition-colors">
+              Packages & Pricing
+            </Link>
+            <Link href="/themes" className="hover:text-white transition-colors">
+              Themes
+            </Link>
+            <Link href="/contact" className="hover:text-white transition-colors">
+              Contact
+            </Link>
+            <Link href="/sites/alex-design" target="_blank" className="hover:text-white transition-colors flex items-center gap-1 text-slate-400 hover:text-emerald-300">
+              <span>Live Demo</span>
               <ExternalLinkIcon className="w-3 h-3 text-pink-400" />
-            </Link>
-            <Link href="/dashboard" className="hover:text-white transition-colors flex items-center gap-1 text-slate-300">
-              <LayoutGridIcon className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Creator Workspace</span>
-            </Link>
-            <Link href="/builder/d0000000-0000-0000-0000-000000000001" className="hover:text-white transition-colors flex items-center gap-1 text-slate-300">
-              <BoxIcon className="w-3.5 h-3.5 text-amber-400" />
-              <span>Drag & Drop Builder</span>
             </Link>
             <Link href="/admin/login" className="hover:text-white transition-colors flex items-center gap-1 text-slate-400">
               <ShieldCheckIcon className="w-3.5 h-3.5 text-rose-400" />
@@ -46,10 +50,17 @@ export default function HomeNavbar() {
         {/* Right CTA Actions */}
         <div className="hidden sm:flex items-center gap-3">
           <Link
+            href="/checkout"
+            className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition-all"
+          >
+            Checkout
+          </Link>
+
+          <Link
             href="/creator/login"
             className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition-all"
           >
-            Creator Sign In
+            Sign In
           </Link>
 
           <Link
@@ -61,7 +72,7 @@ export default function HomeNavbar() {
         </div>
 
         {/* Mobile menu trigger */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-2">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white"
@@ -80,7 +91,42 @@ export default function HomeNavbar() {
 
       {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-slate-950 px-4 py-3 space-y-2">
+        <div className="lg:hidden border-t border-white/10 bg-slate-950 px-4 py-3 space-y-2">
+          <Link
+            href="/about"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
+          >
+            About Platform
+          </Link>
+          <Link
+            href="/packages"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
+          >
+            Packages & Pricing
+          </Link>
+          <Link
+            href="/themes"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
+          >
+            Themes Gallery
+          </Link>
+          <Link
+            href="/contact"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
+          >
+            Contact Us
+          </Link>
+          <Link
+            href="/checkout"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
+          >
+            Checkout Plan
+          </Link>
           <Link
             href="/sites/alex-design"
             target="_blank"
@@ -89,22 +135,6 @@ export default function HomeNavbar() {
           >
             <span>Live Tenant Demo</span>
             <ExternalLinkIcon className="w-3.5 h-3.5" />
-          </Link>
-          <Link
-            href="/dashboard"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
-          >
-            <LayoutGridIcon className="w-4 h-4 text-emerald-400" />
-            <span>Creator Workspace</span>
-          </Link>
-          <Link
-            href="/builder/d0000000-0000-0000-0000-000000000001"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/5"
-          >
-            <BoxIcon className="w-4 h-4 text-amber-400" />
-            <span>Canvas Builder</span>
           </Link>
           <Link
             href="/admin/login"
