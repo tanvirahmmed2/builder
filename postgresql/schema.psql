@@ -1,0 +1,385 @@
+-- ============================================================================
+-- Platform: Multi-Tenant Drag-and-Drop SaaS Portfolio Builder
+-- Database Engine: PostgreSQL 14+
+-- Architecture: Raw SQL / Headless Next.js API Routes / Cloudinary / Brevo
+-- Idempotency: Fully safe to run multiple times without destructive data loss
+-- ============================================================================
+
+-- 1. EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "citext";
+
+-- ============================================================================
+-- 2. ENUM TYPES
+-- ============================================================================
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'CREATOR', 'VISITOR');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'billing_interval') THEN
+        CREATE TYPE billing_interval AS ENUM ('MONTHLY', 'YEARLY', 'ONE_TIME');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_status') THEN
+        CREATE TYPE subscription_status AS ENUM ('ACTIVE', 'PAST_DUE', 'CANCELED', 'TRIALING');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'section_type') THEN
+        CREATE TYPE section_type AS ENUM (
+            'HERO',
+            'ABOUT',
+            'PROJECTS',
+            'SKILLS',
+            'EXPERIENCE',
+            'TESTIMONIALS',
+            'CONTACT',
+            'CUSTOM'
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'comment_status') THEN
+        CREATE TYPE comment_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'channel_type') THEN
+        CREATE TYPE channel_type AS ENUM ('FACEBOOK_PAGE', 'WHATSAPP');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_direction') THEN
+        CREATE TYPE message_direction AS ENUM ('INBOUND', 'OUTBOUND');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_status') THEN
+        CREATE TYPE message_status AS ENUM ('SENT', 'DELIVERED', 'READ', 'FAILED');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'email_status') THEN
+        CREATE TYPE email_status AS ENUM ('QUEUED', 'SENT', 'DELIVERED', 'OPENED', 'CLICKED', 'BOUNCED', 'FAILED');
+    END IF;
+END $$;
+
+-- ============================================================================
+-- 3. UPDATED_AT TRIGGER FUNCTION
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- 4. CORE USERS & AUTH
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email CITEXT UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    full_name VARCHAR(255) NOT NULL,
+    avatar_url TEXT,
+    role user_role NOT NULL DEFAULT 'CREATOR',
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 5. PACKAGES & SUBSCRIPTIONS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS packages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    price_in_cents INTEGER NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    billing_interval billing_interval NOT NULL DEFAULT 'MONTHLY',
+    max_portfolios INTEGER NOT NULL DEFAULT 1,
+    max_sections_per_site INTEGER NOT NULL DEFAULT 10,
+    custom_domain_access BOOLEAN NOT NULL DEFAULT FALSE,
+    analytics_access BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_packages_updated_at
+BEFORE UPDATE ON packages
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    package_id UUID NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    status subscription_status NOT NULL DEFAULT 'TRIALING',
+    current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    current_period_end TIMESTAMPTZ NOT NULL,
+    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    external_gateway_subscription_id VARCHAR(255) UNIQUE,
+    external_gateway_customer_id VARCHAR(255),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_subscriptions_updated_at
+BEFORE UPDATE ON subscriptions
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 6. PORTFOLIO & DRAG-AND-DROP CANVAS SECTIONS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS portfolios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    subdomain CITEXT NOT NULL,
+    custom_domain CITEXT,
+    is_published BOOLEAN NOT NULL DEFAULT FALSE,
+    theme_config JSONB NOT NULL DEFAULT '{
+        "mode": "light",
+        "fonts": {
+            "heading": "Inter",
+            "body": "Inter"
+        },
+        "colors": {
+            "primary": "#2563EB",
+            "background": "#FFFFFF",
+            "surface": "#F9FAFB",
+            "text": "#111827",
+            "muted": "#6B7280"
+        },
+        "radius": "8px"
+    }'::jsonb,
+    seo_title VARCHAR(255),
+    seo_description TEXT,
+    favicon_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_subdomain_format CHECK (subdomain ~ '^[a-z0-9][a-z0-9\-]{1,61}[a-z0-9]$')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolios_subdomain_unique ON portfolios (subdomain);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolios_custom_domain_unique ON portfolios (custom_domain) WHERE custom_domain IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios (user_id);
+CREATE INDEX IF NOT EXISTS idx_portfolios_theme_config_gin ON portfolios USING GIN (theme_config);
+
+CREATE TRIGGER trg_portfolios_updated_at
+BEFORE UPDATE ON portfolios
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS portfolio_sections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    section_type section_type NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+    content_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    styles JSONB NOT NULL DEFAULT '{
+        "paddingTop": "64px",
+        "paddingBottom": "64px",
+        "textAlign": "left",
+        "backgroundColor": "transparent"
+    }'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_sections_portfolio_sort ON portfolio_sections (portfolio_id, sort_order ASC);
+CREATE INDEX IF NOT EXISTS idx_portfolio_sections_content_data_gin ON portfolio_sections USING GIN (content_data);
+
+CREATE TRIGGER trg_portfolio_sections_updated_at
+BEFORE UPDATE ON portfolio_sections
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 7. VISITOR INTERACTION (COMMENTS / TESTIMONIALS)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    visitor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    author_name VARCHAR(255) NOT NULL,
+    author_email CITEXT NOT NULL,
+    author_avatar_url TEXT,
+    content TEXT NOT NULL,
+    rating SMALLINT CHECK (rating >= 1 AND rating <= 5),
+    status comment_status NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_portfolio_status ON comments (portfolio_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_visitor_id ON comments (visitor_id);
+
+CREATE TRIGGER trg_comments_updated_at
+BEFORE UPDATE ON comments
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 8. MESSAGING & SOCIAL PLUGINS (FACEBOOK PAGE & WHATSAPP)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS connected_channels (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    channel_type channel_type NOT NULL,
+    account_or_page_id VARCHAR(255) NOT NULL,
+    display_name VARCHAR(255),
+    encrypted_access_token TEXT NOT NULL,
+    token_expires_at TIMESTAMPTZ,
+    webhook_verify_token VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_channel_per_portfolio UNIQUE (portfolio_id, channel_type, account_or_page_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_connected_channels_lookup ON connected_channels (channel_type, account_or_page_id);
+CREATE INDEX IF NOT EXISTS idx_connected_channels_portfolio_id ON connected_channels (portfolio_id);
+
+CREATE TRIGGER trg_connected_channels_updated_at
+BEFORE UPDATE ON connected_channels
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    channel_id UUID NOT NULL REFERENCES connected_channels(id) ON DELETE CASCADE,
+    customer_external_id VARCHAR(255) NOT NULL,
+    customer_name VARCHAR(255),
+    last_message_preview TEXT,
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_conversation_customer UNIQUE (channel_id, customer_external_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_channel_customer ON conversations (channel_id, customer_external_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_last_message ON conversations (channel_id, last_message_at DESC);
+
+CREATE TRIGGER trg_conversations_updated_at
+BEFORE UPDATE ON conversations
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    direction message_direction NOT NULL,
+    external_mid VARCHAR(255),
+    body TEXT,
+    media_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    status message_status NOT NULL DEFAULT 'SENT',
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_external_mid_unique ON messages (external_mid) WHERE external_mid IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_sent_at ON messages (conversation_id, sent_at DESC);
+
+-- ============================================================================
+-- 9. EMAIL & ACTIVITY LOGS (BREVO INTEGRATION)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS email_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    portfolio_id UUID REFERENCES portfolios(id) ON DELETE SET NULL,
+    recipient_email CITEXT NOT NULL,
+    template_name VARCHAR(100) NOT NULL,
+    subject VARCHAR(255),
+    brevo_message_id VARCHAR(255),
+    status email_status NOT NULL DEFAULT 'QUEUED',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    sent_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs (recipient_email, sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_logs_brevo_message_id ON email_logs (brevo_message_id) WHERE brevo_message_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_email_logs_portfolio_id ON email_logs (portfolio_id);
+
+-- ============================================================================
+-- 10. SEED DATA (IDEMPOTENT)
+-- ============================================================================
+
+-- Default Super Admin User (Password placeholder: 'Admin@123456' hashed with bcrypt)
+INSERT INTO users (
+    id,
+    email,
+    password_hash,
+    full_name,
+    role,
+    is_verified
+)
+VALUES (
+    'a0000000-0000-0000-0000-000000000001',
+    'admin@platform.com',
+    '$2b$10$X8m1d16/171O0w6x01oA2.t0j/gT6qH86.4xG8e4C9bBw9l8tqSXe',
+    'System Super Admin',
+    'SUPER_ADMIN',
+    TRUE
+)
+ON CONFLICT (email) DO NOTHING;
+
+-- Default Packages (Free & Pro)
+INSERT INTO packages (
+    id,
+    name,
+    slug,
+    description,
+    price_in_cents,
+    currency,
+    billing_interval,
+    max_portfolios,
+    max_sections_per_site,
+    custom_domain_access,
+    analytics_access,
+    is_active
+)
+VALUES
+(
+    'b0000000-0000-0000-0000-000000000001',
+    'Free Starter',
+    'free-starter',
+    'Essential tools for creators to build and launch their first personal portfolio.',
+    0,
+    'USD',
+    'MONTHLY',
+    1,
+    6,
+    FALSE,
+    FALSE,
+    TRUE
+),
+(
+    'b0000000-0000-0000-0000-000000000002',
+    'Pro Creator',
+    'pro-creator',
+    'Advanced features including custom domains, priority messaging plugins, and unlimited sections.',
+    1900,
+    'USD',
+    'MONTHLY',
+    5,
+    25,
+    TRUE,
+    TRUE,
+    TRUE
+)
+ON CONFLICT (slug) DO NOTHING;
