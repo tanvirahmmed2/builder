@@ -1,16 +1,25 @@
 import { Pool } from 'pg';
+import {
+  PG_HOST,
+  PG_PORT,
+  PG_DATABASE,
+  PG_USER,
+  PG_PASSWORD,
+} from './secret.js';
 
 let pool = null;
 
 export function getDbPool() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
   if (!pool) {
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      host: PG_HOST,
+      port: PG_PORT ? Number(PG_PORT) : 5432,
+      database: PG_DATABASE,
+      user: PG_USER,
+      password: PG_PASSWORD,
+      ssl: process.env.NODE_ENV === 'production' || process.env.PG_SSL === 'true'
+        ? { rejectUnauthorized: false }
+        : false,
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
@@ -21,10 +30,6 @@ export function getDbPool() {
 
 export async function queryDb(text, params = []) {
   const p = getDbPool();
-  if (!p) {
-    // Database connection not provided, fallback handled by store
-    return null;
-  }
   const start = Date.now();
   try {
     const res = await p.query(text, params);

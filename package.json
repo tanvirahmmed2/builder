@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "node postgresql/apply-schema.mjs"
   },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.3",

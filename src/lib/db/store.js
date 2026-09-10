@@ -21,6 +21,10 @@ const initialData = {
   users: [],
   spams: [],
   portfolioComments: [],
+  portfolioBlogComments: [],
+  portfolioSkills: [],
+  portfolioContacts: [],
+  portfolioSettings: [],
 };
 
 // Clean in-memory store without any insert or seed data
@@ -568,5 +572,98 @@ export const dbStore = {
     const idx = store.spams.findIndex((s) => s.id === id);
     if (idx !== -1) return store.spams.splice(idx, 1)[0];
     return null;
+  },
+
+  // --- PORTFOLIO BLOG COMMENTS (THREADED) ---
+  getBlogComments: (blogId) => {
+    return (store.portfolioBlogComments || []).filter((c) => c.blogId === blogId);
+  },
+  addBlogComment: (commentData) => {
+    const comment = {
+      id: (store.portfolioBlogComments?.length || 0) + 1,
+      isApproved: true,
+      isSpam: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      parentId: null,
+      ...commentData,
+    };
+    if (!store.portfolioBlogComments) store.portfolioBlogComments = [];
+    store.portfolioBlogComments.push(comment);
+    return comment;
+  },
+
+  // --- PORTFOLIO SKILLS ---
+  getSkillsByPortfolioId: (portfolioId) => {
+    return (store.portfolioSkills || [])
+      .filter((s) => s.portfolioId === portfolioId)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  },
+  createSkill: (skillData) => {
+    const skill = {
+      id: (store.portfolioSkills?.length || 0) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sortOrder: 0,
+      proficiency: 80,
+      ...skillData,
+    };
+    if (!store.portfolioSkills) store.portfolioSkills = [];
+    store.portfolioSkills.push(skill);
+    return skill;
+  },
+  deleteSkill: (id) => {
+    if (!store.portfolioSkills) return null;
+    const idx = store.portfolioSkills.findIndex((s) => s.id === id);
+    if (idx !== -1) return store.portfolioSkills.splice(idx, 1)[0];
+    return null;
+  },
+
+  // --- PORTFOLIO CONTACT INQUIRIES ---
+  getPortfolioContacts: (portfolioId) => {
+    return (store.portfolioContacts || []).filter((c) => c.portfolioId === portfolioId);
+  },
+  addPortfolioContact: (contactData) => {
+    const contact = {
+      id: (store.portfolioContacts?.length || 0) + 1,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      ...contactData,
+    };
+    if (!store.portfolioContacts) store.portfolioContacts = [];
+    store.portfolioContacts.unshift(contact);
+    return contact;
+  },
+
+  // --- PORTFOLIO SETTINGS ---
+  getPortfolioSettings: (portfolioId) => {
+    return (store.portfolioSettings || []).find((s) => s.portfolioId === portfolioId) || null;
+  },
+  updatePortfolioSettings: (portfolioId, settingsData) => {
+    if (!store.portfolioSettings) store.portfolioSettings = [];
+    const idx = store.portfolioSettings.findIndex((s) => s.portfolioId === portfolioId);
+    if (idx !== -1) {
+      store.portfolioSettings[idx] = {
+        ...store.portfolioSettings[idx],
+        ...settingsData,
+        updatedAt: new Date().toISOString(),
+      };
+      return store.portfolioSettings[idx];
+    }
+    const newSettings = {
+      id: store.portfolioSettings.length + 1,
+      portfolioId,
+      seoTitle: '',
+      seoDescription: '',
+      googleAnalyticsId: '',
+      socialLinks: {},
+      customCss: '',
+      customJs: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...settingsData,
+    };
+    store.portfolioSettings.push(newSettings);
+    return newSettings;
   },
 };
