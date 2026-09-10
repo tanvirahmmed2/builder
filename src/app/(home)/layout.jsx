@@ -1,14 +1,15 @@
 import Navbar from '@/components/home/Navbar';
 import Footer from '@/components/home/Footer';
+import { SITE_NAME } from '@/lib/db/secret';
 
 export const metadata = {
-  title: 'PortfolioCraft | Multi-Tenant Drag & Drop Portfolio Builder SaaS',
-  description: 'Next-gen SaaS portfolio builder featuring separated Admin, Creator (Admin/Manager), and User tiers.',
+  title: `${SITE_NAME} - Build Your Identity`,
+  description: `Portfolio wesite builder ${SITE_NAME}`,
 };
 
 export default function HomeLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen w-full overflow-x-hidden">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
