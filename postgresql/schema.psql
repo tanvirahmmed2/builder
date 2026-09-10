@@ -81,7 +81,7 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS admins (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -111,7 +111,7 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS packages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     slug VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -130,7 +130,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 CREATE TABLE IF NOT EXISTS features (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     key VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -138,9 +138,9 @@ CREATE TABLE IF NOT EXISTS features (
 );
 
 CREATE TABLE IF NOT EXISTS package_features (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    package_id UUID NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
-    feature_id UUID NOT NULL REFERENCES features(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+    feature_id INTEGER NOT NULL REFERENCES features(id) ON DELETE CASCADE,
     value VARCHAR(255) NOT NULL DEFAULT 'true',
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -154,14 +154,14 @@ CREATE INDEX IF NOT EXISTS idx_package_features_pkg ON package_features (package
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS creators (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role creator_role NOT NULL DEFAULT 'creator', -- 'creator' or 'manager'
     phone VARCHAR(50),
     avatar_url TEXT,
-    portfolio_id UUID, -- Optional linked portfolio for managers
+    portfolio_id INTEGER, -- Optional linked portfolio for managers
     -- Security rows
     is_verified BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at TIMESTAMPTZ,
@@ -181,9 +181,9 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS subscriptions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    creator_id UUID NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
-    package_id UUID NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
     status subscription_status NOT NULL DEFAULT 'ACTIVE',
     current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     current_period_end TIMESTAMPTZ NOT NULL,
@@ -200,10 +200,10 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 CREATE TABLE IF NOT EXISTS payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    creator_id UUID NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
-    package_id UUID NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
-    subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    subscription_id INTEGER REFERENCES subscriptions(id) ON DELETE SET NULL,
     amount_in_cents INTEGER NOT NULL,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
     payment_method VARCHAR(50) NOT NULL DEFAULT 'CARD',
@@ -220,7 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_payments_txn ON payments (transaction_id);
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     reporter_name VARCHAR(255) NOT NULL,
     reporter_email CITEXT NOT NULL,
     subject VARCHAR(255) NOT NULL,
@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS reports (
     status report_status NOT NULL DEFAULT 'OPEN',
     priority report_priority NOT NULL DEFAULT 'MEDIUM',
     admin_response TEXT,
-    resolved_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    resolved_by_admin_id INTEGER REFERENCES admins(id) ON DELETE SET NULL,
     resolved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -247,8 +247,8 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS portfolios (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    creator_id UUID NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     subdomain CITEXT UNIQUE NOT NULL,
     custom_domain CITEXT UNIQUE,
@@ -273,8 +273,8 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 CREATE TABLE IF NOT EXISTS portfolio_sections (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
     module_type module_type NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_visible BOOLEAN NOT NULL DEFAULT TRUE,
@@ -296,15 +296,34 @@ BEFORE UPDATE ON portfolio_sections
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
+CREATE TABLE IF NOT EXISTS portfolio_settings (
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    seo_title VARCHAR(255),
+    seo_description TEXT,
+    google_analytics_id VARCHAR(50),
+    social_links JSONB NOT NULL DEFAULT '{}'::jsonb,
+    custom_css TEXT,
+    custom_js TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_portfolio_settings UNIQUE (portfolio_id)
+);
+
+CREATE TRIGGER trg_portfolio_settings_updated_at
+BEFORE UPDATE ON portfolio_settings
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
 -- ============================================================================
 -- 9. PORTFOLIO MODULES: BLOG, APPOINTMENT, EXPERIENCE, REVIEWS
 -- ============================================================================
 
 -- 9.1 Blog Module
 CREATE TABLE IF NOT EXISTS portfolio_blogs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
-    creator_id UUID REFERENCES creators(id) ON DELETE SET NULL,
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    creator_id INTEGER REFERENCES creators(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL,
     summary TEXT,
@@ -321,8 +340,8 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_blogs_port ON portfolio_blogs (portfoli
 
 -- 9.2 Appointment Module
 CREATE TABLE IF NOT EXISTS portfolio_appointments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
     client_name VARCHAR(255) NOT NULL,
     client_email CITEXT NOT NULL,
     appointment_date DATE NOT NULL,
@@ -337,8 +356,8 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_appts_port ON portfolio_appointments (p
 
 -- 9.3 Experience Module
 CREATE TABLE IF NOT EXISTS portfolio_experiences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
     company VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL,
     location VARCHAR(255),
@@ -354,8 +373,8 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_exp_port ON portfolio_experiences (port
 
 -- 9.4 Reviews Module
 CREATE TABLE IF NOT EXISTS portfolio_reviews (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
     client_name VARCHAR(255) NOT NULL,
     client_email CITEXT NOT NULL,
     rating SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
@@ -368,12 +387,30 @@ CREATE TABLE IF NOT EXISTS portfolio_reviews (
 
 CREATE INDEX IF NOT EXISTS idx_portfolio_reviews_port ON portfolio_reviews (portfolio_id, status, created_at DESC);
 
+-- 9.5 Skills Module
+CREATE TABLE IF NOT EXISTS portfolio_skills (
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    proficiency INTEGER CHECK (proficiency >= 0 AND proficiency <= 100),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_skills_port ON portfolio_skills (portfolio_id, sort_order ASC);
+
+CREATE TRIGGER trg_portfolio_skills_updated_at
+BEFORE UPDATE ON portfolio_skills
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
 -- ============================================================================
 -- 10. THEMES GALLERY & TEMPLATES TABLE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS themes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     slug VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -401,13 +438,13 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS contacts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT NOT NULL,
     subject VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
-    replied_by_admin_id UUID REFERENCES admins(id) ON DELETE SET NULL,
+    replied_by_admin_id INTEGER REFERENCES admins(id) ON DELETE SET NULL,
     admin_reply TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -420,12 +457,26 @@ BEFORE UPDATE ON contacts
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
+-- Portfolio level contacts (messages sent from visitors to portfolio owner)
+CREATE TABLE IF NOT EXISTS portfolio_contacts (
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    sender_name VARCHAR(255) NOT NULL,
+    sender_email CITEXT NOT NULL,
+    subject VARCHAR(255),
+    message TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_portfolio_contacts_port ON portfolio_contacts (portfolio_id, created_at DESC);
+
 -- ============================================================================
 -- 12. REGISTERED USERS (COMMENTERS & PORTFOLIO REVIEWERS)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -442,29 +493,37 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 13. PORTFOLIO COMMENTS (USERS COMMENTING ON PORTFOLIO POSTS)
+-- 13. PORTFOLIO BLOG COMMENTS (USERS COMMENTING ON PORTFOLIO POSTS)
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS portfolio_comments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    blog_id UUID NOT NULL REFERENCES portfolio_blogs(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+CREATE TABLE IF NOT EXISTS portfolio_blog_comments (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER NOT NULL REFERENCES portfolio_blogs(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    parent_id INTEGER REFERENCES portfolio_blog_comments(id) ON DELETE CASCADE,
     author_name VARCHAR(255) NOT NULL,
     author_email CITEXT NOT NULL,
     comment_text TEXT NOT NULL,
     is_approved BOOLEAN NOT NULL DEFAULT TRUE,
     is_spam BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_comments_blog ON portfolio_comments (blog_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_blog ON portfolio_blog_comments (blog_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_parent ON portfolio_blog_comments (parent_id);
+
+CREATE TRIGGER trg_portfolio_blog_comments_updated_at
+BEFORE UPDATE ON portfolio_blog_comments
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
 -- 14. SPAM MODERATION & SECURITY LOGS TABLE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS spams (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     target_type VARCHAR(50) NOT NULL,
     target_id VARCHAR(255),
     reporter_ip VARCHAR(45),
