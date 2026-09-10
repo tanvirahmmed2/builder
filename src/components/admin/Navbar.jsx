@@ -92,7 +92,7 @@ export default function AdminNavbar() {
           </Link>
 
           <Link
-            href="/admin/login"
+            href="/admin-access/login"
             className="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-all"
           >
             Sign In / Out

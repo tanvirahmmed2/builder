@@ -86,7 +86,6 @@ CREATE TABLE IF NOT EXISTS admins (
     email CITEXT UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role admin_role NOT NULL DEFAULT 'SUPER_ADMIN',
-    -- Security Rows
     is_verified BOOLEAN NOT NULL DEFAULT TRUE,
     two_factor_secret VARCHAR(255),
     two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,

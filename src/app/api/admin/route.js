@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
+import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/admin/admin';
+import { queryDb } from '@/lib/db/pg';
+import { sendEmail } from '@/lib/db/mailer';
 
 export async function GET() {
   try {
@@ -151,9 +154,104 @@ export async function POST(request) {
     }
 
     // --- RECOVER ADMIN ---
-    if (action === 'recover_admin') {
-      const result = dbStore.recoverAdminPassword(body.email);
-      return NextResponse.json({ success: true, ...result });
+    if (action === 'recover_admin' || action === 'recover') {
+      const email = body.email?.trim().toLowerCase();
+      if (!email) {
+        return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
+      }
+
+      const token = 'rec_' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      // Check PostgreSQL database
+      const dbAdminRes = await queryDb('SELECT * FROM admins WHERE LOWER(email) = $1 LIMIT 1', [email]);
+      if (dbAdminRes.rows.length > 0) {
+        await queryDb(
+          `UPDATE admins 
+           SET recovery_token = $1, recovery_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour' 
+           WHERE id = $2`,
+          [token, dbAdminRes.rows[0].id]
+        );
+      }
+
+      // Try sending recovery email with Brevo
+      try {
+        await sendEmail({
+          to: email,
+          subject: 'Super Admin Security Recovery Token',
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #0f172a; color: #f8fafc; border-radius: 16px;">
+              <h2 style="color: #6366f1; margin-top: 0;">Admin Security Recovery</h2>
+              <p>You requested an account recovery token for the Multi-Tenant SaaS Admin Portal.</p>
+              <div style="padding: 14px; background: #1e293b; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #38bdf8;">${token}</span>
+              </div>
+              <p style="font-size: 13px; color: #94a3b8;">This token expires in 60 minutes. If you did not request this, please disregard this email.</p>
+            </div>
+          `,
+          text: `Your admin security recovery token is: ${token}. It expires in 60 minutes.`,
+        });
+      } catch (mailErr) {
+        console.warn('Brevo email sending notice:', mailErr.message);
+      }
+
+      return NextResponse.json({
+        success: true,
+        token,
+        message: 'Recovery instructions sent successfully.',
+      });
+    }
+
+    // --- RESET ADMIN PASSWORD ---
+    if (action === 'reset_password') {
+      const email = body.email?.trim().toLowerCase();
+      const token = body.token?.trim();
+      const newPassword = body.newPassword;
+
+      if (!email || !token || !newPassword) {
+        return NextResponse.json(
+          { success: false, error: 'Email, token, and new password are required' },
+          { status: 400 }
+        );
+      }
+
+      const adminRes = await queryDb(
+        `SELECT * FROM admins 
+         WHERE LOWER(email) = $1 AND recovery_token = $2 AND recovery_token_expires_at > CURRENT_TIMESTAMP 
+         LIMIT 1`,
+        [email, token]
+      );
+
+      if (adminRes.rows.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid or expired recovery token.' },
+          { status: 400 }
+        );
+      }
+
+      const hashed = hashPassword(newPassword);
+      await queryDb(
+        `UPDATE admins 
+         SET password_hash = $1, recovery_token = NULL, recovery_token_expires_at = NULL 
+         WHERE id = $2`,
+        [hashed, adminRes.rows[0].id]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Password reset successfully. You can now log in with your new password.',
+      });
+    }
+
+    // --- ADMIN LOGIN ---
+    if (action === 'login') {
+      const result = await authenticateAdmin(body.email, body.password);
+      return NextResponse.json({ success: true, admin: result.admin });
+    }
+
+    // --- ADMIN LOGOUT ---
+    if (action === 'logout') {
+      await clearAdminSessionCookie();
+      return NextResponse.json({ success: true, message: 'Logged out successfully' });
     }
 
     return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
