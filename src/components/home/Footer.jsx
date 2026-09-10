@@ -6,7 +6,7 @@ const Footer = () => {
   return (
     <div className='w-full bg-primary p-4 md:p-8 py-20 flex flex-col items-center justify-center gap-8 text-light'>
       <div className='w-full grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <div className='w-full flex flex-col gap-1'>
+        <div className='w-full flex flex-col'>
           <p className='text-3xl md:text-6xl font-semibold'>{SITE_NAME}</p>
           <p>Build your portfolio on web</p>
           <p>The wat you want</p>
@@ -14,7 +14,7 @@ const Footer = () => {
         </div>
         <div>
           <p className='text-xl font-semibold opacity-75'>Links</p>
-          <div className='w-full flex flex-col gap-1'>
+          <div className='w-full flex flex-col'>
             <Link href={'/creator/login'}>Login</Link>
             <Link href={'https://youtube.com'}>How to build</Link>
             <Link href={'/contact'}>Contact</Link>
@@ -23,7 +23,7 @@ const Footer = () => {
         </div>
         <div>
           <p className='text-xl font-semibold opacity-75'>Address</p>
-          <div className='w-full flex flex-col gap-1'>
+          <div className='w-full flex flex-col'>
             <p>{SITE_MAIL}</p>
             <p>{SITE_CONTACT}</p>
             <p>{SITE_ADDRESS}</p>
