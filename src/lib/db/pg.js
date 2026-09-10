@@ -5,6 +5,7 @@ import {
   PG_DATABASE,
   PG_USER,
   PG_PASSWORD,
+  NODE_ENV,
 } from './secret.js';
 
 let pool = null;
@@ -17,7 +18,7 @@ export function getDbPool() {
       database: PG_DATABASE,
       user: PG_USER,
       password: PG_PASSWORD,
-      ssl: process.env.NODE_ENV === 'production' || process.env.PG_SSL === 'true'
+      ssl: NODE_ENV === 'production' || process.env.PG_SSL === 'true'
         ? { rejectUnauthorized: false }
         : false,
       max: 10,
@@ -34,7 +35,7 @@ export async function queryDb(text, params = []) {
   try {
     const res = await p.query(text, params);
     const duration = Date.now() - start;
-    if (process.env.NODE_ENV === 'development') {
+    if (NODE_ENV === 'development') {
       console.log('Executed query', { text: text.slice(0, 80), duration, rows: res.rowCount });
     }
     return res;
