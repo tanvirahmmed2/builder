@@ -21,3 +21,11 @@
   --color-light: var(--light);
   --color-dark: var(--dark);
 }
+
+.input-style{
+  padding: 5px 14px;
+  border: solid 1px var(--primary);
+  outline: none;
+  border-radius: 4px;
+  width: 100%;
+}
