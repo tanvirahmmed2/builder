@@ -9,7 +9,7 @@ const Footer = () => {
         <div className='w-full flex flex-col'>
           <p className='text-3xl md:text-6xl font-semibold'>{SITE_NAME}</p>
           <p>Build your portfolio on web</p>
-          <p>The wat you want</p>
+          <p>The way you need</p>
           <p>The colour your fans love</p>
         </div>
         <div>

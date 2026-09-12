@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function HomeLayout({ children }) {
   return (
-    <div className="min-h-screen w-full overflow-x-hidden">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />

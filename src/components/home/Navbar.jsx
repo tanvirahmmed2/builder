@@ -8,7 +8,7 @@ import { BiMenu } from 'react-icons/bi';
 export default function HomeNavbar() {
 
   return (
-    <nav className="w-full flex flex-row items-center justify-between bg-white px-4 lg:px-8 h-14">
+    <nav className="w-full flex flex-row items-center justify-between bg-white px-4 shadow lg:px-8 h-14">
       <div className='w-auto flex flex-row items-center justify-center gap-2'>
         <button className='text-2xl md:hidden'><BiMenu /></button>
         <Link href={'/'} className='text-xl font-semibold'>{SITE_NAME}</Link>
@@ -20,8 +20,12 @@ export default function HomeNavbar() {
         <Link href={'/contact'} className='font-semibold hover:text-primary px-4'>Contact</Link>
         <Link href={'/about'} className='font-semibold hover:text-primary px-4'>About</Link>
       </div>
-      <Link href={'/creator/login'} className='bg-primary px-4 md:px-8 p-1 rounded-full text-light font-semibold'>Start Now</Link>
+      <div>
 
+        <Link href={'/creator/login'} className='border border-secondary text-secondary px-4 md:px-4 p-1 rounded-full font-semibold'>Start Now</Link>
+
+      </div>
+      
 
     </nav>
   );
