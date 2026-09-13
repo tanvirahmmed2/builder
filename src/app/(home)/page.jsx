@@ -1,8 +1,8 @@
-import About from '@/components/marketing/pages/About'
-import Hero from '@/components/marketing/pages/Hero'
-import LearnMore from '@/components/marketing/pages/LearnMore'
-import Reviews from '@/components/marketing/pages/Reviews'
-import Themes from '@/components/marketing/pages/Themes'
+import About from '@/components/home/pages/About'
+import Hero from '@/components/home/pages/Hero'
+import LearnMore from '@/components/home/pages/LearnMore'
+import Reviews from '@/components/home/pages/Reviews'
+import Themes from '@/components/home/pages/Themes'
 import React from 'react'
 
 const page = () => {

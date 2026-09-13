@@ -1,5 +1,5 @@
-import Navbar from '@/components/home/Navbar';
-import Footer from '@/components/home/Footer';
+import Navbar from '@/components/home/bar/Navbar';
+import Footer from '@/components/home/bar/Footer';
 import { SITE_NAME } from '@/lib/db/secret';
 
 export const metadata = {

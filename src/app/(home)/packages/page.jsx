@@ -65,7 +65,7 @@ export default function PackagesPage() {
       popular: false,
       features: [
         'Everything in Pro Studio',
-        'Up to 25 Isolated Tenant Portfolios',
+        'Up to 25 Isolated website Portfolios',
         'Multi-Admin & Manager RBAC Governance',
         'White-label Custom Email Invites',
         'Dedicated SLA & Solution Architect',
@@ -77,21 +77,16 @@ export default function PackagesPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
-      {/* Header */}
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-16 space-y-16">
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400">
-          <BoxIcon className="w-3.5 h-3.5" />
-          <span>Transparent, Predictable Subscription Packages</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
+        
+        <h1 className="text-4xl sm:text-5xl font-semibold text-primary">
           Invest in Your Digital Identity
         </h1>
-        <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-          Every tier includes zero-latency multi-tenant portfolio isolation, real-time drag-and-drop canvas studio, and instant subdomain activation.
+        <p className="text-sm max-w-2xl mx-auto">
+          Every tier includes zero-latency multi-website portfolio isolation, real-time drag-and-drop canvas studio, and instant subdomain activation.
         </p>
 
-        {/* Billing Switcher */}
         <div className="pt-4 flex items-center justify-center gap-3">
           <div className="bg-slate-900 p-1.5 rounded-2xl border border-white/10 inline-flex items-center gap-2 text-xs font-semibold">
             <button
@@ -152,7 +147,7 @@ export default function PackagesPage() {
                 </div>
 
                 <div className="text-xs text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-xl border border-indigo-500/20 w-fit font-medium">
-                  {pkg.maxPortfolios} {pkg.maxPortfolios === 1 ? 'Tenant Portfolio' : 'Tenant Portfolios'} Included
+                  {pkg.maxPortfolios} {pkg.maxPortfolios === 1 ? 'website Portfolio' : 'website Portfolios'} Included
                 </div>
 
                 <div className="border-t border-white/10 pt-6 space-y-3">
@@ -188,11 +183,10 @@ export default function PackagesPage() {
         })}
       </div>
 
-      {/* Feature Comparison Notice */}
-      <div className="p-8 rounded-3xl bg-slate-900/40 border border-white/10 text-center space-y-3 max-w-3xl mx-auto">
-        <h4 className="font-bold text-white text-base">All packages include instant tenant provisioning</h4>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          When you complete checkout, our background orchestrator generates your isolated PostgreSQL database tenant, assigns your dedicated subdomain, and links your custom drag-and-drop studio canvas immediately.
+      <div className="p-4 rounded-xl bg-primary text-center space-y-3 max-w-3xl mx-auto">
+        <h4 className="font-bold text-light text-base">All packages include instant website provisioning</h4>
+        <p className="text-xs text-light leading-relaxed">
+          When you complete checkout, our background orchestrator generates your isolated PostgreSQL database website, assigns your dedicated subdomain, and links your custom drag-and-drop studio canvas immediately.
         </p>
       </div>
     </div>
