@@ -1,0 +1,104 @@
+-- ============================================================================
+-- Domain: Creator Domain / Builder Accounts (builder.psql)
+-- Platform: Multi-Tenant Drag-and-Drop SaaS Portfolio Builder
+-- Database Engine: PostgreSQL 14+
+-- Description: Creator & Manager Profiles, Subscriptions, and Payment Transactions.
+-- Note: Requires management tables (packages) to exist first (admin.psql).
+-- ============================================================================
+
+-- 1. EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "citext";
+
+-- ============================================================================
+-- 2. ENUMS
+-- ============================================================================
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'creator_role') THEN
+        CREATE TYPE creator_role AS ENUM ('creator', 'manager');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_status') THEN
+        CREATE TYPE subscription_status AS ENUM ('ACTIVE', 'PAST_DUE', 'CANCELED', 'TRIALING');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+        CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+    END IF;
+END $$;
+
+-- Common updated_at trigger function
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- 3. CREATOR ACCOUNTS (CREATOR & MANAGER ROLES)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS creators (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email CITEXT UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role creator_role NOT NULL DEFAULT 'creator', -- 'creator' or 'manager'
+    phone VARCHAR(50),
+    avatar_url TEXT,
+    portfolio_id INTEGER, -- Optional linked portfolio for managers
+    -- Security rows
+    is_verified BOOLEAN NOT NULL DEFAULT TRUE,
+    last_login_at TIMESTAMPTZ,
+    recovery_token VARCHAR(255),
+    recovery_token_expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_creators_updated_at
+BEFORE UPDATE ON creators
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 4. SUBSCRIPTIONS & PAYMENTS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    status subscription_status NOT NULL DEFAULT 'ACTIVE',
+    current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    current_period_end TIMESTAMPTZ NOT NULL,
+    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_creator ON subscriptions (creator_id);
+
+CREATE TRIGGER trg_subscriptions_updated_at
+BEFORE UPDATE ON subscriptions
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS payments (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    subscription_id INTEGER REFERENCES subscriptions(id) ON DELETE SET NULL,
+    amount_in_cents INTEGER NOT NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'CARD',
+    transaction_id VARCHAR(255) UNIQUE NOT NULL,
+    status payment_status NOT NULL DEFAULT 'COMPLETED',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_creator ON payments (creator_id);
+CREATE INDEX IF NOT EXISTS idx_payments_txn ON payments (transaction_id);
