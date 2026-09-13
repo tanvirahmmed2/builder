@@ -1,14 +1,19 @@
-import React from 'react'
+'use client'
+import { CheckCircleIcon, StarIcon } from '@/components/ui/Icons';
+import React, { useState } from 'react'
+import Link from 'next/link';
 
 const Package = ({pkg,price}) => {
+  
+    const [billingCycle, setBillingCycle] = useState('MONTHLY');
   return (
     <div
               key={pkg.id}
-              className={`relative rounded-3xl p-8 border bg-gradient-to-b ${pkg.color} flex flex-col justify-between shadow-2xl transition-all hover:translate-y-[-4px]`}
+              className={`relative rounded-3xl p-8 border bg-primary flex flex-col justify-between shadow-2xl transition-all hover:translate-y-[-4px]`}
             >
               {pkg.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-lg flex items-center gap-1">
-                  <StarIcon filled className="w-3 h-3 text-amber-300" />
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-light text-[11px] font-semibold uppercase tracking-wider shadow-lg flex items-center gap-1">
+                  <StarIcon filled className="w-3 h-3 text-secondary" />
                   <span>Most Popular Choice</span>
                 </div>
               )}
@@ -16,12 +21,12 @@ const Package = ({pkg,price}) => {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xl font-bold text-white">{pkg.name}</h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{pkg.description}</p>
+                  <p className="text-xs  mt-1 leading-relaxed">{pkg.description}</p>
                 </div>
 
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-extrabold text-white font-mono">${price}</span>
-                  <span className="text-xs text-slate-400 font-medium">/ month</span>
+                  <span className="text-xs  font-medium">/ month</span>
                   {billingCycle === 'YEARLY' && (
                     <span className="text-[10px] text-emerald-400 font-bold ml-2">billed annually</span>
                   )}
