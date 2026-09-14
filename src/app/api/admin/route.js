@@ -1,38 +1,42 @@
 import { NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
-import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/admin/admin';
+import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/auth/admin';
 import { queryDb } from '@/lib/db/pg';
 import { sendEmail } from '@/lib/db/mailer';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const admins = dbStore.getAdmins();
-    const packages = dbStore.getPackages();
-    const features = dbStore.getFeatures();
-    const subscriptions = dbStore.getSubscriptions();
-    const payments = dbStore.getPayments();
-    const reports = dbStore.getReports();
-    const creators = dbStore.getCreators();
-    const users = dbStore.getUsers();
-    const reviews = dbStore.getAllReviews();
-    const themes = dbStore.getThemes();
-    const contacts = dbStore.getContacts();
-    const spams = dbStore.getSpams();
+    const { searchParams } = new URL(request.url);
+    const tableParam = searchParams.get('table');
 
+    if (tableParam) {
+      const records = dbStore.getTableRecords(tableParam);
+      return NextResponse.json({ success: true, table: tableParam, records });
+    }
+
+    // Return full bundle for all 20 tables and overview dashboard
     return NextResponse.json({
       success: true,
-      admins,
-      packages,
-      features,
-      subscriptions,
-      payments,
-      reports,
-      creators,
-      users,
-      reviews,
-      themes,
-      contacts,
-      spams,
+      admins: dbStore.getTableRecords('admin'),
+      blogs: dbStore.getTableRecords('blogs'),
+      blogs_image: dbStore.getTableRecords('blogs_image'),
+      packages: dbStore.getTableRecords('packages'),
+      feature: dbStore.getTableRecords('feature'),
+      packages_feature: dbStore.getTableRecords('packages_feature'),
+      package_image: dbStore.getTableRecords('package_image'),
+      live_chats: dbStore.getTableRecords('live_chats'),
+      live_chat_messages: dbStore.getTableRecords('live_chat_messages'),
+      contacts: dbStore.getTableRecords('contacts'),
+      support: dbStore.getTableRecords('support'),
+      support_messages: dbStore.getTableRecords('support_messages'),
+      support_images: dbStore.getTableRecords('support_images'),
+      payment: dbStore.getTableRecords('payment'),
+      subscription: dbStore.getTableRecords('subscription'),
+      tenant: dbStore.getTableRecords('tenant'),
+      reports: dbStore.getTableRecords('reports'),
+      leads: dbStore.getTableRecords('leads'),
+      subscribers: dbStore.getTableRecords('subscribers'),
+      themes: dbStore.getTableRecords('themes'),
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -44,17 +48,31 @@ export async function POST(request) {
     const body = await request.json();
     const { action } = body;
 
+    // --- GENERIC 20-TABLE ACTIONS ---
+    if (action === 'create_record' || action === 'add_record') {
+      const record = dbStore.addTableRecord(body.table, body.data);
+      return NextResponse.json({ success: true, record });
+    }
+    if (action === 'delete_record') {
+      const success = dbStore.deleteTableRecord(body.table, body.id);
+      return NextResponse.json({ success });
+    }
+    if (action === 'update_record') {
+      const record = dbStore.updateTableRecord(body.table, body.id, body.data);
+      return NextResponse.json({ success: true, record });
+    }
+
     // --- ADMIN TEAM ---
     if (action === 'create_admin' || action === 'add_admin') {
-      const admin = dbStore.createAdmin(body.adminData);
+      const admin = dbStore.createAdmin(body.adminData || body.data);
       return NextResponse.json({ success: true, admin });
     }
     if (action === 'remove_admin') {
-      const removed = dbStore.removeAdmin(body.adminId);
+      const removed = dbStore.removeAdmin ? dbStore.removeAdmin(body.adminId) : dbStore.deleteTableRecord('admin', body.adminId);
       return NextResponse.json({ success: true, removed });
     }
     if (action === 'toggle_admin_status') {
-      const admin = dbStore.toggleAdminStatus(body.adminId);
+      const admin = dbStore.toggleAdminStatus ? dbStore.toggleAdminStatus(body.adminId) : dbStore.updateTableRecord('admin', body.adminId, { isActive: !body.currentStatus });
       return NextResponse.json({ success: true, admin });
     }
 

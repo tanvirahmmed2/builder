@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { hashPassword } from '@/lib/admin/admin';
+import { hashPassword } from '@/lib/auth/admin';
 import { sendEmail } from '@/lib/db/mailer';
 
 export async function POST(request) {

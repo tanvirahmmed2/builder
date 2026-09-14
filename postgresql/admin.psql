@@ -2,8 +2,10 @@
 -- Domain: Management / Platform Administration (admin.psql)
 -- Platform: Multi-Tenant Drag-and-Drop SaaS Portfolio Builder
 -- Database Engine: PostgreSQL 14+
--- Description: Platform Staff, Admins, Packages, Features, Themes,
---              Platform Reports, Platform Inquiries, and Spam Moderation.
+-- Description: Platform Admin (no role), Blogs, Blogs_Image, Packages, Feature,
+--              Packages_Feature, Package_Image, Live_Chats, Live_Chat_Messages,
+--              Contacts, Support, Support_Messages, Support_Images, Payment,
+--              Subscription, Tenant, Reports, Leads, Subscribers, Themes.
 -- ============================================================================
 
 -- 1. EXTENSIONS
@@ -11,28 +13,9 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "citext";
 
 -- ============================================================================
--- 2. ENUMS
+-- 2. COMMON TRIGGER FUNCTIONS
 -- ============================================================================
 
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'admin_role') THEN
-        CREATE TYPE admin_role AS ENUM ('SUPER_ADMIN', 'ADMIN', 'SUPPORT_ADMIN');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'billing_interval') THEN
-        CREATE TYPE billing_interval AS ENUM ('MONTHLY', 'YEARLY', 'LIFETIME');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'report_status') THEN
-        CREATE TYPE report_status AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED');
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'report_priority') THEN
-        CREATE TYPE report_priority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
-    END IF;
-END $$;
-
--- Common updated_at trigger function
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -42,36 +25,65 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- 3. ADMIN DOMAIN (Super Admin & Platform Staff)
+-- 3. ADMIN TABLE (NO ROLE)
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS admins (
+CREATE TABLE IF NOT EXISTS admin (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role admin_role NOT NULL DEFAULT 'SUPER_ADMIN',
-    is_verified BOOLEAN NOT NULL DEFAULT TRUE,
-    two_factor_secret VARCHAR(255),
-    two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     last_login_at TIMESTAMPTZ,
     last_login_ip VARCHAR(45),
-    login_attempts INTEGER NOT NULL DEFAULT 0,
-    locked_until TIMESTAMPTZ,
-    recovery_token VARCHAR(255),
-    recovery_token_expires_at TIMESTAMPTZ,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER trg_admins_updated_at
-BEFORE UPDATE ON admins
+CREATE TRIGGER trg_admin_updated_at
+BEFORE UPDATE ON admin
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 4. PACKAGES, FEATURES & PACKAGE_FEATURES (PLATFORM TIERS)
+-- 4. BLOGS & BLOGS_IMAGE
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS blogs (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    summary TEXT,
+    content TEXT NOT NULL,
+    cover_image TEXT,
+    author_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    published_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs (slug);
+CREATE INDEX IF NOT EXISTS idx_blogs_published ON blogs (is_published, published_at DESC);
+
+CREATE TRIGGER trg_blogs_updated_at
+BEFORE UPDATE ON blogs
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS blogs_image (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER NOT NULL REFERENCES blogs(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    alt_text VARCHAR(255),
+    caption TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blogs_image_blog ON blogs_image (blog_id);
+
+-- ============================================================================
+-- 5. PACKAGES, FEATURE, PACKAGES_FEATURE & PACKAGE_IMAGE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS packages (
@@ -81,7 +93,7 @@ CREATE TABLE IF NOT EXISTS packages (
     description TEXT,
     price_in_cents INTEGER NOT NULL DEFAULT 0,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
-    billing_interval billing_interval NOT NULL DEFAULT 'MONTHLY',
+    billing_interval VARCHAR(50) NOT NULL DEFAULT 'MONTHLY',
     max_portfolios INTEGER NOT NULL DEFAULT 1,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -93,7 +105,7 @@ BEFORE UPDATE ON packages
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS features (
+CREATE TABLE IF NOT EXISTS feature (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     key VARCHAR(100) NOT NULL UNIQUE,
@@ -101,20 +113,267 @@ CREATE TABLE IF NOT EXISTS features (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS package_features (
+CREATE TABLE IF NOT EXISTS packages_feature (
     id SERIAL PRIMARY KEY,
     package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
-    feature_id INTEGER NOT NULL REFERENCES features(id) ON DELETE CASCADE,
+    feature_id INTEGER NOT NULL REFERENCES feature(id) ON DELETE CASCADE,
     value VARCHAR(255) NOT NULL DEFAULT 'true',
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_package_feature UNIQUE (package_id, feature_id)
+    CONSTRAINT uq_packages_feature UNIQUE (package_id, feature_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_package_features_pkg ON package_features (package_id);
+CREATE INDEX IF NOT EXISTS idx_packages_feature_pkg ON packages_feature (package_id);
+
+CREATE TABLE IF NOT EXISTS package_image (
+    id SERIAL PRIMARY KEY,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    alt_text VARCHAR(255),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_package_image_pkg ON package_image (package_id);
 
 -- ============================================================================
--- 5. THEMES GALLERY & TEMPLATES TABLE (PLATFORM LEVEL)
+-- 6. LIVE_CHATS & LIVE_CHAT_MESSAGES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS live_chats (
+    id SERIAL PRIMARY KEY,
+    visitor_name VARCHAR(255) NOT NULL,
+    visitor_email CITEXT,
+    session_id VARCHAR(255) UNIQUE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    ip_address VARCHAR(45),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_live_chats_status ON live_chats (status, created_at DESC);
+
+CREATE TRIGGER trg_live_chats_updated_at
+BEFORE UPDATE ON live_chats
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS live_chat_messages (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER NOT NULL REFERENCES live_chats(id) ON DELETE CASCADE,
+    sender_type VARCHAR(20) NOT NULL, -- 'VISITOR' or 'ADMIN'
+    sender_name VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_live_chat_messages_chat ON live_chat_messages (chat_id, created_at ASC);
+
+-- ============================================================================
+-- 7. CONTACTS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS contacts (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+    admin_reply TEXT,
+    replied_by_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts (status, created_at DESC);
+
+CREATE TRIGGER trg_contacts_updated_at
+BEFORE UPDATE ON contacts
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 8. SUPPORT, SUPPORT_MESSAGES & SUPPORT_IMAGES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS support (
+    id SERIAL PRIMARY KEY,
+    ticket_number VARCHAR(100) UNIQUE NOT NULL,
+    requester_name VARCHAR(255) NOT NULL,
+    requester_email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'TECHNICAL',
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    assigned_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_status ON support (status, priority);
+
+CREATE TRIGGER trg_support_updated_at
+BEFORE UPDATE ON support
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS support_messages (
+    id SERIAL PRIMARY KEY,
+    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
+    sender_type VARCHAR(20) NOT NULL, -- 'USER' or 'ADMIN'
+    sender_id INTEGER,
+    sender_name VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_messages_sup ON support_messages (support_id, created_at ASC);
+
+CREATE TABLE IF NOT EXISTS support_images (
+    id SERIAL PRIMARY KEY,
+    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
+    message_id INTEGER REFERENCES support_messages(id) ON DELETE SET NULL,
+    image_url TEXT NOT NULL,
+    file_name VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
+
+-- ============================================================================
+-- 9. PAYMENT
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS payment (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER,
+    package_id INTEGER REFERENCES packages(id) ON DELETE RESTRICT,
+    subscription_id INTEGER,
+    amount_in_cents INTEGER NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'CARD',
+    transaction_id VARCHAR(255) UNIQUE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_creator ON payment (creator_id);
+CREATE INDEX IF NOT EXISTS idx_payment_txn ON payment (transaction_id);
+
+-- ============================================================================
+-- 10. SUBSCRIPTION
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS subscription (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    current_period_end TIMESTAMPTZ NOT NULL,
+    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
+
+CREATE TRIGGER trg_subscription_updated_at
+BEFORE UPDATE ON subscription
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 11. TENANT
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tenant (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    subdomain CITEXT UNIQUE NOT NULL,
+    custom_domain CITEXT UNIQUE,
+    theme_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    storage_used_mb INTEGER NOT NULL DEFAULT 0,
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tenant_subdomain ON tenant (subdomain);
+CREATE INDEX IF NOT EXISTS idx_tenant_creator ON tenant (creator_id);
+
+CREATE TRIGGER trg_tenant_updated_at
+BEFORE UPDATE ON tenant
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 12. REPORTS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY,
+    reporter_name VARCHAR(255) NOT NULL,
+    reporter_email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
+    admin_response TEXT,
+    resolved_by_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, priority);
+
+CREATE TRIGGER trg_reports_updated_at
+BEFORE UPDATE ON reports
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 13. LEADS & SUBSCRIBERS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS leads (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email CITEXT NOT NULL,
+    phone VARCHAR(50),
+    company VARCHAR(255),
+    source VARCHAR(100) DEFAULT 'WEBSITE',
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at DESC);
+
+CREATE TRIGGER trg_leads_updated_at
+BEFORE UPDATE ON leads
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS subscribers (
+    id SERIAL PRIMARY KEY,
+    email CITEXT UNIQUE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUBSCRIBED',
+    source VARCHAR(100) DEFAULT 'FOOTER',
+    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
+
+-- ============================================================================
+-- 14. THEMES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS themes (
@@ -140,71 +399,3 @@ CREATE TRIGGER trg_themes_updated_at
 BEFORE UPDATE ON themes
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 6. REPORTS (ADMIN RESOLVED)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS reports (
-    id SERIAL PRIMARY KEY,
-    reporter_name VARCHAR(255) NOT NULL,
-    reporter_email CITEXT NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
-    status report_status NOT NULL DEFAULT 'OPEN',
-    priority report_priority NOT NULL DEFAULT 'MEDIUM',
-    admin_response TEXT,
-    resolved_by_admin_id INTEGER REFERENCES admins(id) ON DELETE SET NULL,
-    resolved_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, priority);
-
-CREATE TRIGGER trg_reports_updated_at
-BEFORE UPDATE ON reports
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 7. PLATFORM CONTACT INQUIRIES & PUBLIC MESSAGES
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS contacts (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email CITEXT NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
-    replied_by_admin_id INTEGER REFERENCES admins(id) ON DELETE SET NULL,
-    admin_reply TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts (status, created_at DESC);
-
-CREATE TRIGGER trg_contacts_updated_at
-BEFORE UPDATE ON contacts
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 8. SPAM MODERATION & SECURITY LOGS
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS spams (
-    id SERIAL PRIMARY KEY,
-    target_type VARCHAR(50) NOT NULL,
-    target_id VARCHAR(255),
-    reporter_ip VARCHAR(45),
-    content_snippet TEXT NOT NULL,
-    reason VARCHAR(255) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'FLAGGED',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_spams_status ON spams (status, created_at DESC);

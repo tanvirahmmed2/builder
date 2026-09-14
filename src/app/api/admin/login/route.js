@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateAdmin } from '@/lib/admin/admin';
+import { authenticateAdmin } from '@/lib/auth/admin';
 
 export async function POST(request) {
   try {

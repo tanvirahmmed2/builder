@@ -2,22 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { SITE_NAME } from '@/lib/db/secret';
 import {
-  ShieldCheckIcon,
-  BoxIcon,
-  CreditCardIcon,
-  AlertCircleIcon,
-  UsersIcon,
-} from '@/components/ui/Icons';
+  BiLayer,
+  BiUserCheck,
+  BiCube,
+  BiCreditCard,
+  BiHeadphone,
+  BiDesktop,
+  BiFile,
+  BiChat,
+  BiTrendingUp,
+  BiEnvelope,
+  BiPalette,
+  BiRightArrowAlt,
+} from 'react-icons/bi';
 
-export default function AdminDashboardPage() {
+export default function AdminOverviewPage() {
   const [data, setData] = useState({
     admins: [],
+    blogs: [],
     packages: [],
-    features: [],
-    subscriptions: [],
-    payments: [],
-    reports: [],
+    tenants: [],
+    support: [],
+    payment: [],
+    live_chats: [],
+    leads: [],
+    subscribers: [],
+    themes: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -39,136 +51,222 @@ export default function AdminDashboardPage() {
     fetchData();
   }, []);
 
-  const totalRevenue = data.payments.reduce((acc, p) => acc + (p.amountInCents || 0), 0) / 100;
-  const pendingReports = data.reports.filter((r) => r.status === 'OPEN').length;
+  const totalRevenue = (data.payment || []).reduce(
+    (acc, p) => acc + (p.amount_in_cents || p.amountInCents || 0),
+    0
+  ) / 100;
+
+  const statCards = [
+    {
+      title: 'Platform Admins',
+      value: (data.admins || []).length,
+      icon: BiUserCheck,
+      href: '/admin/admins',
+      color: 'secondary',
+    },
+    {
+      title: 'Active Packages',
+      value: (data.packages || []).length,
+      icon: BiCube,
+      href: '/admin/packages',
+      color: 'primary',
+    },
+    {
+      title: 'Tenant Sites',
+      value: (data.tenant || []).length,
+      icon: BiDesktop,
+      href: '/admin/tenants',
+      color: 'secondary',
+    },
+    {
+      title: 'Blog Articles',
+      value: (data.blogs || []).length,
+      icon: BiFile,
+      href: '/admin/blogs',
+      color: 'primary',
+    },
+    {
+      title: 'Open Support Tickets',
+      value: (data.support || []).filter((s) => s.status === 'OPEN').length,
+      icon: BiHeadphone,
+      href: '/admin/support',
+      color: 'secondary',
+    },
+    {
+      title: 'Total Revenue',
+      value: `$${totalRevenue.toFixed(2)}`,
+      icon: BiCreditCard,
+      href: '/admin/payments',
+      color: 'primary',
+    },
+    {
+      title: 'Inbound Leads',
+      value: (data.leads || []).length,
+      icon: BiTrendingUp,
+      href: '/admin/leads',
+      color: 'secondary',
+    },
+    {
+      title: 'Subscribers',
+      value: (data.subscribers || []).length,
+      icon: BiEnvelope,
+      href: '/admin/subscribers',
+      color: 'primary',
+    },
+  ];
+
+  const moduleCategories = [
+    {
+      category: 'Core Management',
+      items: [
+        { label: 'Admin Team', path: '/admin/admins', desc: 'Internal platform operators (role-free)' },
+        { label: 'Tenants', path: '/admin/tenants', desc: 'Provisioned portfolio subdomains and containers' },
+      ],
+    },
+    {
+      category: 'Content & Design',
+      items: [
+        { label: 'Blogs', path: '/admin/blogs', desc: 'Platform articles, guides, and releases' },
+        { label: 'Blogs Image', path: '/admin/blogs-image', desc: 'Attached blog figures and cover assets' },
+        { label: 'Themes Gallery', path: '/admin/themes', desc: 'Design templates and layout presets' },
+      ],
+    },
+    {
+      category: 'Billing & Monetization',
+      items: [
+        { label: 'Packages', path: '/admin/packages', desc: 'Subscription tiers and pricing limits' },
+        { label: 'Feature Catalog', path: '/admin/features', desc: 'Modular platform feature definitions' },
+        { label: 'Packages Features', path: '/admin/packages-features', desc: 'Tier-to-feature matrix configuration' },
+        { label: 'Package Images', path: '/admin/package-images', desc: 'Showcase banners for checkout cards' },
+        { label: 'Payments', path: '/admin/payments', desc: 'Revenue transactions and billing records' },
+        { label: 'Subscriptions', path: '/admin/subscriptions', desc: 'Recurring memberships and renewal schedules' },
+      ],
+    },
+    {
+      category: 'Support & Real-Time Comms',
+      items: [
+        { label: 'Live Chats', path: '/admin/live-chats', desc: 'Active visitor and client chat sessions' },
+        { label: 'Live Chat Messages', path: '/admin/live-chat-messages', desc: 'Chat message transcripts and history' },
+        { label: 'Contacts', path: '/admin/contacts', desc: 'Inbound inquiry forms from website' },
+        { label: 'Support Tickets', path: '/admin/support', desc: 'Technical trouble tickets and assistance' },
+        { label: 'Support Messages', path: '/admin/support-messages', desc: 'Ticket conversation updates and notes' },
+        { label: 'Support Images', path: '/admin/support-images', desc: 'Attached ticket bug screenshots' },
+        { label: 'Moderation Reports', path: '/admin/reports', desc: 'Platform abuse and content reports' },
+      ],
+    },
+    {
+      category: 'Audience & Growth',
+      items: [
+        { label: 'Sales Leads', path: '/admin/leads', desc: 'Inbound customer prospects and agency evaluations' },
+        { label: 'Subscribers', path: '/admin/subscribers', desc: 'Newsletter audience email list' },
+      ],
+    },
+  ];
 
   return (
     <div className="space-y-8">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-8 rounded-3xl border border-indigo-500/20 shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl text-indigo-400">
-            <ShieldCheckIcon className="w-8 h-8" />
+      {/* Banner matching home style */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+              Admin Console
+            </span>
+            <span className="text-xs text-slate-500 font-semibold">• Multi-Tenant SaaS</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-white">Super Admin Control Center</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                Root Access
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Platform administration, team credentials, packages, subscriptions, and incident resolution.
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            Welcome to {SITE_NAME} Operations
+          </h1>
+          <p className="text-sm text-slate-500 max-w-xl">
+            Central administration hub for platform packages, multi-tenant portfolios, customer support, and financial reporting.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/admins"
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all"
-          >
-            + Create Admin
-          </Link>
+        <div className="flex items-center gap-3">
           <Link
             href="/admin/packages"
-            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold shadow-xs transition-colors"
           >
-            + New Package
+            <span>Manage Packages</span>
+            <BiRightArrowAlt className="text-base" />
+          </Link>
+          <Link
+            href="/admin/support"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors"
+          >
+            <span>Support Center</span>
           </Link>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Payments Captured</div>
-          <div className="text-3xl font-black text-emerald-400">${totalRevenue.toFixed(2)}</div>
-          <div className="text-xs text-slate-500">{data.payments.length} successful transactions</div>
-        </div>
-
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Subscriptions</div>
-          <div className="text-3xl font-black text-indigo-400">{data.subscriptions.length}</div>
-          <div className="text-xs text-slate-500">Live creator billing accounts</div>
-        </div>
-
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Configured Packages</div>
-          <div className="text-3xl font-black text-purple-400">{data.packages.length}</div>
-          <div className="text-xs text-slate-500">{data.features.length} master features linked</div>
-        </div>
-
-        <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Reports</div>
-          <div className="text-3xl font-black text-rose-400">{pendingReports}</div>
-          <div className="text-xs text-slate-500">{data.reports.length} total tickets logged</div>
-        </div>
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {statCards.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <Link
+              key={idx}
+              href={stat.href}
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-secondary/40 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div
+                  className={`p-2 rounded-xl ${
+                    stat.color === 'secondary'
+                      ? 'bg-secondary/10 text-secondary'
+                      : 'bg-primary/10 text-primary'
+                  }`}
+                >
+                  <Icon className="text-xl" />
+                </div>
+                <BiRightArrowAlt className="text-slate-300 group-hover:text-secondary group-hover:translate-x-1 transition-all text-lg" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 tracking-tight">
+                {loading ? '—' : stat.value}
+              </div>
+              <div className="text-xs text-slate-500 font-medium mt-0.5">{stat.title}</div>
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Dedicated Task Launchpads */}
-      <div className="space-y-4">
-        <h2 className="text-base font-bold text-white">Administrative Workflows</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Admins */}
-          <Link
-            href="/admin/admins"
-            className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-indigo-500/40 hover:bg-slate-900/90 transition-all space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-              <UsersIcon className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-white text-base group-hover:text-indigo-300">Admin Management</h3>
-            <p className="text-xs text-slate-400">
-              Create another admin with security rows, monitor verification and 2FA statuses.
-            </p>
-            <span className="text-xs font-bold text-indigo-400 pt-2 block">Manage Admins ({data.admins.length}) →</span>
-          </Link>
+      {/* Categorized Modules Navigation Matrix (All 20 Tables) */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Platform Database Modules</h2>
+          <p className="text-xs text-slate-500">Access and edit any of the 20 platform management tables directly.</p>
+        </div>
 
-          {/* Packages */}
-          <Link
-            href="/admin/packages"
-            className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-purple-500/40 hover:bg-slate-900/90 transition-all space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
-              <BoxIcon className="w-5 h-5" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {moduleCategories.map((cat, idx) => (
+            <div
+              key={idx}
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3 flex flex-col justify-between"
+            >
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-secondary border-b border-slate-100 pb-2 mb-3">
+                  {cat.category}
+                </h3>
+                <div className="space-y-2">
+                  {cat.items.map((item, itemIdx) => (
+                    <Link
+                      key={itemIdx}
+                      href={item.path}
+                      className="group flex items-start justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-slate-800 group-hover:text-secondary transition-colors">
+                          {item.label}
+                        </div>
+                        <div className="text-[11px] text-slate-400 line-clamp-1">{item.desc}</div>
+                      </div>
+                      <BiRightArrowAlt className="text-slate-300 group-hover:text-secondary text-base shrink-0 mt-1 transition-colors" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
-            <h3 className="font-bold text-white text-base group-hover:text-purple-300">Packages & Features</h3>
-            <p className="text-xs text-slate-400">
-              Define SaaS pricing tiers, feature master table, and package_features junction data.
-            </p>
-            <span className="text-xs font-bold text-purple-400 pt-2 block">Configure Packages ({data.packages.length}) →</span>
-          </Link>
-
-          {/* Subscriptions */}
-          <Link
-            href="/admin/subscriptions"
-            className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/40 hover:bg-slate-900/90 transition-all space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <CreditCardIcon className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-white text-base group-hover:text-emerald-300">Subscriptions & Payments</h3>
-            <p className="text-xs text-slate-400">
-              Audit recurring creator subscriptions, renewals, and one-off payment receipts.
-            </p>
-            <span className="text-xs font-bold text-emerald-400 pt-2 block">View Ledger ({data.subscriptions.length}) →</span>
-          </Link>
-
-          {/* Reports */}
-          <Link
-            href="/admin/reports"
-            className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-rose-500/40 hover:bg-slate-900/90 transition-all space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
-              <AlertCircleIcon className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-white text-base group-hover:text-rose-300">Reports Helpdesk</h3>
-            <p className="text-xs text-slate-400">
-              Inspect reported inquiries and bugs from Creators and Users; send official Admin responses.
-            </p>
-            <span className="text-xs font-bold text-rose-400 pt-2 block">Respond to Reports ({data.reports.length}) →</span>
-          </Link>
+          ))}
         </div>
       </div>
     </div>

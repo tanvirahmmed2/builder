@@ -1,23 +1,318 @@
-// In-Memory Reactive Store mirroring postgresql/schema.psql
+// In-Memory Reactive Store mirroring postgresql/admin.psql
 // Fully powers the Next.js runtime, API routes, and frontends
 
 const initialData = {
-  admins: [],
+  admins: [
+    {
+      id: 1,
+      name: 'Platform Administrator',
+      email: 'admin@saasplatform.com',
+      passwordHash: 'Admin@123456',
+      isActive: true,
+      lastLoginAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  ],
+  blogs: [
+    {
+      id: 1,
+      title: 'How to Build a High-Converting Portfolio in 2026',
+      slug: 'how-to-build-high-converting-portfolio',
+      summary: 'A step-by-step guide to showcasing your work with impact.',
+      content: 'Detailed strategies for developers, designers, and creators to establish digital authority...',
+      cover_image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
+      author_id: 1,
+      is_published: true,
+      published_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  blogs_image: [
+    {
+      id: 1,
+      blog_id: 1,
+      image_url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
+      alt_text: 'Portfolio banner showcase',
+      caption: 'Main banner for modern portfolio article',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  packages: [
+    {
+      id: 1,
+      name: 'Starter Tier',
+      slug: 'starter-tier',
+      description: 'Perfect for individual freelancers starting their journey.',
+      price_in_cents: 1900,
+      currency: 'USD',
+      billing_interval: 'MONTHLY',
+      max_portfolios: 1,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      name: 'Professional Pro',
+      slug: 'professional-pro',
+      description: 'Ideal for power creators, agencies, and studios.',
+      price_in_cents: 4900,
+      currency: 'USD',
+      billing_interval: 'MONTHLY',
+      max_portfolios: 5,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  feature: [
+    {
+      id: 1,
+      name: 'Custom Domain Mapping',
+      key: 'custom_domain',
+      description: 'Connect personal apex domain and custom subdomains.',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      name: 'Appointment Scheduling',
+      key: 'appointments',
+      description: 'Direct calendar integration for client bookings.',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  packages_feature: [
+    {
+      id: 1,
+      package_id: 1,
+      feature_id: 1,
+      value: 'true',
+      is_enabled: true,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      package_id: 2,
+      feature_id: 2,
+      value: 'true',
+      is_enabled: true,
+      created_at: new Date().toISOString(),
+    }
+  ],
+  package_image: [
+    {
+      id: 1,
+      package_id: 1,
+      image_url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+      alt_text: 'Starter Tier Preview',
+      sort_order: 1,
+      created_at: new Date().toISOString(),
+    }
+  ],
+  live_chats: [
+    {
+      id: 1,
+      visitor_name: 'Jordan Lee',
+      visitor_email: 'jordan@example.com',
+      session_id: 'sess_live_101',
+      status: 'OPEN',
+      ip_address: '192.168.1.10',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  live_chat_messages: [
+    {
+      id: 1,
+      chat_id: 1,
+      sender_type: 'VISITOR',
+      sender_name: 'Jordan Lee',
+      message: 'Hello, can I export my portfolio directly to static HTML?',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      chat_id: 1,
+      sender_type: 'ADMIN',
+      sender_name: 'Platform Support',
+      message: 'Hi Jordan! Yes, export is supported under the Pro package.',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  contacts: [
+    {
+      id: 1,
+      name: 'Elena Rostova',
+      email: 'elena@studio.design',
+      subject: 'Agency Enterprise Plan Inquiry',
+      message: 'We manage 50+ portfolios for our clients. Do you offer bulk tier discounts?',
+      status: 'NEW',
+      admin_reply: null,
+      replied_by_admin_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  support: [
+    {
+      id: 1,
+      ticket_number: 'TCK-2026-001',
+      requester_name: 'Marcus Chen',
+      requester_email: 'marcus@chen.io',
+      subject: 'Custom domain DNS verification delayed',
+      category: 'TECHNICAL',
+      priority: 'HIGH',
+      status: 'OPEN',
+      assigned_admin_id: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  support_messages: [
+    {
+      id: 1,
+      support_id: 1,
+      sender_type: 'USER',
+      sender_id: 101,
+      sender_name: 'Marcus Chen',
+      message: 'I added the CNAME record 2 hours ago, but SSL cert is still pending.',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  support_images: [
+    {
+      id: 1,
+      support_id: 1,
+      message_id: 1,
+      image_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+      file_name: 'dns_screenshot.png',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  payment: [
+    {
+      id: 1,
+      creator_id: 101,
+      package_id: 2,
+      subscription_id: 1,
+      amount_in_cents: 4900,
+      currency: 'USD',
+      payment_method: 'STRIPE_CARD',
+      transaction_id: 'txn_mock_89234789',
+      status: 'COMPLETED',
+      created_at: new Date().toISOString(),
+    }
+  ],
+  subscription: [
+    {
+      id: 1,
+      creator_id: 101,
+      package_id: 2,
+      status: 'ACTIVE',
+      current_period_start: new Date().toISOString(),
+      current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
+      cancel_at_period_end: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  tenant: [
+    {
+      id: 1,
+      creator_id: 101,
+      name: 'Marcus Chen Portfolio Space',
+      subdomain: 'marcus-chen',
+      custom_domain: 'marcuschen.dev',
+      theme_config: { primaryColor: '#a1b34c', fontFamily: 'Inter' },
+      status: 'ACTIVE',
+      storage_used_mb: 42,
+      is_published: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  reports: [
+    {
+      id: 1,
+      reporter_name: 'Anonymous Reviewer',
+      reporter_email: 'reviewer@moderation.org',
+      subject: 'Inappropriate test content on sample portfolio',
+      description: 'Reported placeholder copyright infringement on site /marcus-chen.',
+      category: 'MODERATION',
+      status: 'OPEN',
+      priority: 'MEDIUM',
+      admin_response: null,
+      resolved_by_admin_id: null,
+      resolved_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  leads: [
+    {
+      id: 1,
+      name: 'Sarah Connor',
+      email: 'sarah@cyberdyne.io',
+      phone: '+1 (555) 234-5678',
+      company: 'Cyberdyne Systems',
+      source: 'GOOGLE_SEARCH',
+      status: 'QUALIFIED',
+      notes: 'Interested in annual subscription for 20 engineering managers.',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
+  subscribers: [
+    {
+      id: 1,
+      email: 'developer.newsletter@gmail.com',
+      status: 'SUBSCRIBED',
+      source: 'FOOTER_NEWSLETTER',
+      subscribed_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    }
+  ],
+  themes: [
+    {
+      id: 1,
+      name: 'Minimalist Artisan',
+      slug: 'minimalist-artisan',
+      description: 'Clean monochrome layout optimized for high readability.',
+      category: 'Minimalist',
+      preview_image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=600&q=80',
+      theme_config: { primaryColor: '#1e293b', backgroundColor: '#ffffff', textColor: '#0f172a' },
+      is_active: true,
+      is_premium: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      name: 'Modern Executive',
+      slug: 'modern-executive',
+      description: 'Sleek dark mode theme tailored for senior engineering leadership.',
+      category: 'Executive',
+      preview_image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=600&q=80',
+      theme_config: { primaryColor: '#a1b34c', backgroundColor: '#090d16', textColor: '#f8fafc' },
+      is_active: true,
+      is_premium: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  ],
   features: [],
-  packages: [],
   packageFeatures: [],
   creators: [],
   portfolios: [],
   subscriptions: [],
   payments: [],
-  reports: [],
   portfolioSections: [],
   portfolioBlogs: [],
   portfolioAppointments: [],
   portfolioExperiences: [],
   portfolioReviews: [],
-  themes: [],
-  contacts: [],
   users: [],
   spams: [],
   portfolioComments: [],
@@ -27,34 +322,31 @@ const initialData = {
   portfolioSettings: [],
 };
 
-// Clean in-memory store without any insert or seed data
-if (!globalThis.__saasStoreClean) {
+// Always ensure live reactive store has all collections
+if (!globalThis.__saasStoreClean || !globalThis.__saasStoreClean.blogs) {
   globalThis.__saasStoreClean = JSON.parse(JSON.stringify(initialData));
 }
 const store = globalThis.__saasStoreClean;
 
 export const dbStore = {
-  // --- ADMINS ---
-  getAdmins: () => store.admins,
-  getAdminById: (id) => store.admins.find((a) => a.id === id),
-  getAdminByEmail: (email) => store.admins.find((a) => a.email.toLowerCase() === email.toLowerCase()),
-  createAdmin: ({ name, email, password, role = 'ADMIN' }) => {
+  // --- ADMINS (NO ROLE) ---
+  getAdmins: () => store.admins || [],
+  getAdminById: (id) => (store.admins || []).find((a) => String(a.id) === String(id)),
+  getAdminByEmail: (email) => (store.admins || []).find((a) => a.email.toLowerCase() === email.toLowerCase()),
+  createAdmin: ({ name, email, password }) => {
     const existing = dbStore.getAdminByEmail(email);
     if (existing) throw new Error('An admin with this email already exists.');
     const newAdmin = {
-      id: 'a' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
+      id: (store.admins?.length || 0) + 1,
       name,
       email,
-      passwordHash: '$2b$10$X8m1d16/171O0w6x01oA2.t0j/gT6qH86.4xG8e4C9bBw9l8tqSXe',
-      role,
-      isVerified: true,
-      twoFactorEnabled: false,
-      loginAttempts: 0,
-      lockedUntil: null,
-      recoveryToken: null,
+      passwordHash: password,
       isActive: true,
+      lastLoginAt: null,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+    if (!store.admins) store.admins = [];
     store.admins.push(newAdmin);
     return newAdmin;
   },
@@ -665,5 +957,171 @@ export const dbStore = {
     };
     store.portfolioSettings.push(newSettings);
     return newSettings;
+  },
+
+  // --- GENERIC 20-TABLE ACCESSORS & MUTATORS ---
+  getTableRecords: (tableName) => {
+    // Map table names to store collection keys
+    const map = {
+      admin: 'admins',
+      admins: 'admins',
+      blogs: 'blogs',
+      blogs_image: 'blogs_image',
+      blog_images: 'blogs_image',
+      packages: 'packages',
+      feature: 'feature',
+      features: 'feature',
+      packages_feature: 'packages_feature',
+      package_features: 'packages_feature',
+      package_image: 'package_image',
+      package_images: 'package_image',
+      live_chats: 'live_chats',
+      live_chat_messages: 'live_chat_messages',
+      contacts: 'contacts',
+      support: 'support',
+      support_messages: 'support_messages',
+      support_images: 'support_images',
+      payment: 'payment',
+      payments: 'payment',
+      subscription: 'subscription',
+      subscriptions: 'subscription',
+      tenant: 'tenant',
+      tenants: 'tenant',
+      reports: 'reports',
+      leads: 'leads',
+      subscribers: 'subscribers',
+      themes: 'themes',
+    };
+    const key = map[tableName] || tableName;
+    return store[key] || [];
+  },
+
+  addTableRecord: (tableName, data) => {
+    const map = {
+      admin: 'admins',
+      admins: 'admins',
+      blogs: 'blogs',
+      blogs_image: 'blogs_image',
+      blog_images: 'blogs_image',
+      packages: 'packages',
+      feature: 'feature',
+      features: 'feature',
+      packages_feature: 'packages_feature',
+      package_features: 'packages_feature',
+      package_image: 'package_image',
+      package_images: 'package_image',
+      live_chats: 'live_chats',
+      live_chat_messages: 'live_chat_messages',
+      contacts: 'contacts',
+      support: 'support',
+      support_messages: 'support_messages',
+      support_images: 'support_images',
+      payment: 'payment',
+      payments: 'payment',
+      subscription: 'subscription',
+      subscriptions: 'subscription',
+      tenant: 'tenant',
+      tenants: 'tenant',
+      reports: 'reports',
+      leads: 'leads',
+      subscribers: 'subscribers',
+      themes: 'themes',
+    };
+    const key = map[tableName] || tableName;
+    if (!store[key]) store[key] = [];
+    const newRecord = {
+      id: (store[key].length || 0) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...data,
+    };
+    store[key].unshift(newRecord);
+    return newRecord;
+  },
+
+  deleteTableRecord: (tableName, id) => {
+    const map = {
+      admin: 'admins',
+      admins: 'admins',
+      blogs: 'blogs',
+      blogs_image: 'blogs_image',
+      blog_images: 'blogs_image',
+      packages: 'packages',
+      feature: 'feature',
+      features: 'feature',
+      packages_feature: 'packages_feature',
+      package_features: 'packages_feature',
+      package_image: 'package_image',
+      package_images: 'package_image',
+      live_chats: 'live_chats',
+      live_chat_messages: 'live_chat_messages',
+      contacts: 'contacts',
+      support: 'support',
+      support_messages: 'support_messages',
+      support_images: 'support_images',
+      payment: 'payment',
+      payments: 'payment',
+      subscription: 'subscription',
+      subscriptions: 'subscription',
+      tenant: 'tenant',
+      tenants: 'tenant',
+      reports: 'reports',
+      leads: 'leads',
+      subscribers: 'subscribers',
+      themes: 'themes',
+    };
+    const key = map[tableName] || tableName;
+    if (!store[key]) return false;
+    const idx = store[key].findIndex((r) => String(r.id) === String(id));
+    if (idx !== -1) {
+      store[key].splice(idx, 1);
+      return true;
+    }
+    return false;
+  },
+
+  updateTableRecord: (tableName, id, data) => {
+    const map = {
+      admin: 'admins',
+      admins: 'admins',
+      blogs: 'blogs',
+      blogs_image: 'blogs_image',
+      blog_images: 'blogs_image',
+      packages: 'packages',
+      feature: 'feature',
+      features: 'feature',
+      packages_feature: 'packages_feature',
+      package_features: 'packages_feature',
+      package_image: 'package_image',
+      package_images: 'package_image',
+      live_chats: 'live_chats',
+      live_chat_messages: 'live_chat_messages',
+      contacts: 'contacts',
+      support: 'support',
+      support_messages: 'support_messages',
+      support_images: 'support_images',
+      payment: 'payment',
+      payments: 'payment',
+      subscription: 'subscription',
+      subscriptions: 'subscription',
+      tenant: 'tenant',
+      tenants: 'tenant',
+      reports: 'reports',
+      leads: 'leads',
+      subscribers: 'subscribers',
+      themes: 'themes',
+    };
+    const key = map[tableName] || tableName;
+    if (!store[key]) return null;
+    const idx = store[key].findIndex((r) => String(r.id) === String(id));
+    if (idx !== -1) {
+      store[key][idx] = {
+        ...store[key][idx],
+        ...data,
+        updatedAt: new Date().toISOString(),
+      };
+      return store[key][idx];
+    }
+    return null;
   },
 };

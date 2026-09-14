@@ -1,125 +1,79 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { CreditCardIcon, BoxIcon } from '@/components/ui/Icons';
+import AdminTableLayout from '@/components/admin/AdminTableLayout';
+import SubscriptionForm from '@/components/admin/forms/SubscriptionForm';
 
-export default function SubscriptionsManagementPage() {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [payments, setPayments] = useState([]);
+export default function AdminSubscriptionsPage() {
+  const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/admin');
-        const data = await res.json();
-        if (data.success) {
-          setSubscriptions(data.subscriptions || []);
-          setPayments(data.payments || []);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchSubs = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin?table=subscription');
+      const data = await res.json();
+      if (data.success) {
+        setSubs(data.records || []);
       }
-    };
-    fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubs();
   }, []);
 
-  const totalVolume = payments.reduce((acc, p) => acc + (p.amountInCents || 0), 0) / 100;
-
   return (
-    <div className="space-y-8">
-      <div>
-        <div className="flex items-center gap-2">
-          <Link href="/admin" className="text-xs text-indigo-400 hover:underline">← Admin Overview</Link>
-          <span className="text-slate-600">/</span>
-          <span className="text-xs text-slate-400">Financials</span>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-1">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Subscriptions & Payment Ledger</h1>
-            <p className="text-xs text-slate-400">
-              Audit recurring creator subscriptions, revenue transactions, and payment statuses.
-            </p>
-          </div>
-          <div className="px-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-right">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Total Captured Revenue</div>
-            <div className="text-xl font-black text-emerald-400">${totalVolume.toFixed(2)} USD</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Subscriptions & Payments in 2 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recurring Subscriptions */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <BoxIcon className="w-4 h-4 text-indigo-400" />
-            <span>Active Subscriptions ({subscriptions.length})</span>
-          </h2>
-
-          <div className="space-y-3">
-            {subscriptions.map((sub) => (
-              <div
-                key={sub.id}
-                className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 flex items-start justify-between gap-4"
-              >
-                <div>
-                  <div className="font-bold text-white text-sm">
-                    {sub.creator?.name || 'Creator'}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {sub.creator?.email} • Plan: <span className="text-indigo-400 font-semibold">{sub.package?.name || 'Pro'}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-2">
-                    Current Period End: {new Date(sub.currentPeriodEnd).toLocaleDateString()}
-                  </div>
-                </div>
-
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  {sub.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Payments Ledger */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <CreditCardIcon className="w-4 h-4 text-emerald-400" />
-            <span>Completed Payments ({payments.length})</span>
-          </h2>
-
-          <div className="space-y-3">
-            {payments.map((pmt) => (
-              <div
-                key={pmt.id}
-                className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 flex items-start justify-between gap-4"
-              >
-                <div>
-                  <div className="font-bold text-white text-sm">
-                    ${(pmt.amountInCents / 100).toFixed(2)} {pmt.currency}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Paid by {pmt.creator?.name || 'Creator'} • Method: {pmt.paymentMethod}
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-2">
-                    Txn: {pmt.transactionId}
-                  </div>
-                </div>
-
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  {pmt.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+    <AdminTableLayout
+      title="Creator Subscriptions"
+      subtitle="Active, trialing, and past-due platform package memberships."
+      badgeText="Subscription"
+      badgeColor="primary"
+      tableName="subscription"
+      records={subs}
+      loading={loading}
+      onRefresh={fetchSubs}
+      FormComponent={SubscriptionForm}
+      searchPlaceholder="Search subscriptions by creator ID or package ID..."
+      filterPredicate={(s, q) =>
+        String(s.creator_id).includes(q) ||
+        String(s.package_id).includes(q) ||
+        s.status?.toLowerCase().includes(q)
+      }
+      columns={['ID', 'Creator ID', 'Package ID', 'Status', 'Period Start', 'Period End', 'Cancel At End']}
+      renderRow={(s) => (
+        <>
+          <td className="px-4 py-3 font-mono font-bold text-slate-500">#{s.id}</td>
+          <td className="px-4 py-3 font-bold text-slate-800">Creator #{s.creator_id}</td>
+          <td className="px-4 py-3 font-semibold text-slate-700">Package #{s.package_id}</td>
+          <td className="px-4 py-3">
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                s.status === 'ACTIVE'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : s.status === 'TRIALING'
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+              }`}
+            >
+              {s.status}
+            </span>
+          </td>
+          <td className="px-4 py-3 text-slate-500 text-[11px]">
+            {s.current_period_start ? new Date(s.current_period_start).toLocaleDateString() : '—'}
+          </td>
+          <td className="px-4 py-3 text-slate-500 text-[11px]">
+            {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}
+          </td>
+          <td className="px-4 py-3 text-[11px] font-semibold text-slate-600">
+            {s.cancel_at_period_end ? 'Yes (Pending cancel)' : 'No (Auto-renew)'}
+          </td>
+        </>
+      )}
+    />
   );
 }

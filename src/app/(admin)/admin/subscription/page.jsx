@@ -1,1 +1,5 @@
-export { default } from '../subscriptions/page';
+import { redirect } from 'next/navigation';
+
+export default function RedirectToSubscriptions() {
+  redirect('/admin/subscriptions');
+}
