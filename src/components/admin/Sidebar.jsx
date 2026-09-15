@@ -80,7 +80,6 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
   const navContent = (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Brand Header */}
       <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
         
         {onClose && (

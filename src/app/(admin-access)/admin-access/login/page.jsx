@@ -1,4 +1,4 @@
-import AdminLoginForm from '@/components/admin/AdminLoginForm';
+import AdminLoginForm from '@/components/admin/forms/AdminLoginForm';
 
 export const metadata = {
   title: 'Super Admin Login | PortfolioCraft SaaS',

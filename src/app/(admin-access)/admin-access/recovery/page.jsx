@@ -1,4 +1,4 @@
-import AdminRecoveryForm from '@/components/admin/AdminRecoveryForm';
+import AdminRecoveryForm from '@/components/admin/forms/AdminRecoveryForm';
 
 export const metadata = {
   title: 'Admin Password Recovery | PortfolioCraft SaaS',
