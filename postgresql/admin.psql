@@ -25,25 +25,82 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- 3. ADMIN TABLE (NO ROLE)
+-- 3. ADMIN TABLE, SESSION & LOGIN_ACTIVITY
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS admin (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'support' CHECK (role IN ('admin', 'manager', 'support')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    
+    -- Two Factor Verification System
+    two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    two_factor_secret VARCHAR(255),
+    two_factor_code VARCHAR(10),
+    two_factor_expires_at TIMESTAMPTZ,
+    two_factor_backup_codes JSONB DEFAULT '[]'::jsonb,
+    
+    -- Forget Token System
+    forget_token VARCHAR(255),
+    forget_token_expires_at TIMESTAMPTZ,
+    
+    -- Metadata
     last_login_at TIMESTAMPTZ,
     last_login_ip VARCHAR(45),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_admin_email ON admin (email);
+
 CREATE TRIGGER trg_admin_updated_at
 BEFORE UPDATE ON admin
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
+
+-- 3.1 SESSION TABLE
+CREATE TABLE IF NOT EXISTS session (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER NOT NULL REFERENCES admin(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    device VARCHAR(100),
+    is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_token ON session (token);
+CREATE INDEX IF NOT EXISTS idx_session_admin_id ON session (admin_id);
+CREATE INDEX IF NOT EXISTS idx_session_expires_at ON session (expires_at);
+
+CREATE TRIGGER trg_session_updated_at
+BEFORE UPDATE ON session
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- 3.2 LOGIN ACTIVITY TABLE
+CREATE TABLE IF NOT EXISTS login_activity (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    email CITEXT NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    device VARCHAR(100),
+    location VARCHAR(255),
+    status VARCHAR(50) NOT NULL DEFAULT 'SUCCESS', -- 'SUCCESS', 'FAILED', '2FA_PENDING', 'LOCKED'
+    failure_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_login_activity_admin_id ON login_activity (admin_id);
+CREATE INDEX IF NOT EXISTS idx_login_activity_email ON login_activity (email);
+CREATE INDEX IF NOT EXISTS idx_login_activity_created_at ON login_activity (created_at DESC);
 
 -- ============================================================================
 -- 4. BLOGS & BLOGS_IMAGE
@@ -399,3 +456,16 @@ CREATE TRIGGER trg_themes_updated_at
 BEFORE UPDATE ON themes
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 15. SEED INITIAL SUPER ADMIN
+-- ============================================================================
+
+INSERT INTO admin (name, email, password, role, is_active, two_factor_enabled)
+VALUES ('Super Admin', 'support@disibin.com', '123', 'admin', TRUE, FALSE)
+ON CONFLICT (email) DO UPDATE 
+SET password = EXCLUDED.password,
+    role = EXCLUDED.role,
+    is_active = TRUE,
+    updated_at = CURRENT_TIMESTAMP;
+

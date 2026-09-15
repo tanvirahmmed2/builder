@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getAdminSession } from '@/lib/auth/admin';
+import { getAdminSession } from '@/lib/service/admin';
 
 export const metadata = {
   title: 'Admin Gateway | PortfolioCraft SaaS',

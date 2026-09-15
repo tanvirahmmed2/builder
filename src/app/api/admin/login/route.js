@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateAdmin } from '@/lib/auth/admin';
+import { authenticateAdmin } from '@/lib/service/admin';
 
 export async function POST(request) {
   try {
@@ -12,7 +12,10 @@ export async function POST(request) {
       );
     }
 
-    const result = await authenticateAdmin(email, password);
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
+    const userAgent = request.headers.get('user-agent') || 'Unknown';
+
+    const result = await authenticateAdmin(email, password, { ip, userAgent });
     return NextResponse.json({
       success: true,
       admin: result.admin,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dbStore } from '@/lib/db/store';
-import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/auth/admin';
+import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/service/admin';
 import { queryDb } from '@/lib/db/pg';
 import { sendEmail } from '@/lib/db/mailer';
 
@@ -181,11 +181,11 @@ export async function POST(request) {
       const token = 'rec_' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
       // Check PostgreSQL database
-      const dbAdminRes = await queryDb('SELECT * FROM admins WHERE LOWER(email) = $1 LIMIT 1', [email]);
+      const dbAdminRes = await queryDb('SELECT * FROM admin WHERE LOWER(email) = $1 LIMIT 1', [email]);
       if (dbAdminRes.rows.length > 0) {
         await queryDb(
-          `UPDATE admins 
-           SET recovery_token = $1, recovery_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour' 
+          `UPDATE admin 
+           SET forget_token = $1, forget_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour' 
            WHERE id = $2`,
           [token, dbAdminRes.rows[0].id]
         );
@@ -233,8 +233,8 @@ export async function POST(request) {
       }
 
       const adminRes = await queryDb(
-        `SELECT * FROM admins 
-         WHERE LOWER(email) = $1 AND recovery_token = $2 AND recovery_token_expires_at > CURRENT_TIMESTAMP 
+        `SELECT * FROM admin 
+         WHERE LOWER(email) = $1 AND forget_token = $2 AND forget_token_expires_at > CURRENT_TIMESTAMP 
          LIMIT 1`,
         [email, token]
       );
@@ -246,12 +246,11 @@ export async function POST(request) {
         );
       }
 
-      const hashed = hashPassword(newPassword);
       await queryDb(
-        `UPDATE admins 
-         SET password_hash = $1, recovery_token = NULL, recovery_token_expires_at = NULL 
+        `UPDATE admin 
+         SET password = $1, forget_token = NULL, forget_token_expires_at = NULL 
          WHERE id = $2`,
-        [hashed, adminRes.rows[0].id]
+        [newPassword, adminRes.rows[0].id]
       );
 
       return NextResponse.json({
@@ -262,7 +261,9 @@ export async function POST(request) {
 
     // --- ADMIN LOGIN ---
     if (action === 'login') {
-      const result = await authenticateAdmin(body.email, body.password);
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
+      const userAgent = request.headers.get('user-agent') || 'Unknown';
+      const result = await authenticateAdmin(body.email, body.password, { ip, userAgent });
       return NextResponse.json({ success: true, admin: result.admin });
     }
 

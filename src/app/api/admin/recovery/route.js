@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { hashPassword } from '@/lib/auth/admin';
+import { hashPassword } from '@/lib/service/admin';
 import { sendEmail } from '@/lib/db/mailer';
 
 export async function POST(request) {
@@ -26,8 +26,8 @@ export async function POST(request) {
       }
 
       const adminRes = await queryDb(
-        `SELECT * FROM admins 
-         WHERE LOWER(email) = $1 AND recovery_token = $2 AND recovery_token_expires_at > CURRENT_TIMESTAMP 
+        `SELECT * FROM admin 
+         WHERE LOWER(email) = $1 AND forget_token = $2 AND forget_token_expires_at > CURRENT_TIMESTAMP 
          LIMIT 1`,
         [cleanEmail, token.trim()]
       );
@@ -39,12 +39,11 @@ export async function POST(request) {
         );
       }
 
-      const hashed = hashPassword(newPassword);
       await queryDb(
-        `UPDATE admins 
-         SET password_hash = $1, recovery_token = NULL, recovery_token_expires_at = NULL 
+        `UPDATE admin 
+         SET password = $1, forget_token = NULL, forget_token_expires_at = NULL 
          WHERE id = $2`,
-        [hashed, adminRes.rows[0].id]
+        [newPassword, adminRes.rows[0].id]
       );
 
       return NextResponse.json({
@@ -56,11 +55,11 @@ export async function POST(request) {
     // Step 1: Request Recovery Token
     const generatedToken = 'rec_' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    const dbAdmin = await queryDb('SELECT * FROM admins WHERE LOWER(email) = $1 LIMIT 1', [cleanEmail]);
+    const dbAdmin = await queryDb('SELECT * FROM admin WHERE LOWER(email) = $1 LIMIT 1', [cleanEmail]);
     if (dbAdmin.rows.length > 0) {
       await queryDb(
-        `UPDATE admins 
-         SET recovery_token = $1, recovery_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour' 
+        `UPDATE admin 
+         SET forget_token = $1, forget_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour' 
          WHERE id = $2`,
         [generatedToken, dbAdmin.rows[0].id]
       );

@@ -8,8 +8,8 @@ import { SITE_NAME } from '@/lib/db/secret';
 
 export default function AdminLoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@saasplatform.com');
-  const [password, setPassword] = useState('Admin@123456');
+  const [email, setEmail] = useState('support@disibin.com');
+  const [password, setPassword] = useState('123');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

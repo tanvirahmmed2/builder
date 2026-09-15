@@ -59,10 +59,20 @@ async function main() {
       WHERE table_schema = 'public' 
       ORDER BY table_name;
     `);
-    console.log('\nCreated tables in database:');
+    console.log(`\nCreated ${res.rows.length} tables in database:`);
     res.rows.forEach((r, idx) => {
       console.log(`  ${idx + 1}. ${r.table_name}`);
     });
+
+    // Check seeded admin
+    const adminCheck = await client.query(`
+      SELECT id, name, email, password, role, is_active, two_factor_enabled, forget_token
+      FROM admin 
+      WHERE email = 'support@disibin.com';
+    `);
+    console.log('\nSeeded Admin Verification:');
+    console.log(adminCheck.rows[0]);
+
 
   } catch (err) {
     console.error('Error applying schema:', err);

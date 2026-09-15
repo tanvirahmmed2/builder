@@ -35,47 +35,11 @@ export default function AdminNavbar({ onToggleSidebar }) {
         </button>
         <Link href="/admin" className="text-xl font-semibold h-14 flex items-center gap-2">
           <span>{SITE_NAME}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-secondary/10 text-secondary border border-secondary/20">
-            Console
-          </span>
+          
         </Link>
       </div>
 
-      <div className="w-auto hidden md:flex flex-row items-center justify-center gap-2 h-14">
-        <Link
-          href="/admin"
-          className="text-xs font-semibold hover:text-primary px-3 h-14 flex items-center justify-center transition-colors text-slate-600"
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/admin/packages"
-          className="text-xs font-semibold hover:text-primary px-3 h-14 flex items-center justify-center transition-colors text-slate-600"
-        >
-          Packages
-        </Link>
-        <Link
-          href="/admin/blogs"
-          className="text-xs font-semibold hover:text-primary px-3 h-14 flex items-center justify-center transition-colors text-slate-600"
-        >
-          Blogs
-        </Link>
-        <Link
-          href="/admin/support"
-          className="text-xs font-semibold hover:text-primary px-3 h-14 flex items-center justify-center transition-colors text-slate-600"
-        >
-          Support
-        </Link>
-        <Link
-          href="/"
-          className="text-xs font-semibold hover:text-primary px-3 h-14 flex items-center justify-center transition-colors text-slate-500"
-          title="Visit Public Website"
-        >
-          <BiHome className="text-base mr-1" />
-          Public Site
-        </Link>
-      </div>
-
+  
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-700 font-medium">
           <BiShieldQuarter className="text-secondary text-sm" />

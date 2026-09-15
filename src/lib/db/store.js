@@ -5,15 +5,19 @@ const initialData = {
   admins: [
     {
       id: 1,
-      name: 'Platform Administrator',
-      email: 'admin@saasplatform.com',
-      passwordHash: 'Admin@123456',
+      name: 'Super Admin',
+      email: 'support@disibin.com',
+      password: '123',
+      role: 'admin',
       isActive: true,
+      twoFactorEnabled: false,
       lastLoginAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
   ],
+  session: [],
+  login_activity: [],
   blogs: [
     {
       id: 1,
@@ -329,19 +333,21 @@ if (!globalThis.__saasStoreClean || !globalThis.__saasStoreClean.blogs) {
 const store = globalThis.__saasStoreClean;
 
 export const dbStore = {
-  // --- ADMINS (NO ROLE) ---
+  // --- ADMINS ---
   getAdmins: () => store.admins || [],
   getAdminById: (id) => (store.admins || []).find((a) => String(a.id) === String(id)),
   getAdminByEmail: (email) => (store.admins || []).find((a) => a.email.toLowerCase() === email.toLowerCase()),
-  createAdmin: ({ name, email, password }) => {
+  createAdmin: ({ name, email, password, role = 'support' }) => {
     const existing = dbStore.getAdminByEmail(email);
     if (existing) throw new Error('An admin with this email already exists.');
     const newAdmin = {
       id: (store.admins?.length || 0) + 1,
       name,
       email,
-      passwordHash: password,
+      password: password,
+      role: role,
       isActive: true,
+      twoFactorEnabled: false,
       lastLoginAt: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -991,6 +997,10 @@ export const dbStore = {
       leads: 'leads',
       subscribers: 'subscribers',
       themes: 'themes',
+      session: 'session',
+      sessions: 'session',
+      login_activity: 'login_activity',
+      login_activities: 'login_activity',
     };
     const key = map[tableName] || tableName;
     return store[key] || [];
@@ -1026,6 +1036,10 @@ export const dbStore = {
       leads: 'leads',
       subscribers: 'subscribers',
       themes: 'themes',
+      session: 'session',
+      sessions: 'session',
+      login_activity: 'login_activity',
+      login_activities: 'login_activity',
     };
     const key = map[tableName] || tableName;
     if (!store[key]) store[key] = [];
@@ -1069,6 +1083,10 @@ export const dbStore = {
       leads: 'leads',
       subscribers: 'subscribers',
       themes: 'themes',
+      session: 'session',
+      sessions: 'session',
+      login_activity: 'login_activity',
+      login_activities: 'login_activity',
     };
     const key = map[tableName] || tableName;
     if (!store[key]) return false;
@@ -1110,6 +1128,10 @@ export const dbStore = {
       leads: 'leads',
       subscribers: 'subscribers',
       themes: 'themes',
+      session: 'session',
+      sessions: 'session',
+      login_activity: 'login_activity',
+      login_activities: 'login_activity',
     };
     const key = map[tableName] || tableName;
     if (!store[key]) return null;

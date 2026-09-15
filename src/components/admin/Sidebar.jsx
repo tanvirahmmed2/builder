@@ -82,16 +82,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Brand Header */}
       <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
-        <Link
-          href="/admin"
-          onClick={onClose}
-          className="text-lg font-bold text-slate-800 hover:text-primary transition-colors flex items-center gap-2"
-        >
-          <span>{SITE_NAME}</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-            Admin
-          </span>
-        </Link>
+        
         {onClose && (
           <button
             type="button"
