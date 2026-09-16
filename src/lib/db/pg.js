@@ -8,11 +8,11 @@ import {
   NODE_ENV,
 } from './secret.js';
 
-let pool = null;
+let pgPoolInstance = null;
 
 export function getDbPool() {
-  if (!pool) {
-    pool = new Pool({
+  if (!pgPoolInstance) {
+    pgPoolInstance = new Pool({
       host: PG_HOST,
       port: PG_PORT ? Number(PG_PORT) : 5432,
       database: PG_DATABASE,
@@ -26,7 +26,7 @@ export function getDbPool() {
       connectionTimeoutMillis: 5000,
     });
   }
-  return pool;
+  return pgPoolInstance;
 }
 
 export async function queryDb(text, params = []) {
@@ -44,3 +44,15 @@ export async function queryDb(text, params = []) {
     throw err;
   }
 }
+
+export const pool = new Proxy(
+  {},
+  {
+    get(target, prop) {
+      const p = getDbPool();
+      const val = p[prop];
+      return typeof val === 'function' ? val.bind(p) : val;
+    },
+  }
+);
+

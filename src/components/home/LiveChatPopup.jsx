@@ -21,7 +21,6 @@ export default function LiveChatPopup() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -32,7 +31,6 @@ export default function LiveChatPopup() {
     }
   }, [messages, isOpen]);
 
-  // Handle starting a new live chat session
   const handleStartChat = async (e) => {
     e.preventDefault();
     if (!visitorName.trim()) return;
@@ -311,7 +309,7 @@ export default function LiveChatPopup() {
                 <button
                   type="submit"
                   disabled={!inputMessage.trim()}
-                  className="p-2.5 rounded-xl bg-secondary hover:bg-secondary-dark disabled:opacity-40 text-white transition-all cursor-pointer shadow-xs"
+                  className="p-2.5 rounded-lg bg-secondary hover:bg-secondary-dark disabled:opacity-40 text-white transition-all cursor-pointer shadow-xs"
                   title="Send message"
                   aria-label="Send message"
                 >

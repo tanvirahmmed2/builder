@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dbStore } from '@/lib/db/store';
+import { queryDb } from '@/lib/db/pg';
 
 export async function POST(request) {
   try {
@@ -10,14 +10,14 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Name, email and message are required.' }, { status: 400 });
     }
 
-    const contact = dbStore.addContact({
-      name,
-      email,
-      subject: subject || 'General Inquiry',
-      message,
-    });
+    const res = await queryDb(
+      `INSERT INTO contacts (name, email, subject, message) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [name, email, subject || 'General Inquiry', message]
+    );
 
-    return NextResponse.json({ success: true, contact });
+    return NextResponse.json({ success: true, contact: res.rows[0] });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
