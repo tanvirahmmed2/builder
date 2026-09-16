@@ -31,7 +31,7 @@ export default function CreatorRegisterPage() {
       });
       const data = await res.json();
       if (data.success) {
-        // If creator role, route them to checkout to purchase package and launch tenant
+        // If creator role, route them to checkout to purchase package and launch website
         router.push(`/creator/checkout?creatorId=${data.creator.id}`);
       } else {
         setError(data.error || 'Registration failed.');

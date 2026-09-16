@@ -9,6 +9,7 @@ export default function AdminTableLayout({
   badgeText,
   badgeColor = 'secondary',
   tableName,
+  apiEndpoint,
   records = [],
   loading = false,
   onRefresh,
@@ -23,6 +24,8 @@ export default function AdminTableLayout({
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
+  const endpoint = apiEndpoint || `/api/admin/${tableName}`;
+
   const filteredRecords = records.filter((rec) => {
     if (!searchTerm.trim()) return true;
     if (filterPredicate) return filterPredicate(rec, searchTerm.toLowerCase());
@@ -33,10 +36,10 @@ export default function AdminTableLayout({
     if (!confirm('Are you sure you want to delete this record?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/admin', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', table: tableName, id }),
+        body: JSON.stringify({ action: 'delete_record', id }),
       });
       const data = await res.json();
       if (data.success && onRefresh) {
@@ -51,7 +54,6 @@ export default function AdminTableLayout({
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -101,6 +103,7 @@ export default function AdminTableLayout({
       {/* Embedded Form Component (NO MODALS - IN PAGE) */}
       {showForm && FormComponent && (
         <FormComponent
+          apiEndpoint={endpoint}
           {...formProps}
           onSuccess={() => {
             setShowForm(false);

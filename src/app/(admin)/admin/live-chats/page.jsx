@@ -11,7 +11,7 @@ export default function AdminLiveChatsPage() {
   const fetchChats = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=live_chats');
+      const res = await fetch('/api/admin/live-chats');
       const data = await res.json();
       if (data.success) {
         setChats(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminLiveChatsPage() {
       badgeText="Live Chat"
       badgeColor="primary"
       tableName="live_chats"
+      apiEndpoint="/api/admin/live-chats"
       records={chats}
       loading={loading}
       onRefresh={fetchChats}

@@ -73,7 +73,7 @@ export default function AdminOverviewPage() {
     },
     {
       title: 'Websites',
-      value: (data.websites || data.tenant || []).length,
+      value: (data.websites || []).length,
       icon: BiDesktop,
       href: '/admin/websites',
       color: 'secondary',
@@ -146,11 +146,8 @@ export default function AdminOverviewPage() {
       category: 'Support & Real-Time Comms',
       items: [
         { label: 'Live Chats', path: '/admin/live-chats', desc: 'Active visitor and client chat sessions' },
-        { label: 'Live Chat Messages', path: '/admin/live-chat-messages', desc: 'Chat message transcripts and history' },
         { label: 'Contacts', path: '/admin/contacts', desc: 'Inbound inquiry forms from website' },
         { label: 'Support Tickets', path: '/admin/support', desc: 'Technical trouble tickets and assistance' },
-        { label: 'Support Messages', path: '/admin/support-messages', desc: 'Ticket conversation updates and notes' },
-        { label: 'Support Images', path: '/admin/support-images', desc: 'Attached ticket bug screenshots' },
         { label: 'Moderation Reports', path: '/admin/reports', desc: 'Platform abuse and content reports' },
       ],
     },

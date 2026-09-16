@@ -39,10 +39,10 @@ export default function BuilderNavbar({
             </div>
           </Link>
 
-          {/* Active Tenant Context */}
+          {/* Active Website Context */}
           <div className="hidden md:flex items-center gap-2 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-slate-400">Tenant:</span>
+            <span className="text-slate-400">Website:</span>
             <span className="font-mono font-bold text-white tracking-tight">{subdomain}.platform</span>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function BuilderNavbar({
         <div className="sm:hidden border-t border-white/10 bg-slate-950 px-4 py-3 space-y-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span className="text-slate-400">Tenant:</span>
+            <span className="text-slate-400">Website:</span>
             <span className="font-mono font-bold text-white">{subdomain}.platform</span>
           </div>
 

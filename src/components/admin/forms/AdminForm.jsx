@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { BiUserPlus, BiCheck, BiX } from 'react-icons/bi';
 
-export default function AdminForm({ onSuccess, onCancel }) {
+export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/admin/admin' }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    isActive: true,
+    role: 'support',
+    is_active: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +22,7 @@ export default function AdminForm({ onSuccess, onCancel }) {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/admin', {
+      const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

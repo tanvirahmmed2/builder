@@ -46,7 +46,7 @@ export default function CreatorDashboardOverview() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                Tenant Portal
+                Website Portal
               </span>
               <span className="text-xs text-slate-400">
                 Subdomain: <strong className="text-white font-mono">{portfolio.subdomain}.platform</strong>

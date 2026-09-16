@@ -38,11 +38,8 @@ export const ADMIN_NAV_SECTIONS = [
     title: 'Support & Comms',
     links: [
       { href: '/admin/live-chats', label: 'Live Chats', icon: BiChat },
-      { href: '/admin/live-chat-messages', label: 'Live Chat Messages', icon: BiMessageSquareDetail },
       { href: '/admin/contacts', label: 'Contacts', icon: BiEnvelope },
       { href: '/admin/support', label: 'Support Tickets', icon: BiHeadphone },
-      { href: '/admin/support-messages', label: 'Support Messages', icon: BiMessageSquareDetail },
-      { href: '/admin/support-images', label: 'Support Images', icon: BiImage },
       { href: '/admin/reports', label: 'Reports', icon: BiMessageSquareDetail },
     ],
   },

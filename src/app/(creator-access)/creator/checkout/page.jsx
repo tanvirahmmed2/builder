@@ -15,7 +15,7 @@ function CheckoutContent() {
   const [paymentMethod, setPaymentMethod] = useState('CARD');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [tenantPortfolio, setTenantPortfolio] = useState(null);
+  const [websitePortfolio, setWebsitePortfolio] = useState(null);
 
   useEffect(() => {
     fetch('/api/creator')
@@ -46,7 +46,7 @@ function CheckoutContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setTenantPortfolio(data.portfolio);
+        setWebsitePortfolio(data.portfolio);
         setCompleted(true);
       }
     } catch (err) {
@@ -59,13 +59,13 @@ function CheckoutContent() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-black text-white">Subscribe & Auto-Provision Tenant</h1>
+        <h1 className="text-3xl font-black text-white">Subscribe & Auto-Provision Website</h1>
         <p className="text-sm text-slate-400">
           Select your plan, confirm payment, and launch your drag-and-drop portfolio site.
         </p>
       </div>
 
-      {completed && tenantPortfolio ? (
+      {completed && websitePortfolio ? (
         <div className="p-8 rounded-3xl bg-slate-900 border border-emerald-500/40 shadow-2xl space-y-6 text-center max-w-lg mx-auto">
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
             <CheckCircleIcon className="w-10 h-10" />
@@ -73,18 +73,18 @@ function CheckoutContent() {
           <div>
             <h2 className="text-2xl font-black text-white">Subscription Active!</h2>
             <p className="text-xs text-slate-300 mt-1">
-              Your multi-tenant portfolio website has been generated automatically.
+              Your portfolio website has been generated automatically.
             </p>
           </div>
 
           <div className="p-4 bg-slate-950 rounded-2xl border border-white/5 space-y-1 text-xs text-left">
             <div className="flex justify-between">
-              <span className="text-slate-400">Tenant Subdomain:</span>
-              <strong className="text-indigo-400 font-mono">{tenantPortfolio.subdomain}.saasplatform.com</strong>
+              <span className="text-slate-400">Website Subdomain:</span>
+              <strong className="text-indigo-400 font-mono">{websitePortfolio.subdomain}.saasplatform.com</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Portfolio Title:</span>
-              <strong className="text-white">{tenantPortfolio.title}</strong>
+              <strong className="text-white">{websitePortfolio.title}</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Plan:</span>
@@ -100,7 +100,7 @@ function CheckoutContent() {
               Open Creator Dashboard →
             </button>
             <a
-              href={`/sites/${tenantPortfolio.subdomain}`}
+              href={`/sites/${websitePortfolio.subdomain}`}
               target="_blank"
               className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all"
             >
@@ -167,7 +167,7 @@ function CheckoutContent() {
                 <CreditCardIcon className="w-4 h-4 text-emerald-400" />
                 <span>Simulated Secure Payment Processing</span>
               </div>
-              <p>Test sandbox gateway. Completing this order will generate an instant transaction ID and provision your multi-tenant site.</p>
+              <p>Test sandbox gateway. Completing this order will generate an instant transaction ID and provision your portfolio website.</p>
             </div>
           </div>
 
@@ -184,7 +184,7 @@ function CheckoutContent() {
                 <span>Monthly</span>
               </div>
               <div className="flex justify-between">
-                <span>Tenant Domain:</span>
+                <span>Website Domain:</span>
                 <span className="text-emerald-400">Auto-Generated</span>
               </div>
             </div>
@@ -201,7 +201,7 @@ function CheckoutContent() {
               disabled={loading}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:opacity-90 text-white text-xs font-bold shadow-xl shadow-indigo-500/25 transition-all"
             >
-              {loading ? 'Processing Payment & Tenant...' : 'Complete Payment & Launch Site'}
+              {loading ? 'Processing Payment & Website...' : 'Complete Payment & Launch Site'}
             </button>
           </div>
         </form>

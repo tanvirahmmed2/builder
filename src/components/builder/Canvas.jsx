@@ -131,7 +131,7 @@ export default function Canvas({
                       <span className="text-indigo-400 font-semibold">2023 - Present</span>
                     </div>
                     <div className="text-xs text-slate-400">CloudScale Technologies • San Francisco, CA</div>
-                    <p className="text-xs text-slate-300">Leading development of distributed multi-tenant cloud platforms.</p>
+                    <p className="text-xs text-slate-300">Leading development of distributed cloud platforms and websites.</p>
                   </div>
                 </div>
               )}

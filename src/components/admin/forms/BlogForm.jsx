@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiFile, BiCheck, BiX } from 'react-icons/bi';
 
-export default function BlogForm({ onSuccess, onCancel }) {
+export default function BlogForm({ onSuccess, onCancel, apiEndpoint = '/api/admin/blogs' }) {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -23,12 +23,11 @@ export default function BlogForm({ onSuccess, onCancel }) {
     const slug = formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     try {
-      const res = await fetch('/api/admin', {
+      const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_record',
-          table: 'blogs',
           data: { ...formData, slug },
         }),
       });

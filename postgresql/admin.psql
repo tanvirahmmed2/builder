@@ -2,7 +2,7 @@
 -- Domain: Management / Platform Administration (admin.psql)
 -- Platform: Multi-Website Drag-and-Drop SaaS Portfolio Builder
 -- Database Engine: PostgreSQL 14+
--- Description: Platform Admin (no role), Blogs, Blogs_Image, Packages, Feature,
+-- Description: Platform Admin, Apps, Apps_Images, Blogs, Blogs_Image, Packages, Feature,
 --              Packages_Feature, Package_Image, Live_Chats, Live_Chat_Messages,
 --              Contacts, Support, Support_Messages, Support_Images, Payment,
 --              Subscription, Websites, Reports, Leads, Subscribers, Themes.
@@ -106,11 +106,44 @@ CREATE INDEX IF NOT EXISTS idx_login_activity_email ON login_activity (email);
 CREATE INDEX IF NOT EXISTS idx_login_activity_created_at ON login_activity (created_at DESC);
 
 -- ============================================================================
--- 4. BLOGS & BLOGS_IMAGE
+-- 4. APPS & APPS_IMAGES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS apps (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    short_description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_apps_slug ON apps (slug);
+
+CREATE TRIGGER trg_apps_updated_at
+BEFORE UPDATE ON apps
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS apps_images (
+    id SERIAL PRIMARY KEY,
+    app_id INTEGER NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+    image TEXT NOT NULL,
+    image_id VARCHAR(255),
+    title VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_apps_images_app ON apps_images (app_id);
+
+-- ============================================================================
+-- 5. BLOGS & BLOGS_IMAGE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS blogs (
     id SERIAL PRIMARY KEY,
+    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     summary TEXT,
@@ -123,6 +156,7 @@ CREATE TABLE IF NOT EXISTS blogs (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_blogs_app ON blogs (app_id);
 CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs (slug);
 CREATE INDEX IF NOT EXISTS idx_blogs_published ON blogs (is_published, published_at DESC);
 
@@ -143,11 +177,12 @@ CREATE TABLE IF NOT EXISTS blogs_image (
 CREATE INDEX IF NOT EXISTS idx_blogs_image_blog ON blogs_image (blog_id);
 
 -- ============================================================================
--- 5. PACKAGES, FEATURE, PACKAGES_FEATURE & PACKAGE_IMAGE
+-- 6. PACKAGES, FEATURE, PACKAGES_FEATURE & PACKAGE_IMAGE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS packages (
     id SERIAL PRIMARY KEY,
+    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
     name VARCHAR(100) NOT NULL UNIQUE,
     slug VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -159,6 +194,8 @@ CREATE TABLE IF NOT EXISTS packages (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_packages_app ON packages (app_id);
 
 CREATE TRIGGER trg_packages_updated_at
 BEFORE UPDATE ON packages
@@ -197,7 +234,7 @@ CREATE TABLE IF NOT EXISTS package_image (
 CREATE INDEX IF NOT EXISTS idx_package_image_pkg ON package_image (package_id);
 
 -- ============================================================================
--- 6. LIVE_CHATS & LIVE_CHAT_MESSAGES
+-- 7. LIVE_CHATS & LIVE_CHAT_MESSAGES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS live_chats (
@@ -230,7 +267,7 @@ CREATE TABLE IF NOT EXISTS live_chat_messages (
 CREATE INDEX IF NOT EXISTS idx_live_chat_messages_chat ON live_chat_messages (chat_id, created_at ASC);
 
 -- ============================================================================
--- 7. CONTACTS
+-- 8. CONTACTS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS contacts (
@@ -254,7 +291,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 8. SUPPORT, SUPPORT_MESSAGES & SUPPORT_IMAGES
+-- 9. SUPPORT, SUPPORT_MESSAGES & SUPPORT_IMAGES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS support (
@@ -302,7 +339,7 @@ CREATE TABLE IF NOT EXISTS support_images (
 CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
 
 -- ============================================================================
--- 9. PAYMENT
+-- 10. PAYMENT
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS payment (
@@ -322,11 +359,12 @@ CREATE INDEX IF NOT EXISTS idx_payment_creator ON payment (creator_id);
 CREATE INDEX IF NOT EXISTS idx_payment_txn ON payment (transaction_id);
 
 -- ============================================================================
--- 10. SUBSCRIPTION
+-- 11. SUBSCRIPTION
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS subscription (
     id SERIAL PRIMARY KEY,
+    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
     creator_id INTEGER NOT NULL,
     package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
@@ -337,6 +375,7 @@ CREATE TABLE IF NOT EXISTS subscription (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_subscription_app ON subscription (app_id);
 CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
 
 CREATE TRIGGER trg_subscription_updated_at
@@ -345,7 +384,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 11. WEBSITES
+-- 12. WEBSITES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS websites (
@@ -371,7 +410,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 12. REPORTS
+-- 13. REPORTS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS reports (
@@ -398,7 +437,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 13. LEADS & SUBSCRIBERS
+-- 14. LEADS & SUBSCRIBERS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS leads (
@@ -433,11 +472,12 @@ CREATE TABLE IF NOT EXISTS subscribers (
 CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
 
 -- ============================================================================
--- 14. THEMES
+-- 15. THEMES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS themes (
     id SERIAL PRIMARY KEY,
+    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
     name VARCHAR(100) NOT NULL UNIQUE,
     slug VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -455,13 +495,15 @@ CREATE TABLE IF NOT EXISTS themes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_themes_app ON themes (app_id);
+
 CREATE TRIGGER trg_themes_updated_at
 BEFORE UPDATE ON themes
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 15. SEED INITIAL SUPER ADMIN
+-- 16. SEED INITIAL SUPER ADMIN
 -- ============================================================================
 
 INSERT INTO admin (name, email, password, role, is_active, is_verified, two_factor_enabled)

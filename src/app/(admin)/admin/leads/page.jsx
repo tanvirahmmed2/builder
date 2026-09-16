@@ -11,7 +11,7 @@ export default function AdminLeadsPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=leads');
+      const res = await fetch('/api/admin/leads');
       const data = await res.json();
       if (data.success) {
         setLeads(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminLeadsPage() {
       badgeText="Lead"
       badgeColor="secondary"
       tableName="leads"
+      apiEndpoint="/api/admin/leads"
       records={leads}
       loading={loading}
       onRefresh={fetchLeads}

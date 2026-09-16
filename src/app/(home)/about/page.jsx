@@ -39,7 +39,7 @@ export default function AboutPage() {
       <div className="text-center max-w-4xl mx-auto space-y-4">
         
         <h1 className="text-4xl sm:text-5xl font-semibold text-primary tracking-tight leading-tight">
-          Empowering Creators with High-Performance Multi-Tenant Portfolios
+          Empowering Creators with High-Performance Multi-Website Portfolios
         </h1>
         <p className="text-base text-dark">
           PortfolioCraft is engineered from the ground up for software architects, digital designers, and creative directors who demand high aesthetic standards, relational data integrity, and collaborative management.

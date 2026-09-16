@@ -13,7 +13,7 @@ export default function AdminAdminsPage() {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=admin');
+      const res = await fetch('/api/admin/admin');
       const data = await res.json();
       if (data.success) {
         setAdmins(data.records || []);
@@ -67,6 +67,7 @@ export default function AdminAdminsPage() {
         badgeText="Admin"
         badgeColor="secondary"
         tableName="admin"
+        apiEndpoint="/api/admin/admin"
         records={admins}
         loading={loading}
         onRefresh={fetchAdmins}

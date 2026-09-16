@@ -58,7 +58,7 @@ export default function ContactPage() {
           We are here to assist your creator journey
         </h1>
         <p className="text-sm sm:text-base md:text-lg lg:text-xl">
-          Have questions about multi-tenant provisioning, custom enterprise domains, or package upgrades? Send us a message and our team will get back to you within 24 hours.
+          Have questions about website provisioning, custom enterprise domains, or package upgrades? Send us a message and our team will get back to you within 24 hours.
         </p>
       </div>
 
@@ -166,7 +166,7 @@ export default function ContactPage() {
           <div className="p-4 rounded-xl text-light bg-secondary w-full">
             <h4 className="font-semibold  text-sm">Need Instant Assistance?</h4>
             <p className="text-  leading-relaxed">
-              If you have already purchased a tenant subscription, you can submit priority tickets directly through the Creator Dashboard or inspect active solutions in the Admin Center.
+              If you have already purchased a website subscription, you can submit priority tickets directly through the Creator Dashboard or inspect active solutions in the Admin Center.
             </p>
             <Link
               href="/dashboard"

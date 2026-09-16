@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiEnvelope, BiCheck, BiX } from 'react-icons/bi';
 
-export default function ContactForm({ onSuccess, onCancel }) {
+export default function ContactForm({ onSuccess, onCancel, apiEndpoint = '/api/admin/contacts' }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,12 +21,11 @@ export default function ContactForm({ onSuccess, onCancel }) {
     setError('');
 
     try {
-      const res = await fetch('/api/admin', {
+      const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_record',
-          table: 'contacts',
           data: formData,
         }),
       });

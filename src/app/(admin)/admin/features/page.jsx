@@ -11,7 +11,7 @@ export default function AdminFeaturesPage() {
   const fetchFeatures = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=feature');
+      const res = await fetch('/api/admin/feature');
       const data = await res.json();
       if (data.success) {
         setFeatures(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminFeaturesPage() {
       badgeText="Feature"
       badgeColor="secondary"
       tableName="feature"
+      apiEndpoint="/api/admin/feature"
       records={features}
       loading={loading}
       onRefresh={fetchFeatures}

@@ -11,7 +11,7 @@ export default function AdminBlogsPage() {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=blogs');
+      const res = await fetch('/api/admin/blogs');
       const data = await res.json();
       if (data.success) {
         setBlogs(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminBlogsPage() {
       badgeText="Blog"
       badgeColor="primary"
       tableName="blogs"
+      apiEndpoint="/api/admin/blogs"
       records={blogs}
       loading={loading}
       onRefresh={fetchBlogs}

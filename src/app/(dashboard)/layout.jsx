@@ -2,7 +2,7 @@ import Navbar from '@/components/dashboard/Navbar';
 
 export const metadata = {
   title: 'Creator & Manager Workspace | PortfolioCraft',
-  description: 'Manage tenant portfolio modules, appointments, blog, experiences, and reviews.',
+  description: 'Manage website portfolio modules, appointments, blog, experiences, and reviews.',
 };
 
 export default function DashboardLayout({ children }) {

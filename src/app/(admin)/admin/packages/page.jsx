@@ -11,7 +11,7 @@ export default function AdminPackagesPage() {
   const fetchPackages = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=packages');
+      const res = await fetch('/api/admin/packages');
       const data = await res.json();
       if (data.success) {
         setPackages(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminPackagesPage() {
       badgeText="Package"
       badgeColor="primary"
       tableName="packages"
+      apiEndpoint="/api/admin/packages"
       records={packages}
       loading={loading}
       onRefresh={fetchPackages}

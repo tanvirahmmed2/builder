@@ -35,7 +35,7 @@ export default function DashboardNavbar() {
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-white text-base leading-tight tracking-tight">Creator Portal</span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-emerald-400">Tenant Workspace</span>
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-emerald-400">Website Workspace</span>
             </div>
           </Link>
 

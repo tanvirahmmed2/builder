@@ -80,7 +80,6 @@ const VALID_TABLES = new Set([
   'payment',
   'subscription',
   'websites',
-  'tenant',
   'reports',
   'leads',
   'subscribers',
@@ -98,8 +97,7 @@ const VALID_TABLES = new Set([
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const rawTable = searchParams.get('table');
-    const tableParam = rawTable === 'tenant' ? 'websites' : rawTable;
+    const tableParam = searchParams.get('table');
 
     if (tableParam) {
       if (!VALID_TABLES.has(tableParam)) {
@@ -113,7 +111,7 @@ export async function GET(request) {
       return NextResponse.json({ success: true, table: tableParam, records: res.rows });
     }
 
-    // Return full bundle for all 20 tables and overview dashboard
+    // Return full bundle for overview dashboard
     const [
       admins,
       blogs,
@@ -123,11 +121,8 @@ export async function GET(request) {
       packages_feature,
       package_image,
       live_chats,
-      live_chat_messages,
       contacts,
       support,
-      support_messages,
-      support_images,
       payment,
       subscription,
       websites,
@@ -144,11 +139,8 @@ export async function GET(request) {
       queryDb('SELECT * FROM packages_feature ORDER BY id ASC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM package_image ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM live_chats ORDER BY id DESC').then((r) => r.rows).catch(() => []),
-      queryDb('SELECT * FROM live_chat_messages ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM contacts ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM support ORDER BY id DESC').then((r) => r.rows).catch(() => []),
-      queryDb('SELECT * FROM support_messages ORDER BY id DESC').then((r) => r.rows).catch(() => []),
-      queryDb('SELECT * FROM support_images ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM payment ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM subscription ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM websites ORDER BY id DESC').then((r) => r.rows).catch(() => []),
@@ -168,15 +160,11 @@ export async function GET(request) {
       packages_feature,
       package_image,
       live_chats,
-      live_chat_messages,
       contacts,
       support,
-      support_messages,
-      support_images,
       payment,
       subscription,
       websites,
-      tenant: websites,
       reports,
       leads,
       subscribers,
@@ -194,7 +182,7 @@ export async function POST(request) {
 
     // --- GENERIC 20-TABLE ACTIONS ---
     if (action === 'create_record' || action === 'add_record') {
-      const table = body.table === 'tenant' ? 'websites' : body.table;
+      const table = body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }
@@ -214,7 +202,7 @@ export async function POST(request) {
     }
 
     if (action === 'delete_record') {
-      const table = body.table === 'tenant' ? 'websites' : body.table;
+      const table = body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }
@@ -223,7 +211,7 @@ export async function POST(request) {
     }
 
     if (action === 'update_record') {
-      const table = body.table === 'tenant' ? 'websites' : body.table;
+      const table = body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }

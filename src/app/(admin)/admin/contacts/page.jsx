@@ -11,7 +11,7 @@ export default function AdminContactsPage() {
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin?table=contacts');
+      const res = await fetch('/api/admin/contacts');
       const data = await res.json();
       if (data.success) {
         setContacts(data.records || []);
@@ -34,6 +34,7 @@ export default function AdminContactsPage() {
       badgeText="Contact"
       badgeColor="secondary"
       tableName="contacts"
+      apiEndpoint="/api/admin/contacts"
       records={contacts}
       loading={loading}
       onRefresh={fetchContacts}
