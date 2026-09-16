@@ -103,12 +103,7 @@ export async function getAuthenticatedUser() {
   }
 }
 
-export async function isLogin() {
-  const user = await getAuthenticatedUser();
-  if (!user) return { success: false, message: 'Please login' };
 
-  return { success: true, payload: user };
-}
 
 export async function isAdmin() {
   const auth = await isLogin();
@@ -126,14 +121,6 @@ export async function isManager() {
   return auth;
 }
 
-export async function isSales() {
-  const auth = await isLogin();
-  if (!auth.success) return auth;
-  if (auth.payload.role !== 'sales' && auth.payload.role !== 'admin') {
-    return { success: false, message: 'Sales only' };
-  }
-  return auth;
-}
 
 export async function isSupport() {
   const auth = await isLogin();
@@ -200,7 +187,6 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
     throw new Error('Invalid email or password.');
   }
 
-  // Create JWT token and session
   const jwtToken = jwt.sign(
     { id: admin.id, email: cleanEmail, role: admin.role || 'admin' },
     JWT_SECRET || 'disibin',
@@ -208,7 +194,6 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
   );
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  // Log to PostgreSQL session & login_activity
   if (isFromPg) {
     try {
       await queryDb(

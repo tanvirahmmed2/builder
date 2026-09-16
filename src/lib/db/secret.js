@@ -15,11 +15,14 @@ export const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
 export const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME;
 export const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-export const ADMIN_TOKEN = 'admin';
+export const ADMIN_TOKEN = 'admin-hiesci';
+export const LIVE_CHAT_TOKEN='live-chat-hiesci'
+export const CREATOR_TOKEN='creator-hiesci'
+export const USER_TOKEN='user-hiesci'
 
-export const SITE_NAME='Hisci'
+export const SITE_NAME='Hiesci'
 export const SITE_CONTACT="+01805003886"
-export const SITE_MAIL='support@hisci.com'
+export const SITE_MAIL='support@hiesci.com'
 export const SITE_ADDRESS='Mymensingh, Bangladesh'
 
 export const COMPANY_NAME='Disibin'
