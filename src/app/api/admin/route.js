@@ -2,6 +2,66 @@ import { NextResponse } from 'next/server';
 import { authenticateAdmin, clearAdminSessionCookie, hashPassword } from '@/lib/middleware/admin';
 import { queryDb } from '@/lib/db/pg';
 import { sendEmail } from '@/lib/db/mailer';
+import { SITE_NAME } from '@/lib/db/secret';
+
+async function handleCreateAdmin(d) {
+  const name = d.name?.trim();
+  const email = d.email?.trim().toLowerCase();
+  const password = d.password?.trim();
+  const role = d.role || 'support';
+  const isActive = d.isActive !== undefined ? Boolean(d.isActive) : (d.is_active !== undefined ? Boolean(d.is_active) : true);
+
+  if (!name || !email || !password) {
+    throw new Error('Full Name, Email Address, and Password are required.');
+  }
+
+  const existing = await queryDb('SELECT id FROM admin WHERE LOWER(email) = $1 LIMIT 1', [email]);
+  if (existing.rows.length > 0) {
+    throw new Error('An admin with this email address already exists.');
+  }
+
+  const hashedPassword = await hashPassword(password);
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const insertRes = await queryDb(
+    `INSERT INTO admin (name, email, password, role, is_active, is_verified, verification_code, verification_expires_at)
+     VALUES ($1, $2, $3, $4, $5, FALSE, $6, CURRENT_TIMESTAMP + INTERVAL '24 hours')
+     RETURNING id, name, email, role, is_active, is_verified, created_at`,
+    [name, email, hashedPassword, role, isActive, verificationCode]
+  );
+
+  const newAdmin = insertRes.rows[0];
+
+  // Send verification code via Brevo mailer
+  try {
+    await sendEmail({
+      to: email,
+      subject: `Admin Account Verification Code - ${SITE_NAME}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #0f172a; color: #f8fafc; border-radius: 20px; border: 1px solid #1e293b;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="color: #6366f1; font-size: 24px; margin: 0 0 8px 0;">${SITE_NAME} Admin Portal</h1>
+            <p style="color: #94a3b8; font-size: 14px; margin: 0;">Administrative Account Verification</p>
+          </div>
+          <div style="background: #1e293b; padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155;">
+            <p style="margin-top: 0; color: #cbd5e1; font-size: 14px;">Hello <strong>${name}</strong>,</p>
+            <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">An administrator account has been created for you. To activate your account and access the admin portal, please verify your email address using the 6-digit security code below:</p>
+            <div style="text-align: center; padding: 18px; margin: 20px 0; background: #0b0f19; border-radius: 10px; border: 1px dashed #6366f1;">
+              <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; font-family: monospace;">${verificationCode}</span>
+            </div>
+            <p style="margin-bottom: 0; font-size: 12px; color: #64748b; text-align: center;">This code will expire in 24 hours. Keep this confidential.</p>
+          </div>
+          <p style="font-size: 12px; color: #64748b; text-align: center; margin: 0;">If you did not expect this invitation, please contact security immediately.</p>
+        </div>
+      `,
+      text: `Hello ${name},\n\nYour admin account verification code is: ${verificationCode}\n\nThis code expires in 24 hours.\n\nPlease enter this code to activate your account on ${SITE_NAME}.`,
+    });
+  } catch (mailErr) {
+    console.warn('Brevo email sending notice during admin creation:', mailErr.message);
+  }
+
+  return newAdmin;
+}
 
 const VALID_TABLES = new Set([
   'admin',
@@ -19,6 +79,7 @@ const VALID_TABLES = new Set([
   'support_images',
   'payment',
   'subscription',
+  'websites',
   'tenant',
   'reports',
   'leads',
@@ -37,11 +98,16 @@ const VALID_TABLES = new Set([
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const tableParam = searchParams.get('table');
+    const rawTable = searchParams.get('table');
+    const tableParam = rawTable === 'tenant' ? 'websites' : rawTable;
 
     if (tableParam) {
       if (!VALID_TABLES.has(tableParam)) {
         return NextResponse.json({ success: false, error: 'Invalid table name.' }, { status: 400 });
+      }
+      if (tableParam === 'admin') {
+        const res = await queryDb('SELECT id, name, email, role, is_active, is_verified, last_login_at, created_at FROM admin ORDER BY id DESC');
+        return NextResponse.json({ success: true, table: tableParam, records: res.rows });
       }
       const res = await queryDb(`SELECT * FROM "${tableParam}" ORDER BY id DESC`);
       return NextResponse.json({ success: true, table: tableParam, records: res.rows });
@@ -64,13 +130,13 @@ export async function GET(request) {
       support_images,
       payment,
       subscription,
-      tenant,
+      websites,
       reports,
       leads,
       subscribers,
       themes,
     ] = await Promise.all([
-      queryDb('SELECT id, name, email, role, is_active, last_login_at, created_at FROM admin ORDER BY id ASC').then((r) => r.rows).catch(() => []),
+      queryDb('SELECT id, name, email, role, is_active, is_verified, last_login_at, created_at FROM admin ORDER BY id ASC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM blogs ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM blogs_image ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM packages ORDER BY id ASC').then((r) => r.rows).catch(() => []),
@@ -85,7 +151,7 @@ export async function GET(request) {
       queryDb('SELECT * FROM support_images ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM payment ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM subscription ORDER BY id DESC').then((r) => r.rows).catch(() => []),
-      queryDb('SELECT * FROM tenant ORDER BY id DESC').then((r) => r.rows).catch(() => []),
+      queryDb('SELECT * FROM websites ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM reports ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM leads ORDER BY id DESC').then((r) => r.rows).catch(() => []),
       queryDb('SELECT * FROM subscribers ORDER BY id DESC').then((r) => r.rows).catch(() => []),
@@ -109,7 +175,8 @@ export async function GET(request) {
       support_images,
       payment,
       subscription,
-      tenant,
+      websites,
+      tenant: websites,
       reports,
       leads,
       subscribers,
@@ -127,11 +194,15 @@ export async function POST(request) {
 
     // --- GENERIC 20-TABLE ACTIONS ---
     if (action === 'create_record' || action === 'add_record') {
-      const table = body.table;
+      const table = body.table === 'tenant' ? 'websites' : body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }
       const data = body.data || {};
+      if (table === 'admin') {
+        const record = await handleCreateAdmin(data);
+        return NextResponse.json({ success: true, record });
+      }
       const keys = Object.keys(data).filter((k) => k !== 'id');
       const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
       const placeholders = keys.map((_, i) => '$' + (i + 1));
@@ -143,7 +214,7 @@ export async function POST(request) {
     }
 
     if (action === 'delete_record') {
-      const table = body.table;
+      const table = body.table === 'tenant' ? 'websites' : body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }
@@ -152,7 +223,7 @@ export async function POST(request) {
     }
 
     if (action === 'update_record') {
-      const table = body.table;
+      const table = body.table === 'tenant' ? 'websites' : body.table;
       if (!VALID_TABLES.has(table)) {
         return NextResponse.json({ success: false, error: 'Invalid table.' }, { status: 400 });
       }
@@ -174,13 +245,127 @@ export async function POST(request) {
     // --- ADMIN TEAM ---
     if (action === 'create_admin' || action === 'add_admin') {
       const d = body.adminData || body.data || {};
-      const res = await queryDb(
-        `INSERT INTO admin (name, email, password, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, name, email, role, is_active, created_at`,
-        [d.name, d.email, d.password || '123', d.role || 'support']
+      const admin = await handleCreateAdmin(d);
+      return NextResponse.json({
+        success: true,
+        admin,
+        message: 'Admin account created successfully. Verification code sent via email.',
+      });
+    }
+
+    if (action === 'verify_admin' || action === 'verify_code') {
+      const email = body.email?.trim().toLowerCase();
+      const code = body.code?.toString().trim();
+
+      if (!email || !code) {
+        return NextResponse.json(
+          { success: false, error: 'Email and verification code are required.' },
+          { status: 400 }
+        );
+      }
+
+      const adminRes = await queryDb(
+        `SELECT id, email, is_verified, verification_code, verification_expires_at 
+         FROM admin 
+         WHERE LOWER(email) = $1 LIMIT 1`,
+        [email]
       );
-      return NextResponse.json({ success: true, admin: res.rows[0] });
+
+      if (adminRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Admin account not found.' }, { status: 404 });
+      }
+
+      const admin = adminRes.rows[0];
+
+      if (admin.is_verified) {
+        return NextResponse.json({
+          success: true,
+          message: 'Account is already verified. You can log in.',
+        });
+      }
+
+      if (!admin.verification_code || admin.verification_code !== code) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid verification code.' },
+          { status: 400 }
+        );
+      }
+
+      if (admin.verification_expires_at && new Date(admin.verification_expires_at) < new Date()) {
+        return NextResponse.json(
+          { success: false, error: 'Verification code has expired. Please request a new one.' },
+          { status: 400 }
+        );
+      }
+
+      await queryDb(
+        `UPDATE admin 
+         SET is_verified = TRUE, verification_code = NULL, verification_expires_at = NULL 
+         WHERE id = $1`,
+        [admin.id]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Admin account verified successfully! You can now log in.',
+      });
+    }
+
+    if (action === 'resend_verification_code' || action === 'resend_code') {
+      const email = body.email?.trim().toLowerCase();
+      if (!email) {
+        return NextResponse.json({ success: false, error: 'Email is required.' }, { status: 400 });
+      }
+
+      const adminRes = await queryDb(
+        `SELECT id, name, is_verified FROM admin WHERE LOWER(email) = $1 LIMIT 1`,
+        [email]
+      );
+
+      if (adminRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Admin account not found.' }, { status: 404 });
+      }
+
+      const admin = adminRes.rows[0];
+      if (admin.is_verified) {
+        return NextResponse.json({ success: false, error: 'Account is already verified.' }, { status: 400 });
+      }
+
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+      await queryDb(
+        `UPDATE admin 
+         SET verification_code = $1, verification_expires_at = CURRENT_TIMESTAMP + INTERVAL '24 hours' 
+         WHERE id = $2`,
+        [newCode, admin.id]
+      );
+
+      try {
+        await sendEmail({
+          to: email,
+          subject: `Admin Verification Code - ${SITE_NAME}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #0f172a; color: #f8fafc; border-radius: 20px; border: 1px solid #1e293b;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #6366f1; font-size: 24px; margin: 0 0 8px 0;">${SITE_NAME} Admin Portal</h1>
+                <p style="color: #94a3b8; font-size: 14px; margin: 0;">Security Verification Code</p>
+              </div>
+              <div style="background: #1e293b; padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155;">
+                <p style="margin-top: 0; color: #cbd5e1; font-size: 14px;">Hello <strong>${admin.name}</strong>,</p>
+                <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">Here is your new 6-digit verification code to activate your administrator account:</p>
+                <div style="text-align: center; padding: 18px; margin: 20px 0; background: #0b0f19; border-radius: 10px; border: 1px dashed #6366f1;">
+                  <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; font-family: monospace;">${newCode}</span>
+                </div>
+                <p style="margin-bottom: 0; font-size: 12px; color: #64748b; text-align: center;">This code will expire in 24 hours.</p>
+              </div>
+            </div>
+          `,
+          text: `Hello ${admin.name},\n\nYour new admin verification code is: ${newCode}\n\nThis code expires in 24 hours.`,
+        });
+      } catch (mailErr) {
+        console.warn('Brevo email notice:', mailErr.message);
+      }
+
+      return NextResponse.json({ success: true, message: 'A new verification code has been dispatched to your email.' });
     }
 
     if (action === 'remove_admin') {
@@ -342,7 +527,7 @@ export async function POST(request) {
           html: `
             <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #0f172a; color: #f8fafc; border-radius: 16px;">
               <h2 style="color: #6366f1; margin-top: 0;">Admin Security Recovery</h2>
-              <p>You requested an account recovery token for the Multi-Tenant SaaS Admin Portal.</p>
+              <p>You requested an account recovery token for the Multi-Website SaaS Admin Portal.</p>
               <div style="padding: 14px; background: #1e293b; border-radius: 8px; text-align: center; margin: 20px 0;">
                 <span style="font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #38bdf8;">${token}</span>
               </div>
@@ -406,8 +591,20 @@ export async function POST(request) {
     if (action === 'login') {
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
       const userAgent = request.headers.get('user-agent') || 'Unknown';
-      const result = await authenticateAdmin(body.email, body.password, { ip, userAgent });
-      return NextResponse.json({ success: true, admin: result.admin });
+      try {
+        const result = await authenticateAdmin(body.email, body.password, { ip, userAgent });
+        return NextResponse.json({ success: true, admin: result.admin, token: result.token });
+      } catch (authErr) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: authErr.message,
+            unverified: Boolean(authErr.unverified),
+            email: authErr.email || undefined,
+          },
+          { status: authErr.unverified ? 403 : 401 }
+        );
+      }
     }
 
     // --- ADMIN LOGOUT ---

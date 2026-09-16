@@ -19,12 +19,19 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       admin: result.admin,
+      token: result.token,
       message: 'Logged in successfully.',
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Authentication failed.' },
-      { status: 401 }
+      {
+        success: false,
+        error: error.message || 'Authentication failed.',
+        unverified: Boolean(error.unverified),
+        email: error.email || undefined,
+        deactivated: Boolean(error.deactivated),
+      },
+      { status: error.unverified || error.deactivated ? 403 : 401 }
     );
   }
 }

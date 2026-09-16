@@ -13,11 +13,13 @@ export default function AdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [unverifiedInfo, setUnverifiedInfo] = useState(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setUnverifiedInfo(null);
 
     try {
       const res = await fetch('/api/admin/login', {
@@ -32,7 +34,14 @@ export default function AdminLoginForm() {
         router.push('/admin');
         router.refresh();
       } else {
-        setError(data.error || 'Authentication failed. Please check your credentials.');
+        if (data.unverified) {
+          setUnverifiedInfo({
+            email: data.email || email,
+            message: data.error || 'This admin account is not verified. Please verify your email with the 6-digit code.',
+          });
+        } else {
+          setError(data.error || 'Authentication failed. Please check your credentials.');
+        }
       }
     } catch (err) {
       setError('Network or server error occurred. Please try again.');
@@ -51,7 +60,19 @@ export default function AdminLoginForm() {
         <p className="text-xs text-slate-500">Restricted administrative gateway for platform operators.</p>
       </div>
 
-      {error && (
+      {unverifiedInfo && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-3">
+          <div className="text-xs font-semibold">{unverifiedInfo.message}</div>
+          <Link
+            href={`/admin-access/verify?email=${encodeURIComponent(unverifiedInfo.email)}`}
+            className="inline-flex items-center justify-center w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-sm"
+          >
+            Enter 6-Digit Verification Code →
+          </Link>
+        </div>
+      )}
+
+      {error && !unverifiedInfo && (
         <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
           {error}
         </div>

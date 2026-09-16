@@ -41,7 +41,7 @@ export default function AdminReviewsPage() {
   };
 
   const handleDelete = async (reviewId) => {
-    if (!confirm('Permanently delete this review from the tenant site?')) return;
+    if (!confirm('Permanently delete this review from the website?')) return;
     try {
       await fetch('/api/admin', {
         method: 'POST',
@@ -68,7 +68,7 @@ export default function AdminReviewsPage() {
           <span>Global Reviews & Testimonials Oversight</span>
         </h1>
         <p className="text-xs text-slate-400">
-          Super Admin moderation for client testimonials submitted across all tenant portfolio websites.
+          Super Admin moderation for client testimonials submitted across all portfolio websites.
         </p>
       </div>
 
@@ -76,7 +76,7 @@ export default function AdminReviewsPage() {
       <div className="space-y-4">
         {loading ? (
           <div className="py-12 text-center text-slate-500 text-xs">
-            Loading tenant reviews...
+            Loading reviews...
           </div>
         ) : reviews.length === 0 ? (
           <div className="p-8 text-center bg-slate-900/40 rounded-2xl border border-white/10 text-slate-500 text-xs">
@@ -107,7 +107,7 @@ export default function AdminReviewsPage() {
                   </span>
 
                   <span className="text-[11px] text-slate-500 font-mono">
-                    Tenant: alex-design
+                    Website: alex-design
                   </span>
                 </div>
 

@@ -1,11 +1,11 @@
 -- ============================================================================
 -- Domain: Management / Platform Administration (admin.psql)
--- Platform: Multi-Tenant Drag-and-Drop SaaS Portfolio Builder
+-- Platform: Multi-Website Drag-and-Drop SaaS Portfolio Builder
 -- Database Engine: PostgreSQL 14+
 -- Description: Platform Admin (no role), Blogs, Blogs_Image, Packages, Feature,
 --              Packages_Feature, Package_Image, Live_Chats, Live_Chat_Messages,
 --              Contacts, Support, Support_Messages, Support_Images, Payment,
---              Subscription, Tenant, Reports, Leads, Subscribers, Themes.
+--              Subscription, Websites, Reports, Leads, Subscribers, Themes.
 -- ============================================================================
 
 -- 1. EXTENSIONS
@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS admin (
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'support' CHECK (role IN ('admin', 'manager', 'support')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code VARCHAR(10),
+    verification_expires_at TIMESTAMPTZ,
     
     -- Two Factor Verification System
     two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
@@ -342,10 +345,10 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 11. TENANT
+-- 11. WEBSITES
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS tenant (
+CREATE TABLE IF NOT EXISTS websites (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -359,11 +362,11 @@ CREATE TABLE IF NOT EXISTS tenant (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_subdomain ON tenant (subdomain);
-CREATE INDEX IF NOT EXISTS idx_tenant_creator ON tenant (creator_id);
+CREATE INDEX IF NOT EXISTS idx_websites_subdomain ON websites (subdomain);
+CREATE INDEX IF NOT EXISTS idx_websites_creator ON websites (creator_id);
 
-CREATE TRIGGER trg_tenant_updated_at
-BEFORE UPDATE ON tenant
+CREATE TRIGGER trg_websites_updated_at
+BEFORE UPDATE ON websites
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
@@ -461,11 +464,12 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- 15. SEED INITIAL SUPER ADMIN
 -- ============================================================================
 
-INSERT INTO admin (name, email, password, role, is_active, two_factor_enabled)
-VALUES ('Super Admin', 'support@disibin.com', '123', 'admin', TRUE, FALSE)
+INSERT INTO admin (name, email, password, role, is_active, is_verified, two_factor_enabled)
+VALUES ('Super Admin', 'support@disibin.com', '123', 'admin', TRUE, TRUE, FALSE)
 ON CONFLICT (email) DO UPDATE 
 SET password = EXCLUDED.password,
     role = EXCLUDED.role,
     is_active = TRUE,
+    is_verified = TRUE,
     updated_at = CURRENT_TIMESTAMP;
 

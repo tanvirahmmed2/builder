@@ -12,7 +12,7 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/admin', label: 'Overview', icon: BiLayer, exact: true },
       { href: '/admin/admins', label: 'Admin Team', icon: BiUserCheck },
-      { href: '/admin/tenants', label: 'Tenants', icon: BiDesktop },
+      { href: '/admin/websites', label: 'Websites', icon: BiDesktop },
     ],
   },
   {

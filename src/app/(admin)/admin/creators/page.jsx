@@ -48,14 +48,14 @@ export default function AdminCreatorsPage() {
         <div className="flex items-center gap-2 text-xs text-rose-400">
           <Link href="/admin" className="hover:underline">← Admin Overview</Link>
           <span>/</span>
-          <span>Tenants Directory</span>
+          <span>Websites Directory</span>
         </div>
         <h1 className="text-2xl font-bold text-white mt-1 flex items-center gap-2">
           <UsersIcon className="w-6 h-6 text-rose-500" />
           <span>Creator & Manager Directory</span>
         </h1>
         <p className="text-xs text-slate-400">
-          Supervise registered creators and their assigned managers across all hosted portfolio tenant websites.
+          Supervise registered creators and their assigned managers across all hosted portfolio websites.
         </p>
       </div>
 
@@ -104,7 +104,7 @@ export default function AdminCreatorsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Tenant Subdomain:</span>
+                    <span className="text-slate-500">Website Subdomain:</span>
                     <span className="font-mono text-indigo-300">alex-design.platform</span>
                   </div>
                   <div className="flex justify-between">
@@ -120,7 +120,7 @@ export default function AdminCreatorsPage() {
                   target="_blank"
                   className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-semibold"
                 >
-                  <span>View Tenant Site</span>
+                  <span>View Website</span>
                   <ExternalLinkIcon className="w-3 h-3 text-pink-400" />
                 </a>
 

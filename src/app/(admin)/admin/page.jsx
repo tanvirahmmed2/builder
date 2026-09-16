@@ -23,7 +23,7 @@ export default function AdminOverviewPage() {
     admins: [],
     blogs: [],
     packages: [],
-    tenants: [],
+    websites: [],
     support: [],
     payment: [],
     live_chats: [],
@@ -72,10 +72,10 @@ export default function AdminOverviewPage() {
       color: 'primary',
     },
     {
-      title: 'Tenant Sites',
-      value: (data.tenant || []).length,
+      title: 'Websites',
+      value: (data.websites || data.tenant || []).length,
       icon: BiDesktop,
-      href: '/admin/tenants',
+      href: '/admin/websites',
       color: 'secondary',
     },
     {
@@ -120,7 +120,7 @@ export default function AdminOverviewPage() {
       category: 'Core Management',
       items: [
         { label: 'Admin Team', path: '/admin/admins', desc: 'Internal platform operators (role-free)' },
-        { label: 'Tenants', path: '/admin/tenants', desc: 'Provisioned portfolio subdomains and containers' },
+        { label: 'Websites', path: '/admin/websites', desc: 'Provisioned portfolio subdomains and containers' },
       ],
     },
     {
@@ -172,13 +172,13 @@ export default function AdminOverviewPage() {
             <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
               Admin Console
             </span>
-            <span className="text-xs text-slate-500 font-semibold">• Multi-Tenant SaaS</span>
+            <span className="text-xs text-slate-500 font-semibold">• Multi-Website SaaS</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Welcome to {SITE_NAME} Operations
           </h1>
           <p className="text-sm text-slate-500 max-w-xl">
-            Central administration hub for platform packages, multi-tenant portfolios, customer support, and financial reporting.
+            Central administration hub for platform packages, website portfolios, customer support, and financial reporting.
           </p>
         </div>
 

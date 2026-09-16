@@ -12,26 +12,33 @@ export default function AdminForm({ onSuccess, onCancel }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccessMsg('');
 
     try {
       const res = await fetch('/api/admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'create_record',
-          table: 'admin',
+          action: 'create_admin',
           data: formData,
         }),
       });
       const data = await res.json();
       if (data.success) {
+        setSuccessMsg(`Admin account created for ${formData.email}! A 6-digit verification code was sent via Brevo email.`);
+        const createdRecord = data.admin || data.record;
         setFormData({ name: '', email: '', password: '', isActive: true });
-        if (onSuccess) onSuccess(data.record);
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess(createdRecord);
+          }, 1500);
+        }
       } else {
         setError(data.error || 'Failed to create admin');
       }
@@ -68,6 +75,12 @@ export default function AdminForm({ onSuccess, onCancel }) {
       {error && (
         <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
           {error}
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="p-3 mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+          {successMsg}
         </div>
       )}
 

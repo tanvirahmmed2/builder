@@ -85,7 +85,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true, token, message: 'Recovery token generated.' });
     }
 
-    // 3. Purchase Package & Create Subscription -> Auto Provision Tenant Portfolio
+    // 3. Purchase Package & Create Subscription -> Auto Provision Website Portfolio
     if (action === 'purchase_subscription') {
       const creatorId = Number(body.creatorId) || 1;
       const packageId = Number(body.packageId) || 1;
