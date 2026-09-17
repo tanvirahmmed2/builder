@@ -116,19 +116,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
   const navContent = (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
-        <Link
-          href="/developer"
-          onClick={onClose}
-          className="flex items-center gap-2.5 font-bold text-slate-900 hover:text-primary transition-colors"
-        >
-          <span className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center font-black text-xs">
-            PB
-          </span>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold leading-tight">{SITE_NAME}</span>
-            <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">Developer Center</span>
-          </div>
-        </Link>
+       
 
         {onClose && (
           <button

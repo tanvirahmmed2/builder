@@ -42,19 +42,8 @@ export default function AdminNavbar({ onToggleSidebar, currentUser = null }) {
         <div className="hidden sm:flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-700 font-medium">
           <BiShieldQuarter className={`text-sm ${isUserAdmin ? 'text-purple-600' : 'text-secondary'}`} />
           <span className="font-semibold text-slate-800">
-            {currentUser?.name || currentUser?.email || 'Operator'}
+            {currentUser?.name || currentUser?.email }
           </span>
-          {currentUser?.role && (
-            <span
-              className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                isUserAdmin
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-            >
-              {currentUser.role}
-            </span>
-          )}
         </div>
 
         <button
