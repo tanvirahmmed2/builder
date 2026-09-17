@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { BiUserPlus, BiCheck, BiX } from 'react-icons/bi';
 
-export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/admin/admin' }) {
+export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/admin/new-admin' }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'support',
-    is_active: true,
+    role: 'developer',
+    isActive: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +34,7 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/adm
       if (data.success) {
         setSuccessMsg(`Admin account created for ${formData.email}! A 6-digit verification code was sent via Brevo email.`);
         const createdRecord = data.admin || data.record;
-        setFormData({ name: '', email: '', password: '', isActive: true });
+        setFormData({ name: '', email: '', password: '', role: 'developer', isActive: true });
         if (onSuccess) {
           setTimeout(() => {
             onSuccess(createdRecord);
@@ -59,7 +59,7 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/adm
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-800">Add Platform Admin</h3>
-            <p className="text-xs text-slate-500">Create a new administrator with platform access (no role constraints).</p>
+            <p className="text-xs text-slate-500">Configure a platform administrator account with role-based permissions.</p>
           </div>
         </div>
         {onCancel && (
@@ -112,7 +112,7 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/adm
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
             <input
@@ -123,6 +123,21 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/adm
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
+            >
+              <option value="developer">Developer (Engineering & Apps)</option>
+              <option value="marketer">Marketer (Growth & Content)</option>
+              <option value="admin">Super Admin (Full Operations)</option>
+              <option value="manager">Manager (Team & Portfolios)</option>
+              <option value="support">Support Specialist (Inquiries)</option>
+            </select>
           </div>
 
           <div>

@@ -71,23 +71,87 @@ export async function GET() {
   }
 }
 
+async function checkLastActiveAdminGuard(targetId, willDeactivateOrDelete = true) {
+  if (!willDeactivateOrDelete) return null;
+
+  const adminRes = await queryDb('SELECT id, role, is_active FROM admin WHERE id = $1 LIMIT 1', [targetId]);
+  if (adminRes.rows.length === 0) {
+    return { error: 'Administrator not found.', status: 404 };
+  }
+
+  const admin = adminRes.rows[0];
+  const role = (admin.role || '').toLowerCase();
+
+  if (role === 'admin' && admin.is_active) {
+    const countRes = await queryDb(
+      "SELECT COUNT(*) as count FROM admin WHERE LOWER(role) = 'admin' AND is_active = TRUE"
+    );
+    const activeAdminCount = parseInt(countRes.rows[0].count, 10);
+    if (activeAdminCount <= 1) {
+      return {
+        error: 'Operation rejected: At least one active Super Admin account must remain in the platform.',
+        status: 400,
+      };
+    }
+  }
+
+  return null;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
     const { action } = body;
+    const targetId = body.id || body.adminId;
 
     if (action === 'delete_record' || action === 'delete') {
-      await queryDb('DELETE FROM admin WHERE id = $1', [body.id]);
-      return NextResponse.json({ success: true });
+      const guard = await checkLastActiveAdminGuard(targetId, true);
+      if (guard) {
+        return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+      }
+
+      await queryDb('DELETE FROM admin WHERE id = $1', [targetId]);
+      return NextResponse.json({ success: true, message: 'Admin account deleted successfully.' });
+    }
+
+    if (action === 'toggle_status' || action === 'update_status') {
+      let nextActive = body.is_active;
+      if (nextActive === undefined) {
+        const currentRes = await queryDb('SELECT is_active FROM admin WHERE id = $1 LIMIT 1', [targetId]);
+        if (currentRes.rows.length === 0) {
+          return NextResponse.json({ success: false, error: 'Admin not found.' }, { status: 404 });
+        }
+        nextActive = !currentRes.rows[0].is_active;
+      }
+
+      if (nextActive === false) {
+        const guard = await checkLastActiveAdminGuard(targetId, true);
+        if (guard) {
+          return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+        }
+      }
+
+      const res = await queryDb(
+        'UPDATE admin SET is_active = $1 WHERE id = $2 RETURNING id, name, email, role, is_active, is_verified, created_at',
+        [Boolean(nextActive), targetId]
+      );
+      return NextResponse.json({ success: true, record: res.rows[0] });
     }
 
     if (action === 'update_record' || action === 'update') {
       const data = body.data || {};
+      if (data.is_active === false || data.isActive === false) {
+        const guard = await checkLastActiveAdminGuard(targetId, true);
+        if (guard) {
+          return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+        }
+      }
+
       const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'password');
       if (keys.length === 0) return NextResponse.json({ success: true });
       const values = keys.map((k) => data[k]);
       const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-      values.push(body.id);
+      values.push(targetId);
       const res = await queryDb(
         `UPDATE admin SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, name, email, role, is_active, is_verified, created_at`,
         values
@@ -115,13 +179,19 @@ export async function DELETE(request) {
     let id = searchParams.get('id');
     if (!id) {
       const body = await request.json().catch(() => ({}));
-      id = body.id;
+      id = body.id || body.adminId;
     }
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
     }
+
+    const guard = await checkLastActiveAdminGuard(id, true);
+    if (guard) {
+      return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+    }
+
     await queryDb('DELETE FROM admin WHERE id = $1', [id]);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Admin account deleted successfully.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

@@ -3,7 +3,29 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SITE_NAME } from '@/lib/db/secret';
-import { BiX, BiLogOut, BiHome, BiLayer, BiCube, BiMessageSquareDetail, BiUserCheck, BiFile, BiImage, BiChat, BiHeadphone, BiCreditCard, BiCheckShield, BiDesktop, BiEnvelope, BiPalette, BiTrendingUp } from 'react-icons/bi';
+import {
+  BiX,
+  BiLogOut,
+  BiHome,
+  BiLayer,
+  BiCube,
+  BiMessageSquareDetail,
+  BiUserCheck,
+  BiFile,
+  BiChat,
+  BiHeadphone,
+  BiCreditCard,
+  BiCheckShield,
+  BiDesktop,
+  BiEnvelope,
+  BiPalette,
+  BiTrendingUp,
+  BiUser,
+  BiGroup,
+  BiStar,
+  BiShieldX,
+  BiGridAlt,
+} from 'react-icons/bi';
 import { useRouter } from 'next/navigation';
 
 export const ADMIN_NAV_SECTIONS = [
@@ -12,14 +34,15 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/admin', label: 'Overview', icon: BiLayer, exact: true },
       { href: '/admin/admins', label: 'Admin Team', icon: BiUserCheck },
+      { href: '/admin/creators', label: 'Creators', icon: BiGroup },
+      { href: '/admin/users', label: 'End-Users', icon: BiUser },
       { href: '/admin/websites', label: 'Websites', icon: BiDesktop },
     ],
   },
   {
-    title: 'Content & Media',
+    title: 'Content & Design',
     links: [
       { href: '/admin/blogs', label: 'Blogs', icon: BiFile },
-      { href: '/admin/blogs-image', label: 'Blogs Image', icon: BiImage },
       { href: '/admin/themes', label: 'Themes', icon: BiPalette },
     ],
   },
@@ -27,11 +50,9 @@ export const ADMIN_NAV_SECTIONS = [
     title: 'Commerce & Plans',
     links: [
       { href: '/admin/packages', label: 'Packages', icon: BiCube },
-      { href: '/admin/features', label: 'Feature', icon: BiCheckShield },
-      { href: '/admin/packages-features', label: 'Packages Feature', icon: BiLayer },
-      { href: '/admin/package-images', label: 'Package Image', icon: BiImage },
-      { href: '/admin/payments', label: 'Payment', icon: BiCreditCard },
-      { href: '/admin/subscriptions', label: 'Subscription', icon: BiCheckShield },
+      { href: '/admin/features', label: 'Features', icon: BiCheckShield },
+      { href: '/admin/payments', label: 'Payments', icon: BiCreditCard },
+      { href: '/admin/subscriptions', label: 'Subscriptions', icon: BiCheckShield },
     ],
   },
   {
@@ -44,10 +65,18 @@ export const ADMIN_NAV_SECTIONS = [
     ],
   },
   {
-    title: 'Growth & Audience',
+    title: 'Security & Trust',
+    links: [
+      { href: '/admin/reviews', label: 'Reviews', icon: BiStar },
+      { href: '/admin/spams', label: 'Spam Defense', icon: BiShieldX },
+    ],
+  },
+  {
+    title: 'Growth & Ecosystem',
     links: [
       { href: '/admin/leads', label: 'Leads', icon: BiTrendingUp },
       { href: '/admin/subscribers', label: 'Subscribers', icon: BiEnvelope },
+      { href: '/admin/apps', label: 'Ecosystem Apps', icon: BiGridAlt },
     ],
   },
 ];
@@ -78,7 +107,20 @@ export default function AdminSidebar({ isOpen, onClose }) {
   const navContent = (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
-        
+        <Link
+          href="/admin"
+          onClick={onClose}
+          className="flex items-center gap-2.5 font-bold text-slate-900 hover:text-primary transition-colors"
+        >
+          <span className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center font-black text-xs">
+            PB
+          </span>
+          <div className="flex flex-col">
+            <span className="text-xs font-bold leading-tight">{SITE_NAME}</span>
+            <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase">Admin Center</span>
+          </div>
+        </Link>
+
         {onClose && (
           <button
             type="button"

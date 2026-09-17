@@ -24,7 +24,7 @@ export default function AdminTableLayout({
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
-  const endpoint = apiEndpoint || `/api/admin/${tableName}`;
+  const endpoint = apiEndpoint || `/api/admin?table=${tableName}`;
 
   const filteredRecords = records.filter((rec) => {
     if (!searchTerm.trim()) return true;
@@ -36,14 +36,17 @@ export default function AdminTableLayout({
     if (!confirm('Are you sure you want to delete this record?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(endpoint, {
+      const deleteUrl = endpoint.includes('?') ? endpoint.split('?')[0] : endpoint;
+      const res = await fetch(deleteUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id }),
+        body: JSON.stringify({ action: 'delete_record', table: tableName, id }),
       });
       const data = await res.json();
       if (data.success && onRefresh) {
         onRefresh();
+      } else if (!data.success && data.error) {
+        alert(data.error);
       }
     } catch (e) {
       console.error(e);

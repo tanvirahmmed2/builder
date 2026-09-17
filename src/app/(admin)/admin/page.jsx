@@ -119,15 +119,16 @@ export default function AdminOverviewPage() {
     {
       category: 'Core Management',
       items: [
-        { label: 'Admin Team', path: '/admin/admins', desc: 'Internal platform operators (role-free)' },
-        { label: 'Websites', path: '/admin/websites', desc: 'Provisioned portfolio subdomains and containers' },
+        { label: 'Admin Team', path: '/admin/admins', desc: 'Internal platform operators and staff' },
+        { label: 'Creators Directory', path: '/admin/creators', desc: 'Registered creators and appointed managers' },
+        { label: 'End-Users Directory', path: '/admin/users', desc: 'Registered site visitors and comment reviewers' },
+        { label: 'Hosted Websites', path: '/admin/websites', desc: 'Provisioned portfolio subdomains and containers' },
       ],
     },
     {
       category: 'Content & Design',
       items: [
-        { label: 'Blogs', path: '/admin/blogs', desc: 'Platform articles, guides, and releases' },
-        { label: 'Blogs Image', path: '/admin/blogs-image', desc: 'Attached blog figures and cover assets' },
+        { label: 'Blog Articles', path: '/admin/blogs', desc: 'Platform articles, guides, and releases' },
         { label: 'Themes Gallery', path: '/admin/themes', desc: 'Design templates and layout presets' },
       ],
     },
@@ -136,8 +137,6 @@ export default function AdminOverviewPage() {
       items: [
         { label: 'Packages', path: '/admin/packages', desc: 'Subscription tiers and pricing limits' },
         { label: 'Feature Catalog', path: '/admin/features', desc: 'Modular platform feature definitions' },
-        { label: 'Packages Features', path: '/admin/packages-features', desc: 'Tier-to-feature matrix configuration' },
-        { label: 'Package Images', path: '/admin/package-images', desc: 'Showcase banners for checkout cards' },
         { label: 'Payments', path: '/admin/payments', desc: 'Revenue transactions and billing records' },
         { label: 'Subscriptions', path: '/admin/subscriptions', desc: 'Recurring memberships and renewal schedules' },
       ],
@@ -152,10 +151,18 @@ export default function AdminOverviewPage() {
       ],
     },
     {
+      category: 'Security & Moderation',
+      items: [
+        { label: 'Reviews Moderation', path: '/admin/reviews', desc: 'Moderate client feedback and site testimonials' },
+        { label: 'Spam Defense', path: '/admin/spams', desc: 'Automated heuristic spam blocks and moderation' },
+      ],
+    },
+    {
       category: 'Audience & Growth',
       items: [
         { label: 'Sales Leads', path: '/admin/leads', desc: 'Inbound customer prospects and agency evaluations' },
         { label: 'Subscribers', path: '/admin/subscribers', desc: 'Newsletter audience email list' },
+        { label: 'Ecosystem Apps', path: '/admin/apps', desc: 'Active platform applications and integrations' },
       ],
     },
   ];
