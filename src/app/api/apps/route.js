@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { CLOUDINARY_NAME } from '@/lib/db/secret';
-
-const cloud = CLOUDINARY_NAME || 'dv30hn53t';
 
 export async function GET(request) {
   try {
@@ -28,10 +25,6 @@ export async function GET(request) {
               'image', ai.image,
               'image_id', ai.image_id,
               'title', ai.title,
-              'url', CASE 
-                WHEN ai.image LIKE 'http://%' OR ai.image LIKE 'https://%' THEN ai.image
-                ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || ai.image
-              END,
               'created_at', ai.created_at
             ) ORDER BY ai.id ASC
           ) FILTER (WHERE ai.id IS NOT NULL),

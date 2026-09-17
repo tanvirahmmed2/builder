@@ -31,19 +31,16 @@ export function getDbPool() {
 
 export async function queryDb(text, params = []) {
   const p = getDbPool();
-  const start = Date.now();
   try {
     const res = await p.query(text, params);
-    const duration = Date.now() - start;
-    if (NODE_ENV === 'development') {
-      console.log('Executed query', { text: text.slice(0, 80), duration, rows: res.rowCount });
-    }
     return res;
   } catch (err) {
     console.error('Database query error:', err);
     throw err;
   }
 }
+
+export const query = queryDb;
 
 export const pool = new Proxy(
   {},

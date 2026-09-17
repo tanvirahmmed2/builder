@@ -80,7 +80,8 @@ export default function SingleAppPage({ params }) {
   }
 
   const images = Array.isArray(app.images) ? app.images : [];
-  const activeImage = images[activeImageIndex]?.url || images[0]?.url || null;
+  const currentImgObj = images[activeImageIndex] || images[0] || null;
+  const activeImage = currentImgObj?.image || currentImgObj?.url || null;
 
   return (
     <main className="min-h-screen bg-slate-50/70 pb-20">

@@ -1,11 +1,14 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { pool, queryDb as query } from '../db/pg.js';
+import { queryDb as query } from '../db/pg.js';
 import { JWT_SECRET, ADMIN_TOKEN } from '../db/secret.js';
 
-export const ADMIN_COOKIE_NAME = ADMIN_TOKEN
+export const ADMIN_COOKIE_NAME = ADMIN_TOKEN;
 
+// ============================================================================
+// PASSWORD & TOKEN UTILITIES
+// ============================================================================
 
 export async function hashPassword(password) {
   if (!password) return '';
@@ -14,28 +17,26 @@ export async function hashPassword(password) {
 
 export async function comparePassword(password, hashedPassword) {
   if (!password || !hashedPassword) return false;
-  if (hashedPassword.startsWith('$2a$') || hashedPassword.startsWith('$2b$')) {
-    return await bcrypt.compare(password, hashedPassword);
-  }
-  // Plain-text match fallback (e.g., initial seed)
-  if (password === hashedPassword) return true;
-  return false;
+  return await bcrypt.compare(password, hashedPassword);
 }
 
 export const verifyPassword = comparePassword;
 
 export function generateToken(payload, expiresIn = '7d') {
-  return jwt.sign(payload, JWT_SECRET || 'disibin', { expiresIn });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
 export function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET || 'disibin');
+    return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return null;
   }
 }
 
+// ============================================================================
+// AUTHENTICATION (STAFF / DEVELOPER / USER)
+// ============================================================================
 
 export const authenticateStaff = async (req) => {
   try {
@@ -44,9 +45,7 @@ export const authenticateStaff = async (req) => {
     // 1. Check req cookies or Authorization header if request is provided
     if (req) {
       if (req.cookies && typeof req.cookies.get === 'function') {
-        token =
-          req.cookies.get(ADMIN_COOKIE_NAME)?.value ||
-          req.cookies.get('ecom_token')?.value;
+        token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
       }
       if (!token && req.headers && typeof req.headers.get === 'function') {
         const authHeader = req.headers.get('authorization');
@@ -60,10 +59,8 @@ export const authenticateStaff = async (req) => {
     if (!token) {
       try {
         const cookieStore = await cookies();
-        token =
-          cookieStore.get(ADMIN_COOKIE_NAME)?.value ||
-          cookieStore.get('ecom_token')?.value;
-      } catch (_) { }
+        token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+      } catch (_) {}
     }
 
     if (!token) {
@@ -87,25 +84,15 @@ export const authenticateStaff = async (req) => {
       [developerId, token]
     );
 
-    let dev = null;
-    let sessionId = null;
-
-    if (result.rows && result.rows.length > 0) {
-      dev = result.rows[0];
-      sessionId = dev.session_id;
-
-      query('UPDATE session SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [sessionId]).catch(() => { });
-    } else {
-      // Direct developer check fallback (if session row expired or token-only auth)
-      const directDev = await query(
-        'SELECT id, name, email, role, is_active, is_verified FROM developers WHERE id = $1 LIMIT 1',
-        [developerId]
-      );
-      if (!directDev.rows || directDev.rows.length === 0) {
-        return { success: false, message: 'Session expired or developer account not found' };
-      }
-      dev = directDev.rows[0];
+    if (result.rows.length === 0) {
+      return { success: false, message: 'Session expired or logged out from another device' };
     }
+
+    const dev = result.rows[0];
+    const sessionId = dev.session_id;
+
+    // Update last active time (fire and forget)
+    query('UPDATE session SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [sessionId]).catch(() => {});
 
     if (dev.is_active === false) {
       return { success: false, message: 'Developer account is deactivated' };
@@ -257,7 +244,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, 'FAILED', 'Admin account not found', $2, $3)`,
         [cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) { }
+    } catch (_) {}
     throw new Error('Invalid email or password.');
   }
 
@@ -269,7 +256,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Invalid password credentials', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) { }
+    } catch (_) {}
     throw new Error('Invalid email or password.');
   }
 
@@ -280,7 +267,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Account deactivated', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) { }
+    } catch (_) {}
     const err = new Error('This admin account has been deactivated.');
     err.deactivated = true;
     throw err;
@@ -293,7 +280,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Account not verified', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) { }
+    } catch (_) {}
     const err = new Error('This admin account is not verified. Please verify your email with the verification code.');
     err.unverified = true;
     err.email = cleanEmail;
@@ -301,7 +288,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
   }
 
   const jwtToken = generateToken(
-    { id: admin.id, email: cleanEmail, role: admin.role || 'admin' },
+    { id: admin.id, email: cleanEmail, role: admin.role },
     '7d'
   );
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -333,7 +320,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
         maxAge: 60 * 60 * 24 * 7,
       });
     }
-  } catch (_) { }
+  } catch (_) {}
 
   return {
     success: true,
@@ -341,7 +328,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
       id: admin.id,
       name: admin.name,
       email: admin.email,
-      role: admin.role || 'admin',
+      role: admin.role,
       isActive: admin.is_active !== false,
       isVerified: admin.is_verified === true,
       twoFactorEnabled: admin.two_factor_enabled || false,
@@ -365,7 +352,7 @@ export async function getAdminSession(req) {
         const cookieStore = await cookies();
         const cookie = cookieStore ? cookieStore.get(ADMIN_COOKIE_NAME) : null;
         token = cookie ? cookie.value : null;
-      } catch (_) { }
+      } catch (_) {}
     }
 
     if (token) {
@@ -418,14 +405,14 @@ export async function clearAdminSessionCookie(response) {
       if (cookieStore) {
         cookieStore.delete(ADMIN_COOKIE_NAME);
       }
-    } catch (_) { }
+    } catch (_) {}
 
     if (token) {
       try {
         await query('UPDATE session SET is_revoked = TRUE WHERE token = $1', [token]);
-      } catch (_) { }
+      } catch (_) {}
     }
-  } catch (_) { }
+  } catch (_) {}
 
   if (response && response.cookies) {
     response.cookies.delete(ADMIN_COOKIE_NAME);

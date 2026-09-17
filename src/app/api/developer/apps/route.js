@@ -1,80 +1,44 @@
-import { NextResponse } from 'next/server';
-import slugify from 'slugify';
-import { queryDb } from '@/lib/db/pg';
-import { getAuthenticatedUser, isManagerOrAdmin } from '@/lib/middleware/developer';
-import cloudinary from '@/lib/db/cloudinary';
-import { CLOUDINARY_NAME } from '@/lib/db/secret';
+import { query } from '@/lib/db/pg';
+import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import cloudinary, { uploadToCloudinary, deleteFromCloudinary } from '@/lib/db/cloudinary';
 
-const cloud = CLOUDINARY_NAME || 'dv30hn53t';
-
-function canManageApps(user) {
-  if (!user) return false;
-  const role = (user.role || '').toLowerCase();
-  return role === 'admin' || role === 'manager';
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
 }
 
-async function generateUniqueAppSlug(title, existingId = null) {
-  const cleanTitle = (title || 'untitled-app').trim();
-  let baseSlug = slugify(cleanTitle, {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
-
-  if (!baseSlug) {
-    baseSlug = 'app';
-  }
-
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const conflict = await queryDb(
-      existingId
-        ? 'SELECT id FROM apps WHERE slug = $1 AND id != $2 LIMIT 1'
-        : 'SELECT id FROM apps WHERE slug = $1 LIMIT 1',
-      existingId ? [slug, existingId] : [slug]
-    );
-
-    if (!conflict.rows || conflict.rows.length === 0) {
-      return slug;
-    }
-
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-}
-
-async function uploadToCloudinary(imageFile, folder = 'portfoliobuilder/apps') {
-  if (!imageFile || typeof imageFile === 'string' || !imageFile.size) return null;
-  const arrayBuffer = await imageFile.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const base64Str = `data:${imageFile.type || 'image/png'};base64,${buffer.toString('base64')}`;
-
-  const uploadRes = await cloudinary.uploader.upload(base64Str, {
-    folder,
-    resource_type: 'image',
-  });
-
-  return {
-    url: uploadRes.secure_url,
-    id: uploadRes.asset_id || uploadRes.public_id,
-    public_id: uploadRes.public_id,
-    asset_id: uploadRes.asset_id || uploadRes.public_id,
-  };
-}
-
-export async function GET(request) {
+export async function GET(req) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized: Session not found.' }, { status: 401 });
+    const url = new URL(req.url);
+    const appId = url.searchParams.get('id');
+    const search = url.searchParams.get('search') || url.searchParams.get('q');
+    const status = url.searchParams.get('status');
+    const listCloudinary = url.searchParams.get('cloudinary_assets');
+
+    if (listCloudinary === 'true') {
+      try {
+        const cloudRes = await cloudinary.api.resources({
+          type: 'upload',
+          max_results: 40,
+        });
+        const assets = (cloudRes.resources || []).map((r) => ({
+          public_id: r.public_id,
+          asset_id: r.asset_id,
+          format: r.format,
+          secure_url: r.secure_url,
+        }));
+        return Response.json({ success: true, assets }, { status: 200 });
+      } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+      }
     }
 
-    const { searchParams } = new URL(request.url);
-    const appId = searchParams.get('id');
-
-    let query = `
+    let sql = `
       SELECT 
         a.id,
         a.title,
@@ -92,10 +56,6 @@ export async function GET(request) {
               'image', ai.image,
               'image_id', ai.image_id,
               'title', ai.title,
-              'url', CASE 
-                WHEN ai.image LIKE 'http://%' OR ai.image LIKE 'https://%' THEN ai.image 
-                ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || ai.image 
-              END,
               'created_at', ai.created_at
             ) ORDER BY ai.id ASC
           ) FILTER (WHERE ai.id IS NOT NULL),
@@ -104,34 +64,51 @@ export async function GET(request) {
       FROM apps a
       LEFT JOIN apps_images ai ON a.id = ai.app_id
     `;
+    let params = [];
+    let whereClauses = [];
 
-    const params = [];
     if (appId) {
-      query += ` WHERE a.id = $1 GROUP BY a.id`;
-      params.push(Number(appId));
-    } else {
-      query += ` GROUP BY a.id ORDER BY a.id DESC`;
+      whereClauses.push(`a.id = $${params.length + 1}`);
+      params.push(parseInt(appId, 10));
     }
 
-    const res = await queryDb(query, params).catch(() => ({ rows: [] }));
+    if (status === 'published') {
+      whereClauses.push(`a.is_published = true`);
+    } else if (status === 'draft') {
+      whereClauses.push(`a.is_published = false`);
+    }
+
+    if (search && search.trim()) {
+      const searchParam = `%${search.trim().toLowerCase()}%`;
+      whereClauses.push(`(LOWER(a.title) LIKE $${params.length + 1} OR LOWER(COALESCE(a.short_description, '')) LIKE $${params.length + 1} OR LOWER(COALESCE(a.description, '')) LIKE $${params.length + 1})`);
+      params.push(searchParam);
+    }
+
+    if (whereClauses.length > 0) {
+      sql += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    sql += ` GROUP BY a.id ORDER BY a.id DESC`;
+    const result = await query(sql, params);
+    const mappedRows = result.rows || [];
 
     if (appId) {
-      const record = res.rows[0] || null;
-      return NextResponse.json({
+      const record = mappedRows[0] || null;
+      return Response.json({
         success: true,
         record,
-        canManage: canManageApps(user),
-      });
+        ...record,
+      }, { status: 200 });
     }
 
-    return NextResponse.json({
+    return Response.json({
       success: true,
+      records: mappedRows,
       table: 'apps',
-      records: res.rows || [],
-      canManage: canManageApps(user),
-    });
+    }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Error fetching apps:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -142,287 +119,90 @@ export async function POST(req) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
-    const contentType = req.headers.get('content-type') || '';
     let title = '';
     let description = '';
-    let shortDescription = '';
-    let isActiveVal = null;
+    let short_description = '';
+    let is_published = true;
     let imageFiles = [];
-    let action = '';
-    let targetId = null;
-    let rawBody = {};
+    let attachPublicId = null;
+    let attachAssetId = null;
+    let attachTitle = null;
 
+    const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await req.formData();
       title = (formData.get('title') || formData.get('name') || '').trim();
       description = formData.get('description') || '';
-      shortDescription = formData.get('short_description') || '';
-      isActiveVal = formData.get('is_published') ?? formData.get('is_active');
-      action = formData.get('action') || '';
-      targetId = formData.get('id') || formData.get('app_id');
+      short_description = formData.get('short_description') || '';
+      const isActiveVal = formData.get('is_published') ?? formData.get('is_active');
+      is_published = isActiveVal === 'false' ? false : true;
 
-      // Collect image files (supports 'image', 'images', or file objects)
+      attachPublicId = formData.get('public_id');
+      attachAssetId = formData.get('asset_id');
+      attachTitle = formData.get('image_title');
+
       for (const [key, val] of formData.entries()) {
         if (val && typeof val === 'object' && typeof val.arrayBuffer === 'function' && val.size > 0) {
           imageFiles.push(val);
         }
       }
     } else {
-      rawBody = await req.json().catch(() => ({}));
-      title = (rawBody.title || rawBody.name || '').trim();
-      description = rawBody.description || '';
-      shortDescription = rawBody.short_description || '';
-      isActiveVal = rawBody.is_published ?? rawBody.is_active;
-      action = rawBody.action || '';
-      targetId = rawBody.id || rawBody.app_id;
+      const body = await req.json().catch(() => ({}));
+      title = (body.title || body.name || '').trim();
+      description = body.description || '';
+      short_description = body.short_description || '';
+      is_published = body.is_published !== false && body.is_active !== false;
+      attachPublicId = body.public_id;
+      attachAssetId = body.asset_id;
+      attachTitle = body.image_title || body.title;
     }
 
-    // -------------------------------------------------------------------------
-    // 1. DELETE APP (Cascades images from Cloudinary & DB)
-    // -------------------------------------------------------------------------
-    if (action === 'delete_record' || action === 'delete') {
-      const idToDelete = targetId || rawBody.id;
-      if (!idToDelete) {
-        return Response.json({ error: 'App ID is required for deletion.' }, { status: 400 });
-      }
-
-      const imgRows = await queryDb('SELECT image FROM apps_images WHERE app_id = $1', [idToDelete]);
-      for (const r of imgRows.rows) {
-        if (r.image) {
-          try {
-            await cloudinary.uploader.destroy(r.image);
-          } catch (_) {}
-        }
-      }
-
-      await queryDb('DELETE FROM apps WHERE id = $1', [idToDelete]);
-      return Response.json({ success: true, message: 'App and associated Cloudinary assets deleted.' });
-    }
-
-    // -------------------------------------------------------------------------
-    // 2. DELETE SINGLE IMAGE
-    // -------------------------------------------------------------------------
-    if (action === 'delete_image') {
-      const imageId = rawBody.image_id || rawBody.id || targetId;
-      if (!imageId) {
-        return Response.json({ error: 'Image ID is required.' }, { status: 400 });
-      }
-
-      const imgRow = await queryDb('SELECT image FROM apps_images WHERE id = $1', [imageId]);
-      if (imgRow.rows.length > 0) {
-        const publicId = imgRow.rows[0].image;
-        if (publicId) {
-          try {
-            await cloudinary.uploader.destroy(publicId);
-          } catch (err) {
-            console.warn('Cloudinary delete image error:', err.message);
-          }
-        }
-        await queryDb('DELETE FROM apps_images WHERE id = $1', [imageId]);
-      }
-
-      return Response.json({ success: true, message: 'Image deleted from Cloudinary and database.' });
-    }
-
-    // -------------------------------------------------------------------------
-    // 3. LIST CLOUDINARY ASSETS
-    // -------------------------------------------------------------------------
-    if (action === 'list_cloudinary_assets') {
-      try {
-        const cloudRes = await cloudinary.api.resources({
-          type: 'upload',
-          max_results: 40,
-        });
-        const assets = (cloudRes.resources || []).map((r) => ({
-          public_id: r.public_id,
-          asset_id: r.asset_id,
-          format: r.format,
-          secure_url: r.secure_url,
-        }));
-        return Response.json({ success: true, assets });
-      } catch (err) {
-        return Response.json({ error: err.message }, { status: 500 });
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // 4. ATTACH EXISTING CLOUDINARY ASSET
-    // -------------------------------------------------------------------------
-    if (action === 'attach_cloudinary_asset') {
-      const appId = Number(targetId || rawBody.app_id);
-      const { public_id, asset_id, title: imgTitle } = rawBody;
-      if (!appId || !public_id) {
-        return Response.json({ error: 'App ID and Cloudinary public_id are required.' }, { status: 400 });
-      }
-
-      await queryDb(
-        `INSERT INTO apps_images (app_id, image, image_id, title)
-         VALUES ($1, $2, $3, $4)`,
-        [appId, public_id, asset_id || public_id, imgTitle || 'Cloudinary Image']
-      );
-
-      const allImagesRes = await queryDb(
-        `SELECT id, app_id, image, image_id, title,
-           CASE 
-             WHEN image LIKE 'http://%' OR image LIKE 'https://%' THEN image 
-             ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || image 
-           END AS url,
-           created_at
-         FROM apps_images WHERE app_id = $1 ORDER BY id ASC`,
-        [appId]
-      );
-
-      return Response.json({
-        success: true,
-        message: 'Cloudinary asset attached successfully.',
-        images: allImagesRes.rows || [],
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // 5. UPLOAD IMAGES TO EXISTING APP
-    // -------------------------------------------------------------------------
-    if (action === 'upload_images' && targetId) {
-      const appId = Number(targetId);
-      for (const file of imageFiles) {
-        const uploadResult = await uploadToCloudinary(file, 'portfoliobuilder/apps');
-        if (uploadResult) {
-          await queryDb(
-            `INSERT INTO apps_images (app_id, image, image_id, title)
-             VALUES ($1, $2, $3, $4)`,
-            [appId, uploadResult.public_id, uploadResult.asset_id, file.name || 'App Screenshot']
-          );
-        }
-      }
-
-      const allImagesRes = await queryDb(
-        `SELECT id, app_id, image, image_id, title,
-           CASE 
-             WHEN image LIKE 'http://%' OR image LIKE 'https://%' THEN image 
-             ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || image 
-           END AS url,
-           created_at
-         FROM apps_images WHERE app_id = $1 ORDER BY id ASC`,
-        [appId]
-      );
-
-      return Response.json({
-        success: true,
-        message: `${imageFiles.length} image(s) uploaded successfully.`,
-        images: allImagesRes.rows || [],
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // 6. UPDATE EXISTING APP RECORD
-    // -------------------------------------------------------------------------
-    if (action === 'update_record' || action === 'update' || (targetId && !action)) {
-      const appId = Number(targetId);
-      const updateData = rawBody.data || rawBody;
-      const updateTitle = (title || updateData.title || '').trim();
-
-      if (!updateTitle) {
-        return Response.json({ error: 'App title cannot be empty.' }, { status: 400 });
-      }
-
-      const slug = await generateUniqueAppSlug(updateTitle, appId);
-      const shortDesc = shortDescription || updateData.short_description || null;
-      const desc = description || updateData.description || null;
-      const isPublished =
-        isActiveVal !== null
-          ? isActiveVal === 'true' || isActiveVal === true
-          : Boolean(updateData.is_published);
-
-      await queryDb(
-        `UPDATE apps 
-         SET title = $1, slug = $2, short_description = $3, description = $4, is_published = $5, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $6`,
-        [updateTitle, slug, shortDesc, desc, isPublished, appId]
-      );
-
-      // Upload any new image files if sent with update
-      for (const file of imageFiles) {
-        const uploadResult = await uploadToCloudinary(file, 'portfoliobuilder/apps');
-        if (uploadResult) {
-          await queryDb(
-            `INSERT INTO apps_images (app_id, image, image_id, title)
-             VALUES ($1, $2, $3, $4)`,
-            [appId, uploadResult.public_id, uploadResult.asset_id, file.name || updateTitle]
-          );
-        }
-      }
-
-      const updatedRes = await queryDb(
-        `SELECT a.*, 
-          COALESCE(
-            json_agg(
-              json_build_object(
-                'id', ai.id,
-                'app_id', ai.app_id,
-                'image', ai.image,
-                'image_id', ai.image_id,
-                'title', ai.title,
-                'url', CASE 
-                  WHEN ai.image LIKE 'http://%' OR ai.image LIKE 'https://%' THEN ai.image 
-                  ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || ai.image 
-                END,
-                'created_at', ai.created_at
-              ) ORDER BY ai.id ASC
-            ) FILTER (WHERE ai.id IS NOT NULL),
-            '[]'::json
-          ) AS images
-         FROM apps a
-         LEFT JOIN apps_images ai ON a.id = ai.app_id
-         WHERE a.id = $1
-         GROUP BY a.id`,
-        [appId]
-      );
-
-      const record = updatedRes.rows[0] || null;
-
-      return Response.json({
-        success: true,
-        message: 'App updated successfully.',
-        record,
-        ...record,
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // 7. CREATE NEW APP (Follows requested structure)
-    // -------------------------------------------------------------------------
-    if (!title && action !== 'create_draft') {
+    if (!title) {
       return Response.json({ error: 'App title is required' }, { status: 400 });
     }
 
-    const appTitle = title || 'Untitled App';
-    const is_active = isActiveVal === 'false' ? false : Boolean(isActiveVal);
-    const slug = await generateUniqueAppSlug(appTitle);
+    const baseSlug = slugify(title) || 'app';
+    let slug = baseSlug + '-' + Math.floor(1000 + Math.random() * 9000);
 
-    const result = await queryDb(
-      `INSERT INTO apps (title, slug, short_description, description, is_published)
-       VALUES ($1, $2, $3, $4, $5)
+    const checkSlug = await query('SELECT id FROM apps WHERE slug = $1', [slug]);
+    if (checkSlug.rows.length > 0) {
+      slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
+    }
+
+    await query('BEGIN');
+
+    const appResult = await query(
+      `INSERT INTO apps (
+        title, slug, description, short_description, is_published
+      ) VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [appTitle, slug, shortDescription, description, is_active]
+      [title, slug, description, short_description, is_published]
     );
 
-    const newApp = result.rows[0];
+    const app = appResult.rows[0];
 
-    // Upload images if provided
-    for (const imageFile of imageFiles) {
-      if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
-        const uploadResult = await uploadToCloudinary(imageFile, 'portfoliobuilder/apps');
-        if (uploadResult) {
-          await queryDb(
-            `INSERT INTO apps_images (app_id, image, image_id, title)
-             VALUES ($1, $2, $3, $4)`,
-            [newApp.id, uploadResult.public_id, uploadResult.asset_id, imageFile.name || appTitle]
-          );
-        }
+    for (const imgFile of imageFiles) {
+      const uploadResult = await uploadToCloudinary(imgFile, 'portfoliobuilder/apps');
+      if (uploadResult) {
+        await query(
+          `INSERT INTO apps_images (app_id, image, image_id, title)
+           VALUES ($1, $2, $3, $4)`,
+          [app.id, uploadResult.url || uploadResult.id, uploadResult.id, imgFile.name || title]
+        );
       }
     }
 
-    const fullAppRes = await queryDb(
+    if (attachPublicId) {
+      await query(
+        `INSERT INTO apps_images (app_id, image, image_id, title)
+         VALUES ($1, $2, $3, $4)`,
+        [app.id, attachPublicId, attachAssetId || attachPublicId, attachTitle || title]
+      );
+    }
+
+    await query('COMMIT');
+
+    const fullAppRes = await query(
       `SELECT a.*, 
         COALESCE(
           json_agg(
@@ -432,10 +212,6 @@ export async function POST(req) {
               'image', ai.image,
               'image_id', ai.image_id,
               'title', ai.title,
-              'url', CASE 
-                WHEN ai.image LIKE 'http://%' OR ai.image LIKE 'https://%' THEN ai.image 
-                ELSE 'https://res.cloudinary.com/' || '${cloud}' || '/image/upload/' || ai.image 
-              END,
               'created_at', ai.created_at
             ) ORDER BY ai.id ASC
           ) FILTER (WHERE ai.id IS NOT NULL),
@@ -445,10 +221,10 @@ export async function POST(req) {
        LEFT JOIN apps_images ai ON a.id = ai.app_id
        WHERE a.id = $1
        GROUP BY a.id`,
-      [newApp.id]
+      [app.id]
     );
 
-    const record = fullAppRes.rows[0] || { ...newApp, images: [] };
+    const record = fullAppRes.rows[0] || { ...app, images: [] };
 
     return Response.json(
       {
@@ -460,7 +236,222 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
+    await query('ROLLBACK');
     console.error('Error creating app:', error);
     return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req) {
+  try {
+    const auth = await isManagerOrAdmin(req);
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
+    }
+
+    let id = null;
+    let title = null;
+    let description = null;
+    let short_description = null;
+    let is_published = null;
+    let imageFiles = [];
+    let attachPublicId = null;
+    let attachAssetId = null;
+    let attachTitle = null;
+
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await req.formData();
+      id = formData.get('id') || formData.get('app_id');
+      if (formData.has('title') || formData.has('name')) {
+        title = (formData.get('title') || formData.get('name') || '').trim();
+      }
+      if (formData.has('description')) description = formData.get('description');
+      if (formData.has('short_description')) short_description = formData.get('short_description');
+      if (formData.has('is_published') || formData.has('is_active')) {
+        const val = formData.get('is_published') ?? formData.get('is_active');
+        is_published = val === 'true' || val === true;
+      }
+      attachPublicId = formData.get('public_id');
+      attachAssetId = formData.get('asset_id');
+      attachTitle = formData.get('image_title');
+
+      for (const [key, val] of formData.entries()) {
+        if (val && typeof val === 'object' && typeof val.arrayBuffer === 'function' && val.size > 0) {
+          imageFiles.push(val);
+        }
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      id = body.id || body.app_id;
+      const data = body.data || body;
+      if (data.title !== undefined || data.name !== undefined) {
+        title = (data.title || data.name || '').trim();
+      }
+      if (data.description !== undefined) description = data.description;
+      if (data.short_description !== undefined) short_description = data.short_description;
+      if (data.is_published !== undefined || data.is_active !== undefined) {
+        const val = data.is_published ?? data.is_active;
+        is_published = Boolean(val);
+      }
+      attachPublicId = data.public_id || body.public_id;
+      attachAssetId = data.asset_id || body.asset_id;
+      attachTitle = data.image_title || body.image_title || data.title;
+    }
+
+    if (!id) {
+      return Response.json({ error: 'App ID is required' }, { status: 400 });
+    }
+
+    const appId = parseInt(id, 10);
+
+    await query('BEGIN');
+
+    // Update metadata if provided
+    if (title !== null || description !== null || short_description !== null || is_published !== null) {
+      const currentRes = await query('SELECT * FROM apps WHERE id = $1', [appId]);
+      if (currentRes.rows.length === 0) {
+        await query('ROLLBACK');
+        return Response.json({ error: 'Application not found' }, { status: 404 });
+      }
+      const current = currentRes.rows[0];
+
+      const newTitle = title !== null ? title : current.title;
+      let newSlug = current.slug;
+      if (title !== null && title !== current.title && title.trim()) {
+        const baseSlug = slugify(newTitle) || 'app';
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+      const newDesc = description !== null ? description : current.description;
+      const newShortDesc = short_description !== null ? short_description : current.short_description;
+      const newPublished = is_published !== null ? is_published : current.is_published;
+
+      await query(
+        `UPDATE apps
+         SET title = $1, slug = $2, short_description = $3, description = $4, is_published = $5, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $6`,
+        [newTitle, newSlug, newShortDesc, newDesc, newPublished, appId]
+      );
+    }
+
+    // Upload & attach any new images
+    for (const file of imageFiles) {
+      const uploadResult = await uploadToCloudinary(file, 'portfoliobuilder/apps');
+      if (uploadResult) {
+        await query(
+          `INSERT INTO apps_images (app_id, image, image_id, title)
+           VALUES ($1, $2, $3, $4)`,
+          [appId, uploadResult.url || uploadResult.id, uploadResult.id, file.name || 'App Screenshot']
+        );
+      }
+    }
+
+    // Attach existing Cloudinary asset if specified
+    if (attachPublicId) {
+      await query(
+        `INSERT INTO apps_images (app_id, image, image_id, title)
+         VALUES ($1, $2, $3, $4)`,
+        [appId, attachPublicId, attachAssetId || attachPublicId, attachTitle || 'Cloudinary Image']
+      );
+    }
+
+    await query('COMMIT');
+
+    const updatedRes = await query(
+      `SELECT a.*, 
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', ai.id,
+              'app_id', ai.app_id,
+              'image', ai.image,
+              'image_id', ai.image_id,
+              'title', ai.title,
+              'created_at', ai.created_at
+            ) ORDER BY ai.id ASC
+          ) FILTER (WHERE ai.id IS NOT NULL),
+          '[]'::json
+        ) AS images
+       FROM apps a
+       LEFT JOIN apps_images ai ON a.id = ai.app_id
+       WHERE a.id = $1
+       GROUP BY a.id`,
+      [appId]
+    );
+
+    const record = updatedRes.rows[0] || null;
+
+    return Response.json({
+      success: true,
+      message: 'Application updated successfully.',
+      record,
+      images: record?.images || [],
+      ...record,
+    }, { status: 200 });
+  } catch (error) {
+    await query('ROLLBACK');
+    console.error('Error updating app:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    const auth = await isManagerOrAdmin(req);
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
+    }
+
+    const url = new URL(req.url);
+    let id = url.searchParams.get('id') || url.searchParams.get('app_id');
+    let imageId = url.searchParams.get('image_id');
+
+    if (!id && !imageId) {
+      const body = await req.json().catch(() => ({}));
+      id = body.id || body.app_id;
+      imageId = body.image_id;
+    }
+
+    if (imageId) {
+      const imgRow = await query('SELECT image, image_id FROM apps_images WHERE id = $1', [imageId]);
+      if (imgRow.rows.length > 0) {
+        const publicId = imgRow.rows[0].image_id || imgRow.rows[0].image;
+        if (publicId) {
+          try {
+            await deleteFromCloudinary(publicId);
+          } catch (err) {
+            console.warn('Cloudinary delete image error:', err.message);
+          }
+        }
+        await query('DELETE FROM apps_images WHERE id = $1', [imageId]);
+      }
+      return Response.json({ success: true, message: 'Image deleted from Cloudinary and database.' }, { status: 200 });
+    }
+
+    if (!id) {
+      return Response.json({ error: 'App ID or Image ID is required for deletion.' }, { status: 400 });
+    }
+
+    const appId = parseInt(id, 10);
+    const imgRows = await query('SELECT image, image_id FROM apps_images WHERE app_id = $1', [appId]);
+    for (const r of imgRows.rows) {
+      const publicId = r.image_id || r.image;
+      if (publicId) {
+        try {
+          await deleteFromCloudinary(publicId);
+        } catch (_) {}
+      }
+    }
+
+    // Safely delete/unlink foreign keys before deleting from apps
+    await query('DELETE FROM apps_images WHERE app_id = $1', [appId]);
+    await query('UPDATE packages SET app_id = NULL WHERE app_id = $1', [appId]).catch(() => {});
+    await query('UPDATE blogs SET app_id = NULL WHERE app_id = $1', [appId]).catch(() => {});
+    await query('DELETE FROM apps WHERE id = $1', [appId]);
+
+    return Response.json({ success: true, message: 'App and associated Cloudinary assets deleted.' }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting:', error);
+    return Response.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

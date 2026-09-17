@@ -5,7 +5,7 @@ import { BiGridAlt, BiRightArrowAlt, BiCheckCircle, BiImage } from 'react-icons/
 
 export default function HomeAppCard({ app }) {
   const images = Array.isArray(app?.images) ? app.images : [];
-  const primaryImage = images[0]?.url || null;
+  const primaryImage = images[0]?.image || images[0]?.url || null;
 
   // Clean description HTML tags for preview text
   const cleanSnippet = app?.description

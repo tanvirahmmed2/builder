@@ -63,9 +63,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
     setError('');
 
     try {
-      const res = await axios.post('/api/developer/apps', {
-        action: 'list_cloudinary_assets',
-      });
+      const res = await axios.get('/api/developer/apps?cloudinary_assets=true');
 
       if (res.data?.success && res.data?.assets) {
         setCloudinaryAssets(res.data.assets);
@@ -86,12 +84,11 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
     setSuccessMsg('');
 
     try {
-      const res = await axios.post('/api/developer/apps', {
-        action: 'attach_cloudinary_asset',
-        app_id: app.id,
+      const res = await axios.put('/api/developer/apps', {
+        id: app.id,
         public_id: asset.public_id,
         asset_id: asset.asset_id,
-        title: formData.title || 'App Image',
+        image_title: formData.title || 'App Image',
       });
 
       if (res.data?.success && res.data?.images) {
@@ -143,14 +140,13 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
 
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append('action', 'upload_images');
-      uploadFormData.append('app_id', String(app.id));
+      uploadFormData.append('id', String(app.id));
 
       selectedFiles.forEach((file) => {
         uploadFormData.append('images', file);
       });
 
-      const res = await axios.post('/api/developer/apps', uploadFormData, {
+      const res = await axios.put('/api/developer/apps', uploadFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -179,10 +175,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
     setSuccessMsg('');
 
     try {
-      const res = await axios.post('/api/developer/apps', {
-        action: 'delete_image',
-        image_id: imageId,
-      });
+      const res = await axios.delete(`/api/developer/apps?image_id=${imageId}`);
 
       if (res.data?.success) {
         setImages((prev) => prev.filter((img) => img.id !== imageId));
@@ -209,24 +202,23 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
       // If there are pending selected files not yet uploaded, upload them first
       if (selectedFiles.length > 0) {
         const uploadFormData = new FormData();
-        uploadFormData.append('action', 'upload_images');
-        uploadFormData.append('app_id', String(app.id));
+        uploadFormData.append('id', String(app.id));
         selectedFiles.forEach((file) => uploadFormData.append('images', file));
 
-        await axios.post('/api/developer/apps', uploadFormData, {
+        await axios.put('/api/developer/apps', uploadFormData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setSelectedFiles([]);
         setFilePreviews([]);
       }
 
-      const res = await axios.post('/api/developer/apps', {
-        action: 'update_record',
+      const res = await axios.put('/api/developer/apps', {
         id: app.id,
-        data: {
-          ...formData,
-          is_published: isPublished,
-        },
+        title: formData.title,
+        slug: formData.slug,
+        short_description: formData.short_description,
+        description: formData.description,
+        is_published: isPublished,
       });
 
       if (res.data?.success && res.data?.record) {
@@ -502,7 +494,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
           {images.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {images.map((img) => {
-                const srcUrl = img.url;
+                const srcUrl = img.image || img.url;
                 return (
                   <div
                     key={img.id}

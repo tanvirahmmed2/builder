@@ -24,7 +24,7 @@ export default function DeveloperAppCard({
   onDelete,
 }) {
   const images = Array.isArray(app.images) ? app.images : [];
-  const primaryImage = images[0]?.url || null;
+  const primaryImage = images[0]?.image || images[0]?.url || null;
   const isDeleting = deletingAppId === app.id;
 
   // Clean HTML tags from rich text description for snippet preview

@@ -68,7 +68,6 @@ export default function DeveloperAppsPage() {
 
     try {
       const res = await axios.post('/api/developer/apps', {
-        action: 'create_draft',
         title: 'Untitled App',
         is_published: false,
       });
@@ -97,10 +96,7 @@ export default function DeveloperAppsPage() {
     setActionError('');
 
     try {
-      const res = await axios.post('/api/developer/apps', {
-        action: 'delete_record',
-        id,
-      });
+      const res = await axios.delete(`/api/developer/apps?id=${id}`);
 
       if (res.data?.success) {
         setApps((prev) => prev.filter((a) => a.id !== id));
@@ -121,16 +117,13 @@ export default function DeveloperAppsPage() {
     const newStatus = !app.is_published;
 
     try {
-      const res = await axios.post('/api/developer/apps', {
-        action: 'update_record',
+      const res = await axios.put('/api/developer/apps', {
         id: app.id,
-        data: {
-          title: app.title,
-          slug: app.slug,
-          short_description: app.short_description,
-          description: app.description,
-          is_published: newStatus,
-        },
+        title: app.title,
+        slug: app.slug,
+        short_description: app.short_description,
+        description: app.description,
+        is_published: newStatus,
       });
 
       if (res.data?.success && res.data?.record) {

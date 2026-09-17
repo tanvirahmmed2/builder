@@ -16,7 +16,6 @@ export default function AppCreateForm({ onSuccess, onCancel }) {
 
     try {
       const res = await axios.post('/api/developer/apps', {
-        action: 'create_draft',
         title: title.trim() || 'Untitled App',
         is_published: false,
       });
