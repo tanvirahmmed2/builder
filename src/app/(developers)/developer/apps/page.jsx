@@ -1,0 +1,332 @@
+'use client';
+
+import { useState, useEffect, useContext } from 'react';
+import Link from 'next/link';
+import axios from 'axios';
+import {
+  BiGridAlt,
+  BiSearch,
+  BiCheckCircle,
+  BiLinkExternal,
+  BiCodeAlt,
+  BiPlus,
+  BiTrash,
+  BiEdit,
+  BiTimeFive,
+  BiRefresh,
+  BiImage,
+  BiGlobe,
+  BiLoaderAlt,
+  BiShieldQuarter,
+} from 'react-icons/bi';
+import { Context } from '@/components/helper/Context';
+import AppCreateForm from '@/components/developer/forms/AppCreateForm';
+import AppUpdateForm from '@/components/developer/forms/AppUpdateForm';
+import DeveloperAppCard from '@/components/developer/card/AppCard';
+
+export default function DeveloperAppsPage() {
+  const { user } = useContext(Context);
+  const [apps, setApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PUBLISHED' | 'DRAFTS'
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingApp, setEditingApp] = useState(null);
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [actionError, setActionError] = useState('');
+
+  const userRole = (user?.role || '').toLowerCase();
+  const canManage = ['admin', 'manager'].includes(userRole);
+
+  const fetchApps = async () => {
+    try {
+      setLoading(true);
+      setActionError('');
+      const res = await axios.get('/api/developer/apps');
+      if (res.data?.success) {
+        setApps(res.data.records || []);
+      } else {
+        setActionError(res.data?.error || 'Failed to fetch applications.');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.error || err.message || 'Error loading ecosystem apps.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApps();
+  }, []);
+
+  // One-click draft auto-creation workflow using axios
+  const handleQuickCreateDraft = async () => {
+    if (!canManage) return;
+    setCreatingDraft(true);
+    setActionError('');
+
+    try {
+      const res = await axios.post('/api/developer/apps', {
+        action: 'create_draft',
+        title: 'Untitled App',
+        is_published: false,
+      });
+
+      if (res.data?.success && res.data?.record) {
+        // Prepend new draft to list and open update form immediately
+        setApps((prev) => [res.data.record, ...prev]);
+        setEditingApp(res.data.record);
+        setShowCreateModal(false);
+      } else {
+        setActionError(res.data?.error || 'Failed to auto-create draft app.');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.error || err.message || 'Network error while creating draft.');
+    } finally {
+      setCreatingDraft(false);
+    }
+  };
+
+  // Delete App using axios
+  const handleDeleteApp = async (id, title) => {
+    if (!canManage) return;
+    if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
+
+    setDeletingId(id);
+    setActionError('');
+
+    try {
+      const res = await axios.post('/api/developer/apps', {
+        action: 'delete_record',
+        id,
+      });
+
+      if (res.data?.success) {
+        setApps((prev) => prev.filter((a) => a.id !== id));
+        if (editingApp?.id === id) setEditingApp(null);
+      } else {
+        setActionError(res.data?.error || 'Failed to delete application.');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.error || err.message || 'Error deleting application.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Toggle publish status inline using axios
+  const handleTogglePublish = async (app) => {
+    if (!canManage) return;
+    const newStatus = !app.is_published;
+
+    try {
+      const res = await axios.post('/api/developer/apps', {
+        action: 'update_record',
+        id: app.id,
+        data: {
+          title: app.title,
+          slug: app.slug,
+          short_description: app.short_description,
+          description: app.description,
+          is_published: newStatus,
+        },
+      });
+
+      if (res.data?.success && res.data?.record) {
+        setApps((prev) => prev.map((a) => (a.id === app.id ? res.data.record : a)));
+        if (editingApp?.id === app.id) setEditingApp(res.data.record);
+      } else {
+        setActionError(res.data?.error || 'Failed to toggle publishing status.');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.error || err.message || 'Error updating status.');
+    }
+  };
+
+  // Filter apps
+  const filteredApps = apps.filter((app) => {
+    if (filterTab === 'PUBLISHED' && !app.is_published) return false;
+    if (filterTab === 'DRAFTS' && app.is_published) return false;
+
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (app.title || '').toLowerCase().includes(q) ||
+      (app.slug || '').toLowerCase().includes(q) ||
+      (app.short_description || '').toLowerCase().includes(q) ||
+      (app.description || '').toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Platform Ecosystem Apps</h1>
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+              Ecosystem
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Catalog of plug-and-play vertical applications and integrations. Admin and Manager roles can manage, draft, and publish apps.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={fetchApps}
+            className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+            title="Refresh list"
+          >
+            <BiRefresh className="text-lg" />
+          </button>
+
+          {canManage ? (
+            <div className="flex items-center gap-2">
+              {/* Quick Auto-Create Draft Button */}
+              <button
+                type="button"
+                onClick={handleQuickCreateDraft}
+                disabled={creatingDraft}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-50"
+              >
+                {creatingDraft ? (
+                  <BiLoaderAlt className="animate-spin text-base" />
+                ) : (
+                  <BiPlus className="text-base" />
+                )}
+                <span>{creatingDraft ? 'Creating Draft...' : 'Create App'}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+              <BiShieldQuarter className="text-sm text-slate-400" />
+              <span>Read Only ({userRole || 'developer'})</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {actionError && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError('')}
+            className="text-rose-500 hover:text-rose-800"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Optional Quick Create Modal/Form */}
+      {showCreateModal && canManage && (
+        <AppCreateForm
+          onSuccess={(newRecord) => {
+            setApps((prev) => [newRecord, ...prev]);
+            setShowCreateModal(false);
+            setEditingApp(newRecord);
+          }}
+          onCancel={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Editing Form */}
+      {editingApp && canManage && (
+        <AppUpdateForm
+          app={editingApp}
+          onSuccess={(updatedRecord) => {
+            setApps((prev) => prev.map((a) => (a.id === updatedRecord.id ? updatedRecord : a)));
+            setEditingApp(updatedRecord);
+          }}
+          onCancel={() => setEditingApp(null)}
+        />
+      )}
+
+      {/* Search & Filter Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search apps by title, slug, or description..."
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+          />
+        </div>
+
+        {/* Tab Filters */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-full sm:w-auto">
+          {[
+            { key: 'ALL', label: `All (${apps.length})` },
+            { key: 'PUBLISHED', label: `Published (${apps.filter((a) => a.is_published).length})` },
+            { key: 'DRAFTS', label: `Drafts (${apps.filter((a) => !a.is_published).length})` },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setFilterTab(tab.key)}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filterTab === tab.key
+                  ? 'bg-white text-slate-900 shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Apps Grid */}
+      {loading ? (
+        <div className="py-20 text-center flex flex-col items-center justify-center gap-3 bg-white border border-slate-200 rounded-2xl">
+          <BiLoaderAlt className="animate-spin text-3xl text-secondary" />
+          <p className="text-xs text-slate-500 font-semibold">Loading applications catalog...</p>
+        </div>
+      ) : filteredApps.length === 0 ? (
+        <div className="py-16 text-center bg-white border border-slate-200 rounded-2xl p-6">
+          <BiGridAlt className="mx-auto text-4xl text-slate-300 mb-2" />
+          <h3 className="text-sm font-bold text-slate-800 mb-1">No Applications Found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+            {searchTerm
+              ? `No apps matching "${searchTerm}". Try a different keyword.`
+              : 'There are currently no ecosystem applications in this view.'}
+          </p>
+          {canManage && (
+            <button
+              type="button"
+              onClick={handleQuickCreateDraft}
+              disabled={creatingDraft}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary-dark text-white cursor-pointer shadow-xs"
+            >
+              <BiPlus className="text-base" />
+              <span>Create Your First App</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredApps.map((app) => (
+            <DeveloperAppCard
+              key={app.id}
+              app={app}
+              isEditing={editingApp?.id === app.id}
+              canManage={canManage}
+              deletingAppId={deletingId}
+              onEdit={setEditingApp}
+              onTogglePublish={handleTogglePublish}
+              onDelete={handleDeleteApp}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

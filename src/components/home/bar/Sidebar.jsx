@@ -85,7 +85,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   {apps.map((app) => (
                     <Link
                       key={app.id}
-                      href={app.path}
+                      href={app.path || `/apps/${app.slug}`}
                       onClick={onClose}
                       className="px-3 py-1.5 text-sm text-slate-600 hover:text-primary rounded-md transition-colors"
                     >

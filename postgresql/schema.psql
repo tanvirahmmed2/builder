@@ -28,12 +28,12 @@ $$ LANGUAGE plpgsql;
 -- 3. ADMIN TABLE, SESSION & LOGIN_ACTIVITY
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS admin (
+CREATE TABLE IF NOT EXISTS developers(
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email CITEXT UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'support' CHECK (role IN ('admin', 'manager', 'support', 'developer', 'marketer')),
+    role VARCHAR(50) NOT NULL DEFAULT 'developer' CHECK (role IN ('admin', 'manager', 'support', 'developer', 'marketer')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     verification_code VARCHAR(10),
@@ -57,17 +57,18 @@ CREATE TABLE IF NOT EXISTS admin (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_admin_email ON admin (email);
+CREATE INDEX IF NOT EXISTS idx_developers_email ON developers (email);
 
-CREATE TRIGGER trg_admin_updated_at
-BEFORE UPDATE ON admin
+DROP TRIGGER IF EXISTS trg_developers_updated_at ON developers;
+CREATE TRIGGER trg_developers_updated_at
+BEFORE UPDATE ON developers
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- 3.1 SESSION TABLE
 CREATE TABLE IF NOT EXISTS session (
     id SERIAL PRIMARY KEY,
-    admin_id INTEGER NOT NULL REFERENCES admin(id) ON DELETE CASCADE,
+    developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
     token VARCHAR(255) UNIQUE NOT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
@@ -79,9 +80,10 @@ CREATE TABLE IF NOT EXISTS session (
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_token ON session (token);
-CREATE INDEX IF NOT EXISTS idx_session_admin_id ON session (admin_id);
+CREATE INDEX IF NOT EXISTS idx_session_developer_id ON session (developer_id);
 CREATE INDEX IF NOT EXISTS idx_session_expires_at ON session (expires_at);
 
+DROP TRIGGER IF EXISTS trg_session_updated_at ON session;
 CREATE TRIGGER trg_session_updated_at
 BEFORE UPDATE ON session
 FOR EACH ROW
@@ -90,7 +92,7 @@ EXECUTE FUNCTION trigger_set_timestamp();
 -- 3.2 LOGIN ACTIVITY TABLE
 CREATE TABLE IF NOT EXISTS login_activity (
     id SERIAL PRIMARY KEY,
-    admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     email CITEXT NOT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
@@ -101,7 +103,7 @@ CREATE TABLE IF NOT EXISTS login_activity (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_login_activity_admin_id ON login_activity (admin_id);
+CREATE INDEX IF NOT EXISTS idx_login_activity_developer_id ON login_activity (developer_id);
 CREATE INDEX IF NOT EXISTS idx_login_activity_email ON login_activity (email);
 CREATE INDEX IF NOT EXISTS idx_login_activity_created_at ON login_activity (created_at DESC);
 
@@ -115,12 +117,15 @@ CREATE TABLE IF NOT EXISTS apps (
     slug VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
     short_description TEXT,
+    is_published BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_apps_slug ON apps (slug);
+CREATE INDEX IF NOT EXISTS idx_apps_published ON apps (is_published);
 
+DROP TRIGGER IF EXISTS trg_apps_updated_at ON apps;
 CREATE TRIGGER trg_apps_updated_at
 BEFORE UPDATE ON apps
 FOR EACH ROW
@@ -149,7 +154,7 @@ CREATE TABLE IF NOT EXISTS blogs (
     summary TEXT,
     content TEXT NOT NULL,
     cover_image TEXT,
-    author_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    author_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     is_published BOOLEAN NOT NULL DEFAULT TRUE,
     published_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -160,6 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_blogs_app ON blogs (app_id);
 CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs (slug);
 CREATE INDEX IF NOT EXISTS idx_blogs_published ON blogs (is_published, published_at DESC);
 
+DROP TRIGGER IF EXISTS trg_blogs_updated_at ON blogs;
 CREATE TRIGGER trg_blogs_updated_at
 BEFORE UPDATE ON blogs
 FOR EACH ROW
@@ -197,6 +203,7 @@ CREATE TABLE IF NOT EXISTS packages (
 
 CREATE INDEX IF NOT EXISTS idx_packages_app ON packages (app_id);
 
+DROP TRIGGER IF EXISTS trg_packages_updated_at ON packages;
 CREATE TRIGGER trg_packages_updated_at
 BEFORE UPDATE ON packages
 FOR EACH ROW
@@ -250,6 +257,7 @@ CREATE TABLE IF NOT EXISTS live_chats (
 
 CREATE INDEX IF NOT EXISTS idx_live_chats_status ON live_chats (status, created_at DESC);
 
+DROP TRIGGER IF EXISTS trg_live_chats_updated_at ON live_chats;
 CREATE TRIGGER trg_live_chats_updated_at
 BEFORE UPDATE ON live_chats
 FOR EACH ROW
@@ -278,13 +286,14 @@ CREATE TABLE IF NOT EXISTS contacts (
     message TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
     admin_reply TEXT,
-    replied_by_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    replied_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts (status, created_at DESC);
 
+DROP TRIGGER IF EXISTS trg_contacts_updated_at ON contacts;
 CREATE TRIGGER trg_contacts_updated_at
 BEFORE UPDATE ON contacts
 FOR EACH ROW
@@ -303,13 +312,14 @@ CREATE TABLE IF NOT EXISTS support (
     category VARCHAR(100) NOT NULL DEFAULT 'TECHNICAL',
     priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
     status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
-    assigned_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    assigned_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_support_status ON support (status, priority);
 
+DROP TRIGGER IF EXISTS trg_support_updated_at ON support;
 CREATE TRIGGER trg_support_updated_at
 BEFORE UPDATE ON support
 FOR EACH ROW
@@ -378,6 +388,7 @@ CREATE TABLE IF NOT EXISTS subscription (
 CREATE INDEX IF NOT EXISTS idx_subscription_app ON subscription (app_id);
 CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
 
+DROP TRIGGER IF EXISTS trg_subscription_updated_at ON subscription;
 CREATE TRIGGER trg_subscription_updated_at
 BEFORE UPDATE ON subscription
 FOR EACH ROW
@@ -404,6 +415,7 @@ CREATE TABLE IF NOT EXISTS websites (
 CREATE INDEX IF NOT EXISTS idx_websites_subdomain ON websites (subdomain);
 CREATE INDEX IF NOT EXISTS idx_websites_creator ON websites (creator_id);
 
+DROP TRIGGER IF EXISTS trg_websites_updated_at ON websites;
 CREATE TRIGGER trg_websites_updated_at
 BEFORE UPDATE ON websites
 FOR EACH ROW
@@ -423,7 +435,7 @@ CREATE TABLE IF NOT EXISTS reports (
     status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
     priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
     admin_response TEXT,
-    resolved_by_admin_id INTEGER REFERENCES admin(id) ON DELETE SET NULL,
+    resolved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     resolved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -431,6 +443,7 @@ CREATE TABLE IF NOT EXISTS reports (
 
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, priority);
 
+DROP TRIGGER IF EXISTS trg_reports_updated_at ON reports;
 CREATE TRIGGER trg_reports_updated_at
 BEFORE UPDATE ON reports
 FOR EACH ROW
@@ -455,6 +468,7 @@ CREATE TABLE IF NOT EXISTS leads (
 
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at DESC);
 
+DROP TRIGGER IF EXISTS trg_leads_updated_at ON leads;
 CREATE TRIGGER trg_leads_updated_at
 BEFORE UPDATE ON leads
 FOR EACH ROW
@@ -497,21 +511,10 @@ CREATE TABLE IF NOT EXISTS themes (
 
 CREATE INDEX IF NOT EXISTS idx_themes_app ON themes (app_id);
 
+DROP TRIGGER IF EXISTS trg_themes_updated_at ON themes;
 CREATE TRIGGER trg_themes_updated_at
 BEFORE UPDATE ON themes
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
--- ============================================================================
--- 16. SEED INITIAL SUPER ADMIN
--- ============================================================================
-
-INSERT INTO admin (name, email, password, role, is_active, is_verified, two_factor_enabled)
-VALUES ('Super Admin', 'support@disibin.com', '123', 'admin', TRUE, TRUE, FALSE)
-ON CONFLICT (email) DO UPDATE 
-SET password = EXCLUDED.password,
-    role = EXCLUDED.role,
-    is_active = TRUE,
-    is_verified = TRUE,
-    updated_at = CURRENT_TIMESTAMP;
 
