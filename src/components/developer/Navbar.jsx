@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { SITE_NAME } from '@/lib/db/secret';
-import { BiMenu, BiLogOut, BiHome, BiShieldQuarter } from 'react-icons/bi';
+import { BiMenu, BiLogOut, BiHome, BiShieldQuarter, BiCog } from 'react-icons/bi';
 import { useRouter } from 'next/navigation';
 
 export default function AdminNavbar({ onToggleSidebar, currentUser = null }) {
@@ -38,13 +38,25 @@ export default function AdminNavbar({ onToggleSidebar, currentUser = null }) {
         </Link>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-700 font-medium">
+      <div className="flex items-center gap-2.5">
+        <Link
+          href="/developer/profile"
+          className="hidden sm:flex items-center gap-2 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-700 font-medium transition-colors"
+          title="View My Profile"
+        >
           <BiShieldQuarter className={`text-sm ${isUserAdmin ? 'text-purple-600' : 'text-secondary'}`} />
           <span className="font-semibold text-slate-800">
-            {currentUser?.name || currentUser?.email }
+            {currentUser?.name || currentUser?.email}
           </span>
-        </div>
+        </Link>
+
+        <Link
+          href="/developer/settings"
+          className="p-1.5 rounded-full border border-slate-200 text-slate-600 hover:text-secondary hover:bg-slate-50 transition-colors"
+          title="Account Settings"
+        >
+          <BiCog className="text-lg" />
+        </Link>
 
         <button
           type="button"

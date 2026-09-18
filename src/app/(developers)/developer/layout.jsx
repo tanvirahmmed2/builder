@@ -13,24 +13,24 @@ export const ROLE_PERMISSIONS = {
     'overview', 'developers', 'team', 'creators', 'users', 'websites',
     'blogs', 'themes', 'packages', 'features', 'payments', 'subscriptions',
     'live-chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
-    'leads', 'subscribers', 'apps', 'profile'
+    'leads', 'subscribers', 'apps', 'profile', 'settings'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
     'payments', 'subscriptions', 'live-chats', 'contacts', 'support',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile'
+    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',
-    'apps', 'spams', 'reports', 'blogs', 'support', 'profile'
+    'apps', 'spams', 'reports', 'blogs', 'support', 'profile', 'settings'
   ],
   marketer: [
     'overview', 'blogs', 'themes', 'leads', 'subscribers',
-    'packages', 'reviews', 'creators', 'profile'
+    'packages', 'reviews', 'creators', 'profile', 'settings'
   ],
   support: [
     'overview', 'live-chats', 'contacts', 'support', 'reports',
-    'reviews', 'users', 'creators', 'profile'
+    'reviews', 'users', 'creators', 'profile', 'settings'
   ]
 };
 

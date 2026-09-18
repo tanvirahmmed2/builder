@@ -25,6 +25,7 @@ import {
   BiStar,
   BiShieldX,
   BiGridAlt,
+  BiCog,
 } from 'react-icons/bi';
 import { ROLE_PERMISSIONS } from '@/app/(developers)/developer/layout';
 
@@ -33,6 +34,8 @@ export const ADMIN_NAV_SECTIONS = [
     title: 'Platform Core',
     links: [
       { href: '/developer', label: 'Overview', icon: BiLayer, exact: true },
+      { href: '/developer/profile', label: 'My Profile', icon: BiUser },
+      { href: '/developer/settings', label: 'Settings', icon: BiCog },
       { href: '/developer/developers', label: 'Developers Team', icon: BiUserCheck },
       { href: '/developer/creators', label: 'Creators', icon: BiGroup },
       { href: '/developer/users', label: 'End-Users', icon: BiUser },
@@ -93,7 +96,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
   const isLinkAllowed = (link) => {
     const segments = link.href.split('/').filter(Boolean);
     const moduleName = segments[1];
-    return !moduleName || moduleName === 'profile' || allowedModules.includes(moduleName);
+    return !moduleName || moduleName === 'profile' || moduleName === 'settings' || allowedModules.includes(moduleName);
   };
 
   const handleLogout = async () => {
