@@ -52,7 +52,7 @@ export default function AdminNavbar({ onToggleSidebar, currentUser = null }) {
           className="inline-flex items-center justify-center border border-secondary text-secondary hover:bg-secondary hover:text-white px-3 py-1 rounded-full font-semibold transition-colors duration-200 text-xs md:text-sm cursor-pointer gap-1"
         >
           <BiLogOut className="text-sm" />
-          <span className="hidden sm:inline">Sign Out</span>
+          <span className="hidden sm:inline">Log Out</span>
         </button>
       </div>
     </nav>
