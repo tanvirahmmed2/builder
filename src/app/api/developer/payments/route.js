@@ -10,32 +10,12 @@ export async function GET() {
   }
 }
 
+// CREATE PAYMENT
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { action } = body;
-
-    if (action === 'delete_record' || action === 'delete') {
-      await queryDb('DELETE FROM payment WHERE id = $1', [body.id]);
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === 'update_record' || action === 'update') {
-      const data = body.data || {};
-      const keys = Object.keys(data).filter((k) => k !== 'id');
-      if (keys.length === 0) return NextResponse.json({ success: true });
-      const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-      const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-      values.push(body.id);
-      const res = await queryDb(
-        `UPDATE payment SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
-        values
-      );
-      return NextResponse.json({ success: true, record: res.rows[0] });
-    }
-
     const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id');
+    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
     const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
     const placeholders = keys.map((_, i) => '$' + (i + 1));
     const res = await queryDb(
@@ -48,6 +28,29 @@ export async function POST(request) {
   }
 }
 
+// UPDATE PAYMENT
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const id = body.id || body.data?.id;
+    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
+    const data = body.data || body;
+    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
+    if (keys.length === 0) return NextResponse.json({ success: true });
+    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
+    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
+    values.push(id);
+    const res = await queryDb(
+      `UPDATE payment SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+    return NextResponse.json({ success: true, record: res.rows[0] });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
+
+// DELETE PAYMENT
 export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);

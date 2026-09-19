@@ -65,9 +65,9 @@ export default function AdminPackagesPage() {
     setTogglingId(pkg.id);
     try {
       const res = await fetch('/api/developer/packages', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle_status', id: pkg.id }),
+        body: JSON.stringify({ id: pkg.id }),
       });
       const data = await res.json();
       if (data.success) {

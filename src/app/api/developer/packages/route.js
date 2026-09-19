@@ -56,103 +56,8 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const action = body.action || (body.data?.action);
 
-    // 1. DELETE
-    if (action === 'delete_record' || action === 'delete' || action === 'delete_package') {
-      const id = body.id || body.packageId || body.data?.id;
-      if (!id) {
-        return NextResponse.json({ success: false, error: 'Package ID is required for deletion' }, { status: 400 });
-      }
-      const res = await queryDb('DELETE FROM packages WHERE id = $1 RETURNING id, name', [Number(id)]);
-      if (res.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Package not found or already deleted' }, { status: 404 });
-      }
-      return NextResponse.json({ success: true, message: 'Package deleted successfully', deleted: res.rows[0] });
-    }
-
-    // 2. TOGGLE STATUS
-    if (action === 'toggle_status') {
-      const id = body.id || body.packageId || body.data?.id;
-      if (!id) {
-        return NextResponse.json({ success: false, error: 'Package ID is required' }, { status: 400 });
-      }
-      const res = await queryDb(
-        `UPDATE packages
-         SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1
-         RETURNING *`,
-        [Number(id)]
-      );
-      if (res.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Package not found' }, { status: 404 });
-      }
-      return NextResponse.json({ success: true, record: res.rows[0] });
-    }
-
-    // 3. UPDATE
-    if (action === 'update_record' || action === 'update' || action === 'update_package') {
-      const data = body.data || body;
-      const id = body.id || body.packageId || data.id;
-      if (!id) {
-        return NextResponse.json({ success: false, error: 'Package ID is required for update' }, { status: 400 });
-      }
-
-      const existingRes = await queryDb('SELECT * FROM packages WHERE id = $1', [Number(id)]);
-      if (existingRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Package not found' }, { status: 404 });
-      }
-      const current = existingRes.rows[0];
-
-      const name = data.name !== undefined ? (data.name || '').trim() : current.name;
-      if (!name) {
-        return NextResponse.json({ success: false, error: 'Package name cannot be empty' }, { status: 400 });
-      }
-
-      let slug = data.slug !== undefined ? generateSlug(data.slug) : current.slug;
-      if (!slug) {
-        slug = generateSlug(name) || `pkg-${Date.now()}`;
-      }
-
-      const description = data.description !== undefined ? data.description : current.description;
-      const priceInCents = data.price_in_cents !== undefined
-        ? Number(data.price_in_cents)
-        : (data.price !== undefined ? Math.round(Number(data.price) * 100) : current.price_in_cents);
-      const currency = data.currency !== undefined ? (data.currency || 'USD').toUpperCase() : current.currency;
-      const billingInterval = (data.billing_interval || data.billingInterval) !== undefined
-        ? (data.billing_interval || data.billingInterval || 'MONTHLY').toUpperCase()
-        : current.billing_interval;
-      const maxPortfolios = data.max_portfolios !== undefined
-        ? Math.max(1, Number(data.max_portfolios))
-        : current.max_portfolios;
-      const isActive = data.is_active !== undefined ? Boolean(data.is_active) : current.is_active;
-      const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
-
-      const res = await queryDb(
-        `UPDATE packages
-         SET name = $1,
-             slug = $2,
-             description = $3,
-             price_in_cents = $4,
-             currency = $5,
-             billing_interval = $6,
-             max_portfolios = $7,
-             is_active = $8,
-             app_id = $9,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $10
-         RETURNING *`,
-        [name, slug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId, Number(id)]
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: 'Package updated successfully',
-        record: res.rows[0],
-      });
-    }
-
-    // 4. CREATE (default)
+    // CREATE PACKAGE
     const data = body.data || body;
     const name = (data.name || '').trim();
     if (!name) {
@@ -302,6 +207,39 @@ export async function DELETE(request) {
     return NextResponse.json({ success: true, message: 'Package deleted successfully', deleted: res.rows[0] });
   } catch (error) {
     console.error('Error deleting package:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const auth = await isManagerOrAdmin(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can update packages.' },
+        { status: auth.status || 403 }
+      );
+    }
+
+    const body = await request.json();
+    const id = body.id || body.packageId;
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Package ID is required' }, { status: 400 });
+    }
+
+    const res = await queryDb(
+      `UPDATE packages
+       SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [Number(id)]
+    );
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Package not found' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, record: res.rows[0] });
+  } catch (error) {
+    console.error('Error toggling package status:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

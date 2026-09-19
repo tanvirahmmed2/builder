@@ -34,10 +34,8 @@ export default function AdminSubscribersPage() {
     if (!confirm('Are you sure you want to delete this subscriber?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/subscribers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id }),
+      const res = await fetch(`/api/developer/subscribers?id=${id}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {

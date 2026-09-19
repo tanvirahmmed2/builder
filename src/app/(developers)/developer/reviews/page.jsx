@@ -30,9 +30,9 @@ export default function AdminReviewsPage() {
   const handleModerate = async (reviewId, status) => {
     try {
       await fetch('/api/developer/reviews', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'moderate_review', reviewId, status }),
+        body: JSON.stringify({ reviewId, status }),
       });
       fetchReviews();
     } catch (err) {
@@ -43,10 +43,8 @@ export default function AdminReviewsPage() {
   const handleDelete = async (reviewId) => {
     if (!confirm('Permanently delete this review from the website?')) return;
     try {
-      await fetch('/api/developer/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_review', reviewId }),
+      await fetch(`/api/developer/reviews?id=${reviewId}`, {
+        method: 'DELETE',
       });
       fetchReviews();
     } catch (err) {

@@ -26,6 +26,8 @@ import {
   BiShieldX,
   BiGridAlt,
   BiCog,
+  BiHelpCircle,
+  BiBell,
 } from 'react-icons/bi';
 import { ROLE_PERMISSIONS } from '@/app/(developers)/developer/layout';
 
@@ -47,6 +49,8 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/developer/blogs', label: 'Blogs', icon: BiFile },
       { href: '/developer/themes', label: 'Themes', icon: BiPalette },
+      { href: '/developer/faqs', label: 'FAQs', icon: BiHelpCircle },
+      { href: '/developer/updates', label: 'Product Updates', icon: BiBell },
     ],
   },
   {

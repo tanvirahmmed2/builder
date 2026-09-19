@@ -25,10 +25,7 @@ export default function LeadForm({ onSuccess, onCancel, apiEndpoint = '/api/deve
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_record',
-          data: formData,
-        }),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {

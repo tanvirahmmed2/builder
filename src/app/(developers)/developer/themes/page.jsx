@@ -34,10 +34,8 @@ export default function AdminThemesPage() {
     if (!confirm('Are you sure you want to delete this theme?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/themes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id }),
+      const res = await fetch(`/api/developer/themes?id=${id}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {

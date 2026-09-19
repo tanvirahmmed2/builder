@@ -82,16 +82,13 @@ export default function PackageForm({
       max_portfolios: Math.max(1, parseInt(formData.max_portfolios, 10) || 1),
       app_id: formData.app_id ? parseInt(formData.app_id, 10) : null,
     };
-
     try {
-      const bodyPayload = isEditing
-        ? { action: 'update_record', id: initialData.id, data: payloadData }
-        : { action: 'create_record', data: payloadData };
+      const payload = isEditing ? { id: initialData.id, ...payloadData } : payloadData;
 
       const res = await fetch(apiEndpoint, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isEditing ? { id: initialData.id, ...payloadData } : bodyPayload),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();

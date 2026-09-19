@@ -122,9 +122,9 @@ export default function AdminAdminsPage() {
       setUpdatingStatusId(admin.id);
       setActionNotice({ text: '', type: 'info' });
       const res = await fetch('/api/developer/devs/list', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle_status', id: admin.id }),
+        body: JSON.stringify({ id: admin.id, is_active: !admin.is_active }),
       });
       const data = await res.json();
       if (data.success) {
@@ -170,9 +170,9 @@ export default function AdminAdminsPage() {
       setUpdatingRoleId(admin.id);
       setActionNotice({ text: '', type: 'info' });
       const res = await fetch('/api/developer/devs/list', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'change_role', id: admin.id, role: newRole }),
+        body: JSON.stringify({ id: admin.id, role: newRole }),
       });
       const data = await res.json();
       if (data.success) {
@@ -238,10 +238,9 @@ export default function AdminAdminsPage() {
       }
 
       const res = await fetch('/api/developer/devs/list', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'update_record',
           id: editingAdmin.id,
           data: payload,
         }),
@@ -281,10 +280,8 @@ export default function AdminAdminsPage() {
 
     try {
       setActionNotice({ text: '', type: 'info' });
-      const res = await fetch('/api/developer/devs/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id: adminId }),
+      const res = await fetch(`/api/developer/devs/list?id=${adminId}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {

@@ -16,6 +16,8 @@ const Footer = () => {
           <p className='text-xl font-semibold opacity-75'>Links</p>
           <div className='w-full flex flex-col'>
             <Link href={'/creator/login'}>Login</Link>
+            <Link href={'/updates'}>Updates & Changelog</Link>
+            <Link href={'/faqs'}>FAQs & Help</Link>
             <Link href={'https://youtube.com'}>How to build</Link>
             <Link href={'/contact'}>Contact</Link>
             <Link href={'/report'}>Report</Link>

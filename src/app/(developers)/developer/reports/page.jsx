@@ -34,10 +34,8 @@ export default function AdminReportsPage() {
     if (!confirm('Are you sure you want to delete this report?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id }),
+      const res = await fetch(`/api/developer/reports?id=${id}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {

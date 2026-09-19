@@ -74,76 +74,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const action = body.action || body.data?.action;
-
-    // 1. DELETE
-    if (action === 'delete_record' || action === 'delete' || action === 'delete_feature') {
-      const id = body.id || body.featureId || body.data?.id;
-      if (!id) {
-        return NextResponse.json({ success: false, error: 'Feature ID is required for deletion' }, { status: 400 });
-      }
-      const res = await queryDb('DELETE FROM feature WHERE id = $1 RETURNING id, name, key', [Number(id)]);
-      if (res.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Feature not found or already deleted' }, { status: 404 });
-      }
-      return NextResponse.json({
-        success: true,
-        message: `Feature "${res.rows[0].name}" deleted successfully`,
-        deleted: res.rows[0],
-      });
-    }
-
-    // 2. UPDATE
-    if (action === 'update_record' || action === 'update' || action === 'update_feature') {
-      const data = body.data || body;
-      const id = body.id || body.featureId || data.id;
-      if (!id) {
-        return NextResponse.json({ success: false, error: 'Feature ID is required for update' }, { status: 400 });
-      }
-
-      const existingRes = await queryDb('SELECT * FROM feature WHERE id = $1', [Number(id)]);
-      if (existingRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Feature not found' }, { status: 404 });
-      }
-      const current = existingRes.rows[0];
-
-      const name = data.name !== undefined ? (data.name || '').trim() : current.name;
-      if (!name) {
-        return NextResponse.json({ success: false, error: 'Feature name cannot be empty' }, { status: 400 });
-      }
-
-      let key = data.key !== undefined ? generateFeatureKey(data.key) : current.key;
-      if (!key) {
-        key = generateFeatureKey(name) || `feat_${Date.now()}`;
-      }
-
-      // Check unique key collision with other feature
-      const keyConflict = await queryDb('SELECT id FROM feature WHERE key = $1 AND id != $2 LIMIT 1', [key, Number(id)]);
-      if (keyConflict.rows.length > 0) {
-        return NextResponse.json(
-          { success: false, error: `Feature key "${key}" is already in use by another feature.` },
-          { status: 400 }
-        );
-      }
-
-      const description = data.description !== undefined ? data.description : current.description;
-
-      const res = await queryDb(
-        `UPDATE feature
-         SET name = $1, key = $2, description = $3
-         WHERE id = $4
-         RETURNING *`,
-        [name, key, description, Number(id)]
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: 'Feature updated successfully',
-        record: res.rows[0],
-      });
-    }
-
-    // 3. CREATE (default)
+    // CREATE FEATURE
     const data = body.data || body;
     const name = (data.name || '').trim();
     if (!name) {

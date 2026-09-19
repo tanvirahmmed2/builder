@@ -26,10 +26,7 @@ export default function BlogForm({ onSuccess, onCancel, apiEndpoint = '/api/deve
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_record',
-          data: { ...formData, slug },
-        }),
+        body: JSON.stringify({ ...formData, slug }),
       });
       const data = await res.json();
       if (data.success) {

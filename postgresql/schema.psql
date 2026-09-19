@@ -506,4 +506,45 @@ BEFORE UPDATE ON themes
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
+-- ============================================================================
+-- 16. FAQS (Frequently Asked Questions)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS faqs (
+    id SERIAL PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
+CREATE TRIGGER trg_faqs_updated_at
+BEFORE UPDATE ON faqs
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 17. UPDATES (Product Changelog & Announcements)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS updates (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
+CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
+CREATE TRIGGER trg_updates_updated_at
+BEFORE UPDATE ON updates
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+
 

@@ -60,16 +60,13 @@ export default function FeatureForm({
       key: key.trim(),
       description: formData.description.trim(),
     };
-
     try {
-      const bodyPayload = isEditing
-        ? { action: 'update_record', id: initialData.id, data: payloadData }
-        : { action: 'create_record', data: payloadData };
+      const payload = isEditing ? { id: initialData.id, ...payloadData } : payloadData;
 
       const res = await fetch(apiEndpoint, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isEditing ? { id: initialData.id, ...payloadData } : bodyPayload),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();

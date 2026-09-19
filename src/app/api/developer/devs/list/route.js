@@ -144,73 +144,81 @@ export async function POST(request) {
       });
     }
 
-    // --- DELETE ADMIN ---
-    if (action === 'delete_record' || action === 'delete') {
-      const guard = await checkLastActiveAdminGuard(targetId, true);
-      if (guard) {
-        return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
-      }
+    return NextResponse.json({ success: false, error: 'Invalid action for POST.' }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 
-      await queryDb('DELETE FROM developers WHERE id = $1', [targetId]);
-      return NextResponse.json({ success: true, message: 'Developer account deleted successfully.' });
+export async function PUT(request) {
+  try {
+    const authCheck = await isAdmin(request);
+    if (!authCheck.success) {
+      return NextResponse.json(
+        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { status: authCheck.status || 403 }
+      );
     }
 
-    // --- GENERIC UPDATE RECORD ---
-    if (action === 'update_record' || action === 'update') {
-      const data = { ...(body.data || {}) };
+    const body = await request.json();
+    const targetId = body.id || body.adminId;
+    if (!targetId) {
+      return NextResponse.json({ success: false, error: 'Admin ID is required.' }, { status: 400 });
+    }
 
-      // Validate role if changing
-      if (data.role) {
-        const cleanRole = data.role.toLowerCase().trim();
-        if (!ALLOWED_ROLES.has(cleanRole)) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Invalid role "${data.role}". Allowed roles: admin, manager, support, developer, marketer.`,
-            },
-            { status: 400 }
-          );
-        }
-        data.role = cleanRole;
-        if (cleanRole !== 'admin') {
-          const guard = await checkLastActiveAdminGuard(targetId, true);
-          if (guard) {
-            return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
-          }
-        }
+    const data = { ...(body.data || body) };
+
+    // Validate role if changing
+    if (data.role) {
+      const cleanRole = data.role.toLowerCase().trim();
+      if (!ALLOWED_ROLES.has(cleanRole)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Invalid role "${data.role}". Allowed roles: admin, manager, support, developer, marketer.`,
+          },
+          { status: 400 }
+        );
       }
-
-      if (data.is_active === false || data.isActive === false) {
+      data.role = cleanRole;
+      if (cleanRole !== 'admin') {
         const guard = await checkLastActiveAdminGuard(targetId, true);
         if (guard) {
           return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
         }
       }
-
-      // Handle optional password update
-      if (data.password && data.password.trim()) {
-        data.password = await hashPassword(data.password.trim());
-      } else {
-        delete data.password;
-      }
-
-      delete data.id;
-
-      const keys = Object.keys(data);
-      if (keys.length === 0) return NextResponse.json({ success: true });
-
-      const values = keys.map((k) => data[k]);
-      const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-      values.push(targetId);
-
-      const res = await queryDb(
-        `UPDATE developers SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, name, email, role, is_active, is_verified, created_at`,
-        values
-      );
-      return NextResponse.json({ success: true, record: res.rows[0], message: 'Developer account updated successfully.' });
     }
 
-    return NextResponse.json({ success: false, error: 'Unknown action.' }, { status: 400 });
+    if (data.is_active === false || data.isActive === false) {
+      const guard = await checkLastActiveAdminGuard(targetId, true);
+      if (guard) {
+        return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
+      }
+    }
+
+    // Handle optional password update
+    if (data.password && data.password.trim()) {
+      data.password = await hashPassword(data.password.trim());
+    } else {
+      delete data.password;
+    }
+
+    delete data.id;
+    delete data.adminId;
+    delete data.action;
+
+    const keys = Object.keys(data);
+    if (keys.length === 0) return NextResponse.json({ success: true });
+
+    const values = keys.map((k) => data[k]);
+    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
+    values.push(targetId);
+
+    const res = await queryDb(
+      `UPDATE developers SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, name, email, role, is_active, is_verified, created_at`,
+      values
+    );
+    return NextResponse.json({ success: true, record: res.rows[0], message: 'Developer account updated successfully.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

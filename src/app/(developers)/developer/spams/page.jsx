@@ -29,11 +29,18 @@ export default function AdminSpamModerationPage() {
 
   const handleAction = async (action, spamId) => {
     try {
-      await fetch('/api/developer/spams', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, spamId }),
-      });
+      if (action === 'delete_spam') {
+        await fetch(`/api/developer/spams?id=${spamId}`, {
+          method: 'DELETE',
+        });
+      } else {
+        const status = action === 'block_spam' ? 'BLOCKED' : 'RESOLVED';
+        await fetch('/api/developer/spams', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ spamId, status }),
+        });
+      }
       fetchSpams();
     } catch (err) {
       console.error(err);

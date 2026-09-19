@@ -104,6 +104,20 @@ export default function Sidebar({ isOpen, onClose }) {
               Packages
             </Link>
             <Link
+              href="/updates"
+              onClick={onClose}
+              className="px-3 py-2 rounded-lg font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition-colors"
+            >
+              Updates
+            </Link>
+            <Link
+              href="/faqs"
+              onClick={onClose}
+              className="px-3 py-2 rounded-lg font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition-colors"
+            >
+              FAQs
+            </Link>
+            <Link
               href="/contact"
               onClick={onClose}
               className="px-3 py-2 rounded-lg font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition-colors"

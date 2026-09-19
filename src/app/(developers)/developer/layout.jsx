@@ -13,12 +13,12 @@ export const ROLE_PERMISSIONS = {
     'overview', 'developers', 'team', 'creators', 'users', 'websites',
     'blogs', 'themes', 'packages', 'features', 'payments', 'subscriptions',
     'live-chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
-    'leads', 'subscribers', 'apps', 'profile', 'settings'
+    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
     'payments', 'subscriptions', 'live-chats', 'contacts', 'support',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings'
+    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',

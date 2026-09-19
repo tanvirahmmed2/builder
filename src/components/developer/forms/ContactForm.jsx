@@ -24,10 +24,7 @@ export default function ContactForm({ onSuccess, onCancel, apiEndpoint = '/api/d
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_record',
-          data: formData,
-        }),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {

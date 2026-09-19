@@ -112,19 +112,39 @@ export async function POST(request) {
 
     const body = await request.json();
     const { action } = body;
-    const targetId = body.id || body.adminId;
+    // POST is strictly for creating developer/admin account
+    const newAdmin = await handleCreateAdmin(body.data || body.adminData || body);
 
-    if (action === 'delete_record' || action === 'delete') {
-      const guard = await checkLastActiveAdminGuard(targetId, true);
-      if (guard) {
-        return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
-      }
+    return NextResponse.json({
+      success: true,
+      admin: newAdmin,
+      record: newAdmin,
+      message: 'Admin account created successfully. Verification code sent via email.',
+    });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
 
-      await queryDb('DELETE FROM developers WHERE id = $1', [targetId]);
-      return NextResponse.json({ success: true, message: 'Developer account deleted successfully.' });
+export async function PUT(request) {
+  try {
+    const authCheck = await isAdmin(request);
+    if (!authCheck.success) {
+      return NextResponse.json(
+        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { status: authCheck.status || 403 }
+      );
     }
 
-    if (action === 'change_role' || action === 'update_role') {
+    const body = await request.json();
+    const targetId = body.id || body.adminId;
+    if (!targetId) {
+      return NextResponse.json({ success: false, error: 'Target admin ID is required.' }, { status: 400 });
+    }
+
+    const action = body.action;
+
+    if (action === 'change_role' || body.role) {
       const rawRole = body.role || body.newRole;
       const cleanRole = (rawRole || '').toLowerCase().trim();
 
@@ -149,7 +169,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true, record: res.rows[0], message: `Role updated to ${cleanRole}.` });
     }
 
-    if (action === 'toggle_status' || action === 'update_status') {
+    if (action === 'toggle_status' || body.is_active !== undefined) {
       let nextActive = body.is_active;
       if (nextActive === undefined) {
         const currentRes = await queryDb('SELECT is_active FROM developers WHERE id = $1 LIMIT 1', [targetId]);
@@ -173,62 +193,38 @@ export async function POST(request) {
       return NextResponse.json({ success: true, record: res.rows[0], message: `Status updated to ${nextActive ? 'Active' : 'Inactive'}.` });
     }
 
-    if (action === 'update_record' || action === 'update') {
-      const data = { ...(body.data || {}) };
+    // Generic Update
+    const data = { ...(body.data || body) };
+    delete data.id;
+    delete data.adminId;
+    delete data.action;
 
-      if (data.role) {
-        const cleanRole = data.role.toLowerCase().trim();
-        if (!ALLOWED_ROLES.has(cleanRole)) {
-          return NextResponse.json(
-            { success: false, error: `Invalid role "${data.role}". Allowed roles: admin, manager, support, developer, marketer.` },
-            { status: 400 }
-          );
-        }
-        data.role = cleanRole;
-        if (cleanRole !== 'admin') {
-          const guard = await checkLastActiveAdminGuard(targetId, true);
-          if (guard) {
-            return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
-          }
-        }
+    if (data.role) {
+      const cleanRole = data.role.toLowerCase().trim();
+      if (!ALLOWED_ROLES.has(cleanRole)) {
+        return NextResponse.json({ success: false, error: `Invalid role "${data.role}".` }, { status: 400 });
       }
-
-      if (data.is_active === false || data.isActive === false) {
-        const guard = await checkLastActiveAdminGuard(targetId, true);
-        if (guard) {
-          return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
-        }
-      }
-
-      if (data.password && data.password.trim()) {
-        data.password = await hashPassword(data.password.trim());
-      } else {
-        delete data.password;
-      }
-
-      delete data.id;
-
-      const keys = Object.keys(data);
-      if (keys.length === 0) return NextResponse.json({ success: true });
-      const values = keys.map((k) => data[k]);
-      const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-      values.push(targetId);
-      const res = await queryDb(
-        `UPDATE developers SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, name, email, role, is_active, is_verified, created_at`,
-        values
-      );
-      return NextResponse.json({ success: true, record: res.rows[0], message: 'Developer account updated successfully.' });
+      data.role = cleanRole;
     }
 
-    // Default: create admin
-    const data = body.data || body.adminData || body;
-    const admin = await handleCreateAdmin(data);
-    return NextResponse.json({
-      success: true,
-      admin,
-      record: admin,
-      message: 'Admin account created successfully. Verification code sent via email.',
-    });
+    if (data.password && data.password.trim()) {
+      data.password = await hashPassword(data.password.trim());
+    } else {
+      delete data.password;
+    }
+
+    const keys = Object.keys(data);
+    if (keys.length === 0) return NextResponse.json({ success: true });
+
+    const values = keys.map((k) => data[k]);
+    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
+    values.push(targetId);
+
+    const res = await queryDb(
+      `UPDATE developers SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, name, email, role, is_active, is_verified, created_at`,
+      values
+    );
+    return NextResponse.json({ success: true, record: res.rows[0], message: 'Developer account updated successfully.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }

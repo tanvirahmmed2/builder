@@ -27,10 +27,7 @@ export default function ThemeForm({ onSuccess, onCancel }) {
       const res = await fetch('/api/developer/themes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create_record',
-          data: { ...formData, slug },
-        }),
+        body: JSON.stringify({ ...formData, slug }),
       });
       const data = await res.json();
       if (data.success) {

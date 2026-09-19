@@ -34,10 +34,8 @@ export default function AdminLiveChatsPage() {
     if (!confirm('Are you sure you want to delete this live chat session?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/live_chats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_record', id }),
+      const res = await fetch(`/api/developer/live_chats?id=${id}`, {
+        method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {

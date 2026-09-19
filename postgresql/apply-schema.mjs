@@ -1,168 +1,126 @@
+import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function loadEnv() {
-  const envPath = path.resolve(__dirname, '../.env');
-  if (fs.existsSync(envPath)) {
-    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const idx = trimmed.indexOf('=');
-      if (idx !== -1) {
-        const key = trimmed.slice(0, idx).trim();
-        let val = trimmed.slice(idx + 1).trim();
-        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-          val = val.slice(1, -1);
-        }
-        if (!process.env[key]) {
-          process.env[key] = val;
-        }
+// Read .env file manually
+const envPath = path.resolve(__dirname, '../.env');
+const envConfig = {};
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx !== -1) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      let val = trimmed.slice(eqIdx + 1).trim();
+      if ((val.startsWith("'") && val.endsWith("'")) || (val.startsWith('"') && val.endsWith('"'))) {
+        val = val.slice(1, -1);
       }
+      envConfig[key] = val;
     }
-  }
+  });
 }
 
-loadEnv();
-
-const { Pool } = pg;
-
 const pool = new Pool({
-  host: process.env.PG_HOST || 'aws-0-ap-southeast-1.pooler.supabase.com',
-  port: process.env.PG_PORT ? Number(process.env.PG_PORT) : 6543,
-  database: process.env.PG_DATABASE || 'postgres',
-  user: process.env.PG_USER || 'postgres.odqqmjjlycdtouwgebyu',
-  password: process.env.PG_PASSWORD,
+  host: envConfig.PG_HOST || process.env.PG_HOST,
+  port: envConfig.PG_PORT ? Number(envConfig.PG_PORT) : 5432,
+  database: envConfig.PG_DATABASE || process.env.PG_DATABASE,
+  user: envConfig.PG_USER || process.env.PG_USER,
+  password: envConfig.PG_PASSWORD || process.env.PG_PASSWORD,
   ssl: { rejectUnauthorized: false },
 });
 
-async function main() {
+async function migrate() {
+  console.log('Connecting to PostgreSQL database...');
   const client = await pool.connect();
-  console.log('Connected to PostgreSQL successfully.');
 
   try {
-    // 1. Check if 'admin' table exists and 'developers' does not
-    const tableCheckRes = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_name IN ('admin', 'developers');
+    console.log('Applying trigger_set_timestamp function if not exists...');
+    await client.query(`
+      CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          NEW.updated_at = CURRENT_TIMESTAMP;
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
     `);
 
-    const existingTables = tableCheckRes.rows.map((r) => r.table_name);
-    console.log('Existing target tables:', existingTables);
-
-    if (existingTables.includes('admin') && !existingTables.includes('developers')) {
-      console.log('Renaming table "admin" -> "developers"...');
-      await client.query('ALTER TABLE admin RENAME TO developers;');
-      console.log('Renamed table "admin" to "developers".');
-    }
-
-    // 2. Ensure indexes & triggers for developers table
+    console.log('Creating faqs table and trigger...');
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_developers_email ON developers (email);
-      DROP TRIGGER IF EXISTS trg_admin_updated_at ON developers;
-      DROP TRIGGER IF EXISTS trg_developers_updated_at ON developers;
-      CREATE TRIGGER trg_developers_updated_at
-      BEFORE UPDATE ON developers
+      CREATE TABLE IF NOT EXISTS faqs (
+          id SERIAL PRIMARY KEY,
+          question TEXT NOT NULL,
+          answer TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
+      CREATE TRIGGER trg_faqs_updated_at
+      BEFORE UPDATE ON faqs
       FOR EACH ROW
       EXECUTE FUNCTION trigger_set_timestamp();
     `);
 
-    // 3. Migrate and remove all admin_id columns from tables
-    console.log('Migrating and removing admin_id columns...');
+    console.log('Creating updates table, indexes and trigger...');
     await client.query(`
-      -- session table
-      ALTER TABLE session ADD COLUMN IF NOT EXISTS developer_id INTEGER REFERENCES developers(id) ON DELETE CASCADE;
-      DO $$ 
-      BEGIN 
-        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'session' AND column_name = 'admin_id') THEN
-          UPDATE session SET developer_id = admin_id WHERE developer_id IS NULL AND admin_id IS NOT NULL;
-          ALTER TABLE session DROP COLUMN admin_id CASCADE;
-        END IF;
-      END $$;
-      CREATE INDEX IF NOT EXISTS idx_session_developer_id ON session (developer_id);
+      CREATE TABLE IF NOT EXISTS updates (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
 
-      -- login_activity table
-      ALTER TABLE login_activity ADD COLUMN IF NOT EXISTS developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL;
-      DO $$ 
-      BEGIN 
-        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'login_activity' AND column_name = 'admin_id') THEN
-          UPDATE login_activity SET developer_id = admin_id WHERE developer_id IS NULL AND admin_id IS NOT NULL;
-          ALTER TABLE login_activity DROP COLUMN admin_id CASCADE;
-        END IF;
-      END $$;
-      CREATE INDEX IF NOT EXISTS idx_login_activity_developer_id ON login_activity (developer_id);
+      CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
+      CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
 
-      -- contacts table
-      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS replied_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL;
-      DO $$ 
-      BEGIN 
-        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'contacts' AND column_name = 'replied_by_admin_id') THEN
-          UPDATE contacts SET replied_by_developer_id = replied_by_admin_id WHERE replied_by_developer_id IS NULL;
-          ALTER TABLE contacts DROP COLUMN replied_by_admin_id CASCADE;
-        END IF;
-      END $$;
-
-      -- support table
-      ALTER TABLE support ADD COLUMN IF NOT EXISTS assigned_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL;
-      DO $$ 
-      BEGIN 
-        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'support' AND column_name = 'assigned_admin_id') THEN
-          UPDATE support SET assigned_developer_id = assigned_admin_id WHERE assigned_developer_id IS NULL;
-          ALTER TABLE support DROP COLUMN assigned_admin_id CASCADE;
-        END IF;
-      END $$;
-
-      -- reports table
-      ALTER TABLE reports ADD COLUMN IF NOT EXISTS resolved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL;
-      DO $$ 
-      BEGIN 
-        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'reports' AND column_name = 'resolved_by_admin_id') THEN
-          UPDATE reports SET resolved_by_developer_id = resolved_by_admin_id WHERE resolved_by_developer_id IS NULL;
-          ALTER TABLE reports DROP COLUMN resolved_by_admin_id CASCADE;
-        END IF;
-      END $$;
-
-      -- apps table is_published
-      ALTER TABLE apps ADD COLUMN IF NOT EXISTS is_published BOOLEAN NOT NULL DEFAULT FALSE;
-      CREATE INDEX IF NOT EXISTS idx_apps_published ON apps (is_published);
+      DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
+      CREATE TRIGGER trg_updates_updated_at
+      BEFORE UPDATE ON updates
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
     `);
 
-    // 4. Update check constraint on developers role if needed
-    try {
+    // Check if initial faqs exist, if not seed some helpful starter FAQs
+    const faqsCount = await client.query('SELECT COUNT(*)::int AS count FROM faqs');
+    if (faqsCount.rows[0].count === 0) {
+      console.log('Seeding initial FAQs...');
       await client.query(`
-        ALTER TABLE developers DROP CONSTRAINT IF EXISTS developers_role_check;
-        ALTER TABLE developers ADD CONSTRAINT developers_role_check 
-        CHECK (role IN ('admin', 'manager', 'support', 'developer', 'marketer'));
-        ALTER TABLE developers ALTER COLUMN role SET DEFAULT 'developer';
+        INSERT INTO faqs (question, answer) VALUES
+        ('How do I build my portfolio using this platform?', 'You can choose from our professionally crafted themes or start from a blank canvas. Use our visual drag-and-drop studio to customize sections, typography, images, and projects in real time, then publish with a single click.'),
+        ('Can I connect my own custom domain?', 'Yes! Depending on your subscription package, you can connect your own custom domain (e.g., yourname.com) with complimentary automatic SSL certificate provisioning.'),
+        ('How does the multi-website management work?', 'Creators can design, publish, and manage multiple distinct portfolio websites from a single centralized dashboard, each with its own subdomain, visitor analytics, and theme settings.'),
+        ('Can I receive client inquiries and booking requests directly?', 'Yes, each portfolio can have built-in contact forms and support modules that route inquiries straight to your creator portal and email notifications.')
       `);
-    } catch (e) {
-      console.warn('Notice updating role constraint:', e.message);
     }
 
-    // 5. Read and apply schema.psql
-    const schemaSql = fs.readFileSync(path.resolve(__dirname, 'schema.psql'), 'utf8');
-    console.log('Applying schema.psql...');
-    await client.query(schemaSql);
-    console.log('Successfully applied schema.psql.');
+    // Check if initial updates exist, if not seed initial product updates
+    const updatesCount = await client.query('SELECT COUNT(*)::int AS count FROM updates');
+    if (updatesCount.rows[0].count === 0) {
+      console.log('Seeding initial Updates...');
+      await client.query(`
+        INSERT INTO updates (title, slug, description) VALUES
+        ('Platform 2.0: Instant Canvas Studio & Live Previews', 'platform-2-instant-canvas-studio', '<h2>Exciting Platform Upgrades</h2><p>We are thrilled to unveil our revamped <strong>Visual Canvas Studio</strong>! This major milestone delivers zero-latency visual editing, real-time responsive previews across mobile and desktop, and streamlined asset uploads.</p><ul><li>Instant drag-and-drop reordering</li><li>Adaptive color palette generation</li><li>Sub-second live preview reloads</li></ul><p>Explore the new studio now in your creator workspace.</p>'),
+        ('Custom Domain Automation with Edge SSL', 'custom-domain-automation-edge-ssl', '<h2>Frictionless Custom Domains</h2><p>Connecting your bespoke branded domain to your portfolio builder has never been simpler. Our upgraded DNS validation engine now automatically detects domain records and provisions edge SSL certificates in under 60 seconds.</p><p>Check your website settings to connect your brand domain today.</p>')
+      `);
+    }
 
-    // 6. Verify developers table records
-    const devRes = await client.query('SELECT id, name, email, role, is_active FROM developers;');
-    console.log('Current records in developers table:', devRes.rows);
-
-    console.log('Migration completed successfully.');
+    console.log('Migration completed successfully!');
+  } catch (err) {
+    console.error('Migration failed:', err);
+    process.exit(1);
   } finally {
     client.release();
     await pool.end();
   }
 }
 
-main().catch((err) => {
-  console.error('Migration error:', err);
-  process.exit(1);
-});
+migrate();

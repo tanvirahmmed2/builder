@@ -31,9 +31,9 @@ export default function AdminCreatorsPage() {
     const nextRole = currentRole === 'creator' ? 'manager' : 'creator';
     try {
       await fetch('/api/developer/creators', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_creator_role', creatorId, role: nextRole }),
+        body: JSON.stringify({ creatorId, role: nextRole }),
       });
       fetchCreators();
     } catch (err) {
