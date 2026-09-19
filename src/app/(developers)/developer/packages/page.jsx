@@ -48,6 +48,8 @@ export default function AdminPackagesPage() {
     fetchPackages();
   }, []);
 
+
+  
   const handleEditClick = (pkg) => {
     setEditingPackage(pkg);
     setShowForm(true);
