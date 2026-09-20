@@ -30,7 +30,14 @@ export default function CreatorNavbar({
   const primaryWebsite = websites[0] || null;
   const hasActiveSub = Boolean(activeSubscription && activeSubscription.status === 'ACTIVE');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch (_) {}
     router.push('/creator/login');
   };
 
@@ -52,13 +59,9 @@ export default function CreatorNavbar({
             href={`/creator/${creatorId}`}
             className="text-lg font-bold text-slate-900 flex items-center gap-2 group"
           >
-            <span className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs group-hover:bg-slate-800 transition-colors shadow-xs">
-              CP
-            </span>
             <span className="hidden sm:inline font-bold tracking-tight">Creator Studio</span>
           </Link>
 
-          {/* Website Switcher Dropdown */}
           {websites.length > 0 && (
             <div className="relative hidden md:block">
               <button

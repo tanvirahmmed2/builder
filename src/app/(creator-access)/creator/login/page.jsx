@@ -11,11 +11,17 @@ export default function CreatorLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setIsUnverified(false);
+    setResendMsg('');
 
     try {
       const res = await fetch('/api/creator', {
@@ -32,11 +38,42 @@ export default function CreatorLoginPage() {
         router.push(`/creator/${data.creator.id}`);
       } else {
         setError(data.error || 'Authentication failed. Check your email and password.');
+        if (data.unverified) {
+          setIsUnverified(true);
+          setUnverifiedEmail(data.email || email);
+        }
       }
     } catch (err) {
       setError('Server error during sign in.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    const targetEmail = unverifiedEmail || email;
+    if (!targetEmail) return;
+    setResending(true);
+    setResendMsg('');
+    try {
+      const res = await fetch('/api/creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'resend_verification',
+          email: targetEmail,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResendMsg(data.message || 'Verification email sent! Check your inbox.');
+      } else {
+        setError(data.error || 'Failed to resend verification link.');
+      }
+    } catch (_) {
+      setError('Network error while resending verification email.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -51,9 +88,32 @@ export default function CreatorLoginPage() {
           </p>
         </div>
 
+        {resendMsg && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+            {resendMsg}
+          </div>
+        )}
+
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-            {error}
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold space-y-2">
+            <p>{error}</p>
+            {isUnverified && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="w-full py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-[11px]"
+              >
+                {resending ? (
+                  <>
+                    <BiLoaderAlt className="animate-spin text-xs" />
+                    <span>Resending link...</span>
+                  </>
+                ) : (
+                  <span>Resend Verification Email →</span>
+                )}
+              </button>
+            )}
           </div>
         )}
 

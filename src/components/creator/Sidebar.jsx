@@ -70,7 +70,14 @@ export default function CreatorSidebar({
     return pathname.startsWith(fullHref);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch (_) {}
     router.push('/creator/login');
   };
 
@@ -79,14 +86,9 @@ export default function CreatorSidebar({
       {/* Top Header */}
       <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
         <Link href={basePath} className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs">
-            CP
-          </div>
+          
           <div className="flex flex-col">
             <span className="text-xs font-bold text-slate-900 leading-tight">Creator Portal</span>
-            <span className="text-[10px] text-slate-500 font-semibold leading-none">
-              {activeSubscription?.package_name || 'Active Workspace'}
-            </span>
           </div>
         </Link>
 

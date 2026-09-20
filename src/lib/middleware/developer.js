@@ -6,9 +6,6 @@ import { JWT_SECRET, ADMIN_TOKEN } from '../db/secret.js';
 
 export const ADMIN_COOKIE_NAME = ADMIN_TOKEN;
 
-// ============================================================================
-// PASSWORD & TOKEN UTILITIES
-// ============================================================================
 
 export async function hashPassword(password) {
   if (!password) return '';

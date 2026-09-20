@@ -1,10 +1,10 @@
-import { SITE_NAME } from '@/lib/db/secret';
+import { redirect } from 'next/navigation';
+import { getCreatorSession } from '@/lib/middleware/creator';
 
-export const metadata = {
-  title: `Checkout & Select Plan | ${SITE_NAME}`,
-  description: `Choose your portfolio creator package and launch your custom website on ${SITE_NAME}.`,
-};
-
-export default function CheckoutLayout({ children }) {
+export default async function CreatorCheckoutLayout({ children }) {
+  const session = await getCreatorSession();
+  if (!session || session.isActive === false || session.isVerified === false) {
+    redirect('/creator/login');
+  }
   return <>{children}</>;
 }

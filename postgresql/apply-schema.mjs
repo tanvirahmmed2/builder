@@ -125,7 +125,7 @@ async function migrate() {
           bio TEXT,
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
           is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-          verification_code VARCHAR(10),
+          verification_code VARCHAR(255),
           verification_expires_at TIMESTAMPTZ,
           two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
           two_factor_secret VARCHAR(255),
@@ -138,6 +138,8 @@ async function migrate() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE creators ALTER COLUMN verification_code TYPE VARCHAR(255);
 
       CREATE INDEX IF NOT EXISTS idx_creators_email ON creators (email);
 

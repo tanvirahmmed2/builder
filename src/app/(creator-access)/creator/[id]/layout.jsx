@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, use } from 'react';
-import { useParams } from 'next/navigation';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import CreatorNavbar from '@/components/creator/Navbar';
 import CreatorSidebar from '@/components/creator/Sidebar';
 import { BiLoaderAlt, BiPlus, BiX, BiDesktop, BiCheckCircle } from 'react-icons/bi';
@@ -17,6 +17,7 @@ export function useCreator() {
 }
 
 export default function CreatorLayout({ children, params }) {
+  const router = useRouter();
   const routeParams = useParams();
   const creatorId = routeParams?.id || (params && typeof params.then !== 'function' ? params.id : '1');
 
@@ -47,15 +48,22 @@ export default function CreatorLayout({ children, params }) {
     try {
       const res = await fetch(`/api/creator?creatorId=${creatorId}`);
       const json = await res.json();
-      if (json.success) {
+      if (json.success && json.creator) {
+        if (Number(creatorId) !== json.creator.id) {
+          router.push(`/creator/${json.creator.id}`);
+          return;
+        }
         setData(json);
+      } else {
+        router.push('/creator/login');
       }
     } catch (err) {
       console.error('Error fetching creator data:', err);
+      router.push('/creator/login');
     } finally {
       setLoading(false);
     }
-  }, [creatorId]);
+  }, [creatorId, router]);
 
   useEffect(() => {
     let ignore = false;
@@ -63,8 +71,14 @@ export default function CreatorLayout({ children, params }) {
       .then((res) => res.json())
       .then((json) => {
         if (!ignore) {
-          if (json.success) {
+          if (json.success && json.creator) {
+            if (Number(creatorId) !== json.creator.id) {
+              router.push(`/creator/${json.creator.id}`);
+              return;
+            }
             setData(json);
+          } else {
+            router.push('/creator/login');
           }
           setLoading(false);
         }
@@ -72,6 +86,7 @@ export default function CreatorLayout({ children, params }) {
       .catch((err) => {
         if (!ignore) {
           console.error('Error fetching creator data:', err);
+          router.push('/creator/login');
           setLoading(false);
         }
       });
@@ -79,7 +94,7 @@ export default function CreatorLayout({ children, params }) {
     return () => {
       ignore = true;
     };
-  }, [creatorId]);
+  }, [creatorId, router]);
 
   const handleCreateWebsite = async (e) => {
     e.preventDefault();
