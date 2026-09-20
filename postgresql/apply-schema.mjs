@@ -338,6 +338,12 @@ async function migrate() {
       EXECUTE FUNCTION trigger_set_timestamp();
     `);
 
+    console.log('Ensuring support table has creator_id foreign key and index...');
+    await client.query(`
+      ALTER TABLE support ADD COLUMN IF NOT EXISTS creator_id INTEGER REFERENCES creators(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS idx_support_creator ON support (creator_id);
+    `);
+
     console.log('Migration completed successfully!');
   } catch (err) {
     console.error('Migration failed:', err);

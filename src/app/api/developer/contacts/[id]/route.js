@@ -1,0 +1,86 @@
+import { NextResponse } from 'next/server';
+import { queryDb } from '@/lib/db/pg';
+import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+
+// GET SINGLE CONTACT DETAILS
+export async function GET(request, context) {
+  try {
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+    }
+
+    const params = await context?.params;
+    const id = params?.id;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Contact ID is required.' }, { status: 400 });
+    }
+
+    const res = await queryDb(`
+      SELECT 
+        c.id,
+        c.name,
+        c.email,
+        c.subject,
+        c.message,
+        c.status,
+        c.reply,
+        c.replied_by_developer_id,
+        c.created_at,
+        c.updated_at,
+        d.name AS replied_by_name,
+        d.email AS replied_by_email,
+        d.role AS replied_by_role
+      FROM contacts c
+      LEFT JOIN developers d ON c.replied_by_developer_id = d.id
+      WHERE c.id = $1
+      LIMIT 1
+    `, [id]);
+
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Contact inquiry not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      contact: res.rows[0],
+      record: res.rows[0],
+      currentUserRole: auth.staff?.role || 'staff',
+    });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE SINGLE CONTACT (Admin and Manager only)
+export async function DELETE(request, context) {
+  try {
+    const auth = await isManagerOrAdmin(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Access denied: Only administrators and managers have permission to delete contact inquiries.' 
+        }, 
+        { status: 403 }
+      );
+    }
+
+    const params = await context?.params;
+    const id = params?.id;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Contact ID is required.' }, { status: 400 });
+    }
+
+    const deleteRes = await queryDb('DELETE FROM contacts WHERE id = $1 RETURNING id', [id]);
+    if (deleteRes.rowCount === 0) {
+      return NextResponse.json({ success: false, error: 'Contact inquiry not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Contact inquiry deleted successfully.' });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

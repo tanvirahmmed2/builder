@@ -1,25 +1,22 @@
 'use client';
 
 import { useState, useEffect, useContext, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   BiSearch,
-  BiPlus,
-  BiMinus,
   BiTrash,
   BiRefresh,
   BiEnvelope,
   BiCheckCircle,
   BiTimeFive,
   BiX,
-  BiSend,
   BiCheckShield,
-  BiUser,
-  BiMessageDetail,
 } from 'react-icons/bi';
 import { Context } from '@/components/helper/Context';
-import ContactForm from '@/components/developer/forms/ContactForm';
 
 export default function AdminContactsPage() {
+  const router = useRouter();
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
   const canReply = ['admin', 'manager', 'support'].includes(userRole);
@@ -27,15 +24,9 @@ export default function AdminContactsPage() {
 
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deletingId, setDeletingId] = useState(null);
-
-  // Modal State for viewing & replying
-  const [activeContact, setActiveContact] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const [replySending, setReplySending] = useState(false);
   const [actionNotice, setActionNotice] = useState({ text: '', type: '' });
 
   const notify = (text, type = 'success') => {
@@ -72,15 +63,12 @@ export default function AdminContactsPage() {
 
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/contacts?id=${id}`, {
+      const res = await fetch(`/api/developer/contacts/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
         notify('Contact message deleted successfully.');
-        if (activeContact?.id === id) {
-          setActiveContact(null);
-        }
         fetchContacts();
       } else {
         notify(data.error || 'Failed to delete contact.', 'error');
@@ -90,52 +78,6 @@ export default function AdminContactsPage() {
       notify('Network error deleting contact.', 'error');
     } finally {
       setDeletingId(null);
-    }
-  };
-
-  const handleOpenReplyModal = (contact) => {
-    setActiveContact(contact);
-    setReplyText(contact.reply || '');
-  };
-
-  const handleSendReply = async (e) => {
-    e.preventDefault();
-    if (!canReply) {
-      notify('Permission denied: Support, Manager, or Admin role required to reply.', 'error');
-      return;
-    }
-    if (!replyText.trim()) {
-      notify('Please write a reply message before sending.', 'error');
-      return;
-    }
-
-    setReplySending(true);
-    try {
-      const res = await fetch('/api/developer/contacts/reply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: activeContact.id,
-          reply: replyText.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        notify('Reply sent successfully via email and inquiry marked as Replied!');
-        // Update local state
-        setContacts((prev) =>
-          prev.map((c) => (c.id === activeContact.id ? { ...c, ...data.record } : c))
-        );
-        setActiveContact((prev) => (prev ? { ...prev, ...data.record } : null));
-      } else {
-        notify(data.error || 'Failed to send reply.', 'error');
-      }
-    } catch (err) {
-      console.error('Error sending reply:', err);
-      notify('Network error when sending reply email.', 'error');
-    } finally {
-      setReplySending(false);
     }
   };
 
@@ -162,7 +104,7 @@ export default function AdminContactsPage() {
       {/* Toast Alert */}
       {actionNotice.text && (
         <div
-          className={`p-4 rounded-2xl flex items-center justify-between text-xs font-semibold shadow-sm transition-all ${
+          className={`p-4 rounded-2xl flex items-center justify-between text-xs font-semibold shadow-xs transition-all ${
             actionNotice.type === 'error'
               ? 'bg-rose-50 border border-rose-200 text-rose-800'
               : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
@@ -191,7 +133,7 @@ export default function AdminContactsPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500">
-            View public inquiries, compose mailer email replies, and manage customer communications.
+            View public inquiries, compose mailer email replies on dedicated detail pages, and manage communications.
           </p>
         </div>
 
@@ -199,22 +141,11 @@ export default function AdminContactsPage() {
           <button
             type="button"
             onClick={() => fetchContacts(true)}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-xs font-semibold"
             title="Refresh contacts"
           >
             <BiRefresh className="text-lg" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowForm(!showForm)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              showForm
-                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            }`}
-          >
-            {showForm ? <BiMinus className="text-base" /> : <BiPlus className="text-base" />}
-            <span>{showForm ? 'Close Form' : 'New Entry'}</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
@@ -226,7 +157,7 @@ export default function AdminContactsPage() {
           <span>
             Signed in as <strong className="capitalize text-slate-900">{userRole || 'staff'}</strong>.
             {canReply ? (
-              <span className="text-emerald-700 ml-1">You have authorization to send email replies.</span>
+              <span className="text-emerald-700 ml-1">You have authorization to reply to contact inquiries.</span>
             ) : (
               <span className="text-amber-700 ml-1">Reply permissions require Support, Manager, or Admin role.</span>
             )}
@@ -274,18 +205,6 @@ export default function AdminContactsPage() {
           </div>
         </div>
       </div>
-
-      {showForm && (
-        <ContactForm
-          apiEndpoint="/api/developer/contacts"
-          onSuccess={() => {
-            setShowForm(false);
-            notify('Inquiry record saved.');
-            fetchContacts();
-          }}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
 
       {/* Filter Tabs & Search */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
@@ -356,7 +275,7 @@ export default function AdminContactsPage() {
                   return (
                     <tr
                       key={c.id}
-                      onClick={() => handleOpenReplyModal(c)}
+                      onClick={() => router.push(`/developer/contacts/${c.id}`)}
                       className="hover:bg-slate-50/70 transition-colors cursor-pointer"
                     >
                       <td className="px-4 py-3 font-mono font-bold text-slate-400">#{c.id}</td>
@@ -394,13 +313,12 @@ export default function AdminContactsPage() {
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenReplyModal(c)}
+                          <Link
+                            href={`/developer/contacts/${c.id}`}
                             className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer text-[11px]"
                           >
                             {isReplied ? 'View / Update' : 'Reply'}
-                          </button>
+                          </Link>
 
                           {canDelete && (
                             <button
@@ -423,169 +341,6 @@ export default function AdminContactsPage() {
           </table>
         </div>
       </div>
-
-      {/* Inquiry Detail & Reply Modal */}
-      {activeContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-                  <BiMessageDetail className="text-xl" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-slate-900">Inquiry #{activeContact.id}</h3>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        activeContact.status === 'REPLIED'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}
-                    >
-                      {activeContact.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Received on {new Date(activeContact.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setActiveContact(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              >
-                <BiX className="text-xl" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6">
-              {/* Sender & Contact Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs">
-                <div>
-                  <span className="text-slate-400 font-medium block mb-0.5">Sender Name</span>
-                  <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                    <BiUser className="text-slate-400" />
-                    <span>{activeContact.name}</span>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-medium block mb-0.5">Email Address</span>
-                  <div className="font-mono text-slate-800 text-xs flex items-center gap-1.5">
-                    <BiEnvelope className="text-slate-400" />
-                    <a href={`mailto:${activeContact.email}`} className="text-indigo-600 hover:underline">
-                      {activeContact.email}
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Inquiry Content */}
-              <div>
-                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Subject
-                </span>
-                <h4 className="text-base font-bold text-slate-900 mb-3">{activeContact.subject}</h4>
-
-                <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Message Content
-                </span>
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
-                  {activeContact.message}
-                </div>
-              </div>
-
-              {/* Previous Reply Banner if exists */}
-              {activeContact.reply && (
-                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-xs space-y-2">
-                  <div className="flex items-center justify-between text-emerald-800 font-bold text-[11px]">
-                    <span className="flex items-center gap-1">
-                      <BiCheckCircle className="text-sm" />
-                      <span>Last Reply Sent:</span>
-                    </span>
-                    <span className="font-normal text-emerald-600">
-                      {activeContact.updated_at ? new Date(activeContact.updated_at).toLocaleString() : ''}
-                    </span>
-                  </div>
-                  <div className="text-slate-700 leading-relaxed whitespace-pre-wrap bg-white/80 p-3 rounded-xl border border-emerald-100 font-normal">
-                    {activeContact.reply}
-                  </div>
-                  {activeContact.replied_by_name && (
-                    <div className="text-[11px] text-emerald-700">
-                      Replied by: <strong>{activeContact.replied_by_name}</strong> ({activeContact.replied_by_role || 'Staff'})
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Reply Composer */}
-              <form onSubmit={handleSendReply} className="space-y-4 pt-2">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-bold text-slate-800">
-                      {activeContact.reply ? 'Send New Email Response' : 'Write Response via Mailer'}
-                    </label>
-                    <span className="text-[11px] text-slate-400">
-                      Recipient: <strong className="text-slate-700 font-mono">{activeContact.email}</strong>
-                    </span>
-                  </div>
-                  <textarea
-                    rows={4}
-                    required
-                    disabled={!canReply || replySending}
-                    placeholder={
-                      canReply
-                        ? 'Type your official reply here. Submitting will email the user and update status to Replied...'
-                        : 'Your current account role does not have permission to send replies.'
-                    }
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition-all disabled:opacity-60 disabled:cursor-not-allowed leading-relaxed"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-2">
-                  <div>
-                    {canDelete && (
-                      <button
-                        type="button"
-                        disabled={deletingId === activeContact.id}
-                        onClick={() => handleDelete(activeContact.id)}
-                        className="flex items-center gap-1 text-rose-600 hover:text-rose-800 text-xs font-semibold py-2 px-3 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
-                      >
-                        <BiTrash className="text-base" />
-                        <span>Delete Inquiry</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveContact(null)}
-                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
-                    >
-                      Close
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!canReply || replySending || !replyText.trim()}
-                      className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs disabled:opacity-50 transition-all cursor-pointer"
-                    >
-                      <BiSend className="text-base" />
-                      <span>{replySending ? 'Sending Email...' : 'Send Reply via Email'}</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

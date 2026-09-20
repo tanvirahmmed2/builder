@@ -10,6 +10,43 @@ export async function GET(request) {
       return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      const singleRes = await queryDb(`
+        SELECT 
+          c.id,
+          c.name,
+          c.email,
+          c.subject,
+          c.message,
+          c.status,
+          c.reply,
+          c.replied_by_developer_id,
+          c.created_at,
+          c.updated_at,
+          d.name AS replied_by_name,
+          d.email AS replied_by_email,
+          d.role AS replied_by_role
+        FROM contacts c
+        LEFT JOIN developers d ON c.replied_by_developer_id = d.id
+        WHERE c.id = $1
+        LIMIT 1
+      `, [id]);
+
+      if (singleRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Contact inquiry not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        contact: singleRes.rows[0], 
+        record: singleRes.rows[0],
+        currentUserRole: auth.staff?.role || 'staff'
+      });
+    }
+
     const res = await queryDb(`
       SELECT 
         c.id,
@@ -41,38 +78,12 @@ export async function GET(request) {
   }
 }
 
-// CREATE CONTACT (Staff manual creation)
-export async function POST(request) {
-  try {
-    const auth = await authenticateStaff(request);
-    if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const data = body.data || body;
-    const name = data.name?.trim();
-    const email = data.email?.trim()?.toLowerCase();
-    const subject = data.subject?.trim() || 'General Inquiry';
-    const message = data.message?.trim();
-    const status = data.status || 'NEW';
-    const reply = data.reply || data.admin_reply || null;
-
-    if (!name || !email || !message) {
-      return NextResponse.json({ success: false, error: 'Name, email, and message are required.' }, { status: 400 });
-    }
-
-    const res = await queryDb(
-      `INSERT INTO contacts (name, email, subject, message, status, reply, replied_by_developer_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [name, email, subject, message, status, reply, reply ? auth.staff.id : null]
-    );
-
-    return NextResponse.json({ success: true, record: res.rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
-  }
+// POST is disabled: Contacts must originate exclusively from public visitors on the contact page
+export async function POST() {
+  return NextResponse.json(
+    { success: false, error: 'Manual contact creation is disabled. Contacts can only be submitted via the public contact page.' },
+    { status: 405 }
+  );
 }
 
 // UPDATE CONTACT (Staff update)

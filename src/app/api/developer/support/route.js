@@ -1,81 +1,169 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
+import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
 
-export async function GET() {
+// GET ALL SUPPORT TICKETS (Staff access)
+export async function GET(request) {
   try {
-    const res = await queryDb('SELECT * FROM support ORDER BY id DESC').catch(() => ({ rows: [] }));
-    return NextResponse.json({ success: true, table: 'support', records: res.rows });
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+    const priorityParam = searchParams.get('priority');
+
+    let whereClauses = [];
+    let queryParams = [];
+
+    if (statusParam && statusParam !== 'ALL') {
+      queryParams.push(statusParam);
+      whereClauses.push(`s.status = $${queryParams.length}`);
+    }
+
+    if (priorityParam && priorityParam !== 'ALL') {
+      queryParams.push(priorityParam);
+      whereClauses.push(`s.priority = $${queryParams.length}`);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const res = await queryDb(`
+      SELECT 
+        s.id,
+        s.ticket_number,
+        s.creator_id,
+        s.requester_name,
+        s.requester_email,
+        s.subject,
+        s.category,
+        s.priority,
+        s.status,
+        s.assigned_developer_id,
+        s.created_at,
+        s.updated_at,
+        c.name AS creator_name,
+        c.avatar_url AS creator_avatar,
+        d.name AS assigned_developer_name,
+        d.role AS assigned_developer_role,
+        (SELECT COUNT(*)::int FROM support_messages WHERE support_id = s.id) AS message_count,
+        (
+          SELECT message FROM support_messages 
+          WHERE support_id = s.id 
+          ORDER BY created_at DESC LIMIT 1
+        ) AS last_message,
+        (
+          SELECT created_at FROM support_messages 
+          WHERE support_id = s.id 
+          ORDER BY created_at DESC LIMIT 1
+        ) AS last_message_at
+      FROM support s
+      LEFT JOIN creators c ON s.creator_id = c.id
+      LEFT JOIN developers d ON s.assigned_developer_id = d.id
+      ${whereSql}
+      ORDER BY s.updated_at DESC
+    `, queryParams).catch(() => ({ rows: [] }));
+
+    // Calculate stats
+    const statsRes = await queryDb(`
+      SELECT 
+        COUNT(*)::int AS total,
+        COUNT(CASE WHEN status = 'OPEN' THEN 1 END)::int AS open,
+        COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END)::int AS in_progress,
+        COUNT(CASE WHEN status = 'RESOLVED' THEN 1 END)::int AS resolved,
+        COUNT(CASE WHEN status = 'CLOSED' THEN 1 END)::int AS closed
+      FROM support
+    `).catch(() => ({ rows: [{ total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 }] }));
+
+    return NextResponse.json({
+      success: true,
+      records: res.rows,
+      tickets: res.rows,
+      stats: statsRes.rows[0],
+      currentUserRole: auth.staff?.role || 'staff',
+    });
   } catch (error) {
+    console.error('Developer support GET error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// CREATE SUPPORT TICKET OR MESSAGE
-export async function POST(request) {
-  try {
-    const body = await request.json();
-
-    if (body.table === 'support_messages' || (body.data && body.data.support_id)) {
-      const data = body.data || body;
-      const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'table' && k !== 'action');
-      const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-      const placeholders = keys.map((_, i) => '$' + (i + 1));
-      const res = await queryDb(
-        `INSERT INTO support_messages (${keys.map((k) => `"${k}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-        values
-      );
-      return NextResponse.json({ success: true, record: res.rows[0] });
-    }
-
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const placeholders = keys.map((_, i) => '$' + (i + 1));
-    const res = await queryDb(
-      `INSERT INTO support (${keys.map((k) => `"${k}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, record: res.rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
-  }
-}
-
-// UPDATE SUPPORT TICKET
+// UPDATE SUPPORT TICKET STATUS / ASSIGNMENT / PRIORITY
 export async function PUT(request) {
   try {
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const id = body.id || body.data?.id;
-    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action' && k !== 'table');
-    if (keys.length === 0) return NextResponse.json({ success: true });
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-    values.push(id);
-    const res = await queryDb(
-      `UPDATE support SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, record: res.rows[0] });
+    const id = body.id || body.ticketId;
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Ticket ID is required.' }, { status: 400 });
+    }
+
+    const status = body.status;
+    const priority = body.priority;
+    const assignedDeveloperId = body.assigned_developer_id !== undefined ? body.assigned_developer_id : undefined;
+
+    const res = await queryDb(`
+      UPDATE support
+      SET status = COALESCE($1, status),
+          priority = COALESCE($2, priority),
+          assigned_developer_id = CASE WHEN $3::text IS NOT NULL THEN $4::int ELSE assigned_developer_id END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING *
+    `, [
+      status || null,
+      priority || null,
+      assignedDeveloperId !== undefined ? 'SET' : null,
+      assignedDeveloperId !== undefined ? (assignedDeveloperId ? Number(assignedDeveloperId) : null) : null,
+      id
+    ]);
+
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Support ticket not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, record: res.rows[0], ticket: res.rows[0] });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    console.error('Developer support PUT error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// DELETE SUPPORT TICKET
+// DELETE SUPPORT TICKET (Admin and Manager only)
 export async function DELETE(request) {
   try {
+    const auth = await isManagerOrAdmin(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied: Only administrators and managers can delete support tickets.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
     if (!id) {
       const body = await request.json().catch(() => ({}));
       id = body.id;
     }
-    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
-    await queryDb('DELETE FROM support WHERE id = $1', [id]);
-    return NextResponse.json({ success: true });
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID is required.' }, { status: 400 });
+    }
+
+    const res = await queryDb('DELETE FROM support WHERE id = $1 RETURNING id', [id]);
+    if (res.rowCount === 0) {
+      return NextResponse.json({ success: false, error: 'Ticket not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Ticket deleted successfully.' });
   } catch (error) {
+    console.error('Developer support DELETE error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCreator } from '../layout';
 import {
   BiHeadphone,
@@ -14,6 +16,7 @@ import {
 } from 'react-icons/bi';
 
 export default function CreatorTicketsPage() {
+  const router = useRouter();
   const { creatorId, tickets = [], refetch } = useCreator();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [subject, setSubject] = useState('');
@@ -221,47 +224,79 @@ export default function CreatorTicketsPage() {
                 <th className="px-4 py-3 whitespace-nowrap">Ticket #</th>
                 <th className="px-4 py-3 whitespace-nowrap">Subject</th>
                 <th className="px-4 py-3 whitespace-nowrap">Category</th>
+                <th className="px-4 py-3 whitespace-nowrap">Priority</th>
                 <th className="px-4 py-3 whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 whitespace-nowrap">Date Opened</th>
+                <th className="px-4 py-3 whitespace-nowrap">Opened</th>
+                <th className="px-4 py-3 text-right whitespace-nowrap">Conversation</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     No support tickets found. Click &quot;New Ticket&quot; if you need assistance!
                   </td>
                 </tr>
               ) : (
-                filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-800">
-                      {t.ticket_number}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-slate-800 max-w-xs truncate">
-                      {t.subject}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px] uppercase tracking-wider">
-                        {t.category}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          t.status === 'RESOLVED'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
-                      >
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-[11px]">
-                      {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
-                    </td>
-                  </tr>
-                ))
+                filtered.map((t) => {
+                  const statusColors = {
+                    OPEN: 'bg-blue-50 text-blue-700 border-blue-200',
+                    IN_PROGRESS: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                    RESOLVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    CLOSED: 'bg-slate-100 text-slate-600 border-slate-200',
+                  };
+                  const priorityColors = {
+                    URGENT: 'bg-rose-50 text-rose-700 border-rose-200',
+                    HIGH: 'bg-amber-50 text-amber-700 border-amber-200',
+                    MEDIUM: 'bg-slate-100 text-slate-700 border-slate-200',
+                    LOW: 'bg-slate-50 text-slate-500 border-slate-200',
+                  };
+
+                  return (
+                    <tr
+                      key={t.id}
+                      onClick={() => router.push(`/creator/${creatorId}/tickets/${t.id}`)}
+                      className="hover:bg-slate-50/70 transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                        {t.ticket_number}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-900 max-w-xs truncate">
+                        {t.subject}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px] uppercase tracking-wider">
+                          {t.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full border font-bold text-[10px] uppercase ${priorityColors[t.priority] || priorityColors.MEDIUM}`}>
+                          {t.priority || 'MEDIUM'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            statusColors[t.status] || 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {t.status || 'OPEN'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 text-[11px] whitespace-nowrap">
+                        {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <Link
+                          href={`/creator/${creatorId}/tickets/${t.id}`}
+                          className="inline-flex items-center gap-1 text-slate-900 hover:text-white bg-slate-100 hover:bg-slate-900 font-semibold px-3 py-1 rounded-lg transition-colors text-xs"
+                        >
+                          <span>Open Thread →</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

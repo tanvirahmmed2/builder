@@ -107,8 +107,8 @@ export async function GET(request) {
       ),
       // Support tickets submitted by this creator
       queryDb(
-        `SELECT * FROM support WHERE requester_email = $1 ORDER BY id DESC LIMIT 10`,
-        [creator.email]
+        `SELECT * FROM support WHERE creator_id = $1 OR requester_email = $2 ORDER BY id DESC LIMIT 50`,
+        [creator.id, creator.email]
       ),
       // Platform updates & changelog
       queryDb(
@@ -730,16 +730,16 @@ export async function POST(request) {
       const ticketNumber = 'TKT-' + Math.floor(100000 + Math.random() * 900000);
 
       const ticketRes = await queryDb(
-        `INSERT INTO support (ticket_number, requester_name, requester_email, subject, category, priority, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'OPEN')
+        `INSERT INTO support (ticket_number, creator_id, requester_name, requester_email, subject, category, priority, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'OPEN')
          RETURNING *`,
-        [ticketNumber, creator.name, creator.email, subject, category || 'TECHNICAL', priority || 'MEDIUM']
+        [ticketNumber, creatorId, creator.name, creator.email, subject, category || 'TECHNICAL', priority || 'MEDIUM']
       );
       const ticket = ticketRes.rows[0];
 
       await queryDb(
         `INSERT INTO support_messages (support_id, sender_type, sender_id, sender_name, message)
-         VALUES ($1, 'USER', $2, $3, $4)`,
+         VALUES ($1, 'CREATOR', $2, $3, $4)`,
         [ticket.id, creatorId, creator.name, message]
       );
 

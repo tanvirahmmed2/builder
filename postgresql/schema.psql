@@ -289,56 +289,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 9. SUPPORT, SUPPORT_MESSAGES & SUPPORT_IMAGES
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS support (
-    id SERIAL PRIMARY KEY,
-    ticket_number VARCHAR(100) UNIQUE NOT NULL,
-    requester_name VARCHAR(255) NOT NULL,
-    requester_email CITEXT NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL DEFAULT 'TECHNICAL',
-    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
-    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
-    assigned_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_support_status ON support (status, priority);
-
-DROP TRIGGER IF EXISTS trg_support_updated_at ON support;
-CREATE TRIGGER trg_support_updated_at
-BEFORE UPDATE ON support
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
-CREATE TABLE IF NOT EXISTS support_messages (
-    id SERIAL PRIMARY KEY,
-    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
-    sender_type VARCHAR(20) NOT NULL, -- 'USER' or 'ADMIN'
-    sender_id INTEGER,
-    sender_name VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_support_messages_sup ON support_messages (support_id, created_at ASC);
-
-CREATE TABLE IF NOT EXISTS support_images (
-    id SERIAL PRIMARY KEY,
-    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
-    message_id INTEGER REFERENCES support_messages(id) ON DELETE SET NULL,
-    image_url TEXT NOT NULL,
-    file_name VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
-
--- ============================================================================
--- 10. CREATORS (Creators who purchase package subscriptions & build websites)
+-- 9. CREATORS (Creators who purchase package subscriptions & build websites)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS creators (
@@ -372,6 +323,57 @@ CREATE TRIGGER trg_creators_updated_at
 BEFORE UPDATE ON creators
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 10. SUPPORT, SUPPORT_MESSAGES & SUPPORT_IMAGES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS support (
+    id SERIAL PRIMARY KEY,
+    ticket_number VARCHAR(100) UNIQUE NOT NULL,
+    creator_id INTEGER REFERENCES creators(id) ON DELETE SET NULL,
+    requester_name VARCHAR(255) NOT NULL,
+    requester_email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'TECHNICAL',
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    assigned_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_creator ON support (creator_id);
+CREATE INDEX IF NOT EXISTS idx_support_status ON support (status, priority);
+
+DROP TRIGGER IF EXISTS trg_support_updated_at ON support;
+CREATE TRIGGER trg_support_updated_at
+BEFORE UPDATE ON support
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS support_messages (
+    id SERIAL PRIMARY KEY,
+    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
+    sender_type VARCHAR(20) NOT NULL, -- 'CREATOR' / 'USER' or 'DEVELOPER' / 'ADMIN'
+    sender_id INTEGER,
+    sender_name VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_messages_sup ON support_messages (support_id, created_at ASC);
+
+CREATE TABLE IF NOT EXISTS support_images (
+    id SERIAL PRIMARY KEY,
+    support_id INTEGER NOT NULL REFERENCES support(id) ON DELETE CASCADE,
+    message_id INTEGER REFERENCES support_messages(id) ON DELETE SET NULL,
+    image_url TEXT NOT NULL,
+    file_name VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
 
 -- ============================================================================
 -- 11. PAYMENT
