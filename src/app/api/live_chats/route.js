@@ -68,10 +68,16 @@ export async function GET(request) {
       [chat.id]
     );
 
+    // Sanitize messages so admin personal data / roles are never exposed to visitors
+    const sanitizedMessages = msgRes.rows.map((msg) => ({
+      ...msg,
+      sender_name: msg.sender_type === 'ADMIN' ? 'Support' : msg.sender_name,
+    }));
+
     return NextResponse.json({
       success: true,
       chat,
-      messages: msgRes.rows,
+      messages: sanitizedMessages,
       device: cookieData?.device || null,
     });
   } catch (error) {
@@ -119,14 +125,17 @@ export async function POST(request) {
       const chat = chatRes.rows[0];
 
       // Insert automated welcome greeting into live_chat_messages
-      const welcomeText = `Hello ${visitorName}! 👋 Thanks for reaching out. An administrator, manager, or support specialist will be with you shortly.`;
+      const welcomeText = `Hello ${visitorName}! 👋 Thanks for reaching out. A support specialist will be with you shortly.`;
       const welcomeRes = await queryDb(
         `INSERT INTO live_chat_messages (chat_id, sender_type, sender_name, message)
          VALUES ($1, 'ADMIN', $2, $3)
          RETURNING *`,
-        [chat.id, `${SITE_NAME} Support`, welcomeText]
+        [chat.id, 'Support', welcomeText]
       );
-      const welcomeMsg = welcomeRes.rows[0];
+      const welcomeMsg = {
+        ...welcomeRes.rows[0],
+        sender_name: 'Support',
+      };
 
       // Store device data and session details in cookie for 24 hours
       const deviceData = {

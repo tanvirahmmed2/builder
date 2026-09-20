@@ -42,10 +42,22 @@ export const ContextProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchReviews = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/reviews');
+      if (res.data?.success && Array.isArray(res.data?.reviews)) {
+        setReviews(res.data.reviews);
+      }
+    } catch (_) {
+      // Keep empty or current reviews
+    }
+  }, []);
+
   useEffect(() => {
     fetchUser();
     fetchApps();
-  }, [fetchUser, fetchApps]);
+    fetchReviews();
+  }, [fetchUser, fetchApps, fetchReviews]);
 
   const contextValues = {
     reviews,

@@ -118,6 +118,13 @@ export default function Sidebar({ isOpen, onClose }) {
               FAQs
             </Link>
             <Link
+              href="/reviews"
+              onClick={onClose}
+              className="px-3 py-2 rounded-lg font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition-colors"
+            >
+              Reviews
+            </Link>
+            <Link
               href="/contact"
               onClick={onClose}
               className="px-3 py-2 rounded-lg font-medium text-slate-700 hover:text-primary hover:bg-slate-50 transition-colors"

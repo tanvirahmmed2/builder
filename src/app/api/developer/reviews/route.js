@@ -1,74 +1,175 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
+import { isStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
 
-export async function GET() {
+// GET: Fetch all reviews for developer moderation oversight
+export async function GET(request) {
   try {
-    const res = await queryDb('SELECT * FROM portfolio_reviews ORDER BY id DESC').catch(() => ({ rows: [] }));
-    return NextResponse.json({ success: true, reviews: res.rows, records: res.rows, portfolio_reviews: res.rows });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
-// CREATE REVIEW
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action' && k !== 'reviewId');
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const placeholders = keys.map((_, i) => '$' + (i + 1));
-    const res = await queryDb(
-      `INSERT INTO portfolio_reviews (${keys.map((k) => `"${k}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, record: res.rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
-  }
-}
-
-// UPDATE REVIEW
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const id = body.reviewId || body.id || body.data?.id;
-    if (!id) return NextResponse.json({ success: false, error: 'Review ID is required' }, { status: 400 });
-
-    if (body.status) {
-      const res = await queryDb('UPDATE portfolio_reviews SET status = $1 WHERE id = $2 RETURNING *', [body.status, id]);
-      return NextResponse.json({ success: true, review: res.rows[0], record: res.rows[0] });
+    const auth = await isStaff(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, error: auth.message || 'Staff authentication required' },
+        { status: 401 }
+      );
     }
 
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action' && k !== 'reviewId');
-    if (keys.length === 0) return NextResponse.json({ success: true });
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-    values.push(id);
-    const res = await queryDb(
-      `UPDATE portfolio_reviews SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, review: res.rows[0], record: res.rows[0] });
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+
+    let queryText = `
+      SELECT r.*,
+             c.name AS creator_name,
+             c.email AS creator_email,
+             c.avatar_url AS creator_avatar,
+             p.name AS package_name,
+             p.slug AS package_slug,
+             d.name AS approved_by_name,
+             d.role AS approved_by_role
+      FROM reviews r
+      JOIN creators c ON r.creator_id = c.id
+      JOIN subscription s ON r.subscription_id = s.id
+      JOIN packages p ON s.package_id = p.id
+      LEFT JOIN developers d ON r.approved_by_developer_id = d.id
+    `;
+
+    const params = [];
+    if (statusParam && statusParam !== 'ALL') {
+      params.push(statusParam.toUpperCase());
+      queryText += ' WHERE r.status = $1';
+    }
+
+    queryText += ' ORDER BY r.created_at DESC, r.id DESC';
+
+    const res = await queryDb(queryText, params);
+
+    return NextResponse.json({
+      success: true,
+      reviews: res.rows || [],
+      records: res.rows || [],
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    console.error('Error in GET /api/developer/reviews:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to fetch reviews' },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE REVIEW
+// PUT: Moderate review status (Admin & Manager only can approve or reject)
+export async function PUT(request) {
+  try {
+    const auth = await isManagerOrAdmin(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied: Only Admins and Managers have permission to approve or reject reviews.',
+        },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const reviewId = Number(body.reviewId || body.id || body.data?.id);
+    const status = String(body.status || body.data?.status || '').toUpperCase();
+
+    if (!reviewId) {
+      return NextResponse.json(
+        { success: false, error: 'Review ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!['APPROVED', 'REJECTED', 'PENDING'].includes(status)) {
+      return NextResponse.json(
+        { success: false, error: 'Status must be APPROVED, REJECTED, or PENDING' },
+        { status: 400 }
+      );
+    }
+
+    const reviewerDeveloperId = auth.staff.id;
+
+    const res = await queryDb(
+      `UPDATE reviews
+       SET status = $1,
+           approved_by_developer_id = $2,
+           approved_at = CASE WHEN $1 IN ('APPROVED', 'REJECTED') THEN CURRENT_TIMESTAMP ELSE NULL END,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3
+       RETURNING *`,
+      [status, reviewerDeveloperId, reviewId]
+    );
+
+    if (res.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Review not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Review #${reviewId} has been successfully updated to ${status}.`,
+      review: res.rows[0],
+      record: res.rows[0],
+    });
+  } catch (error) {
+    console.error('Error in PUT /api/developer/reviews:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to moderate review' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Remove review (Admin & Manager only)
 export async function DELETE(request) {
   try {
+    const auth = await isManagerOrAdmin(request);
+    if (!auth.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied: Only Admins and Managers can delete reviews.',
+        },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id') || searchParams.get('reviewId');
     if (!id) {
       const body = await request.json().catch(() => ({}));
       id = body.reviewId || body.id;
     }
-    if (!id) return NextResponse.json({ success: false, error: 'Review ID is required' }, { status: 400 });
-    const res = await queryDb('DELETE FROM portfolio_reviews WHERE id = $1 RETURNING id', [id]);
-    return NextResponse.json({ success: true, deleted: res.rows[0] });
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Review ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const res = await queryDb('DELETE FROM reviews WHERE id = $1 RETURNING id', [Number(id)]);
+
+    if (res.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Review not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Review permanently removed.',
+      deleted: res.rows[0],
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Error in DELETE /api/developer/reviews:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to delete review' },
+      { status: 500 }
+    );
   }
 }

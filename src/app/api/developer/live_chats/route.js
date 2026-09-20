@@ -67,7 +67,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Chat ID and message are required.' }, { status: 400 });
     }
 
-    const staffName = `${auth.staff.name || 'Support'} (${auth.staff.role?.toUpperCase() || 'STAFF'})`;
+    const staffName = 'Support';
 
     const msgRes = await queryDb(
       `INSERT INTO live_chat_messages (chat_id, sender_type, sender_name, message)

@@ -223,7 +223,7 @@ export default function LiveChatPopup() {
                 <h3 className="text-sm font-bold leading-tight">{SITE_NAME} Help Desk</h3>
                 <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Admin • Manager • Support Online
+                  Support Team Online
                 </p>
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function LiveChatPopup() {
                 <div className="text-center space-y-1">
                   <h4 className="text-base font-bold text-slate-900">How can we help you?</h4>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Chat directly with our administrative and support team. Your session and device data will be saved in cookies for 24 hours.
+                    Chat directly with our support team. Your session and device data will be saved in cookies for 24 hours.
                   </p>
                 </div>
 
@@ -312,7 +312,7 @@ export default function LiveChatPopup() {
                     {loading ? (
                       <>
                         <BiLoaderAlt className="animate-spin text-sm" />
-                        <span>Connecting with Staff...</span>
+                        <span>Connecting with Support...</span>
                       </>
                     ) : (
                       <span>Start Live Chat →</span>
@@ -349,7 +349,7 @@ export default function LiveChatPopup() {
                     >
                       <div className="flex items-center gap-1 mb-1">
                         <span className="text-[10px] font-semibold text-slate-500">
-                          {isVisitor ? 'You' : msg.sender_name}
+                          {isVisitor ? 'You' : 'Support'}
                         </span>
                       </div>
                       <div
@@ -382,7 +382,7 @@ export default function LiveChatPopup() {
               >
                 <input
                   type="text"
-                  placeholder="Type a message to admin/support..."
+                  placeholder="Type a message to support..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-800 focus:bg-white transition-all"

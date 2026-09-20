@@ -7,7 +7,7 @@ export default function LiveChatMessageForm({ chats = [], onSuccess, onCancel })
   const [formData, setFormData] = useState({
     chat_id: chats[0]?.id || 1,
     sender_type: 'ADMIN',
-    sender_name: 'Platform Support',
+    sender_name: 'Support',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function LiveChatMessageForm({ chats = [], onSuccess, onCancel })
         setFormData({
           chat_id: chats[0]?.id || 1,
           sender_type: 'ADMIN',
-          sender_name: 'Platform Support',
+          sender_name: 'Support',
           message: '',
         });
         if (onSuccess) onSuccess(data.record);
@@ -100,7 +100,7 @@ export default function LiveChatMessageForm({ chats = [], onSuccess, onCancel })
               onChange={(e) => setFormData({ ...formData, sender_type: e.target.value })}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
             >
-              <option value="ADMIN">Admin Staff</option>
+              <option value="ADMIN">Support Staff</option>
               <option value="VISITOR">Visitor</option>
             </select>
           </div>
@@ -110,7 +110,7 @@ export default function LiveChatMessageForm({ chats = [], onSuccess, onCancel })
             <input
               type="text"
               required
-              placeholder="e.g. Platform Support"
+              placeholder="e.g. Support"
               value={formData.sender_name}
               onChange={(e) => setFormData({ ...formData, sender_name: e.target.value })}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"

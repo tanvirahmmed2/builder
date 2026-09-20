@@ -251,6 +251,58 @@ async function migrate() {
       `, [creatorId]);
     }
 
+    console.log('Creating reviews table, indexes, and trigger...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reviews (
+          id SERIAL PRIMARY KEY,
+          creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+          subscription_id INTEGER NOT NULL REFERENCES subscription(id) ON DELETE CASCADE,
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          title VARCHAR(255),
+          comment TEXT NOT NULL,
+          status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+          approved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          approved_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT uq_creator_subscription_review UNIQUE (subscription_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_reviews_creator ON reviews (creator_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_subscription ON reviews (subscription_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews (status, created_at DESC);
+
+      DROP TRIGGER IF EXISTS trg_reviews_updated_at ON reviews;
+      CREATE TRIGGER trg_reviews_updated_at
+      BEFORE UPDATE ON reviews
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+    `);
+
+    // Check if initial review exists for the seed creator's subscription
+    const reviewsCount = await client.query('SELECT COUNT(*)::int AS count FROM reviews');
+    if (reviewsCount.rows[0].count === 0) {
+      const subRes = await client.query('SELECT id, creator_id FROM subscription LIMIT 1');
+      if (subRes.rows.length > 0) {
+        console.log('Seeding initial approved review for creator subscription...');
+        const adminRes = await client.query("SELECT id FROM developers WHERE role IN ('admin', 'manager') LIMIT 1");
+        const adminId = adminRes.rows[0]?.id || null;
+        await client.query(`
+          INSERT INTO reviews (creator_id, subscription_id, rating, title, comment, status, approved_by_developer_id, approved_at)
+          VALUES (
+            $1,
+            $2,
+            5,
+            'Superb Studio Builder with Instant Custom Domain',
+            'Upgrading to the Creator Pro plan gave me full creative freedom. The custom domain edge SSL provisioned in seconds, and my inquiries skyrocketed. Truly a premier SaaS portfolio solution.',
+            'APPROVED',
+            $3,
+            CURRENT_TIMESTAMP
+          )
+        `, [subRes.rows[0].creator_id, subRes.rows[0].id, adminId]);
+      }
+    }
+
     console.log('Migration completed successfully!');
   } catch (err) {
     console.error('Migration failed:', err);

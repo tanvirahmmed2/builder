@@ -95,6 +95,12 @@ export default function HomeNavbar() {
             FAQs
           </Link>
           <Link
+            href={'/reviews'}
+            className="font-medium text-slate-700 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
+          >
+            Reviews
+          </Link>
+          <Link
             href={'/contact'}
             className="font-medium text-slate-700 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
           >
