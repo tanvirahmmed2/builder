@@ -303,6 +303,41 @@ async function migrate() {
       }
     }
 
+    console.log('Migrating contacts table, indexes, and trigger...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS contacts (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email CITEXT NOT NULL,
+          subject VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+          reply TEXT,
+          replied_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      DO $$ 
+      BEGIN 
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'contacts' AND column_name = 'admin_reply'
+        ) THEN 
+          ALTER TABLE contacts RENAME COLUMN admin_reply TO reply; 
+        END IF; 
+      END $$;
+
+      CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts (status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts (email);
+
+      DROP TRIGGER IF EXISTS trg_contacts_updated_at ON contacts;
+      CREATE TRIGGER trg_contacts_updated_at
+      BEFORE UPDATE ON contacts
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+    `);
+
     console.log('Migration completed successfully!');
   } catch (err) {
     console.error('Migration failed:', err);

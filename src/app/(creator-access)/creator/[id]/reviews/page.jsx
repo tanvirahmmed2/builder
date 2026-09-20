@@ -14,7 +14,7 @@ import {
   BiX,
   BiCheck,
   BiTimeFive,
-  BiShieldCheck,
+  BiCheckShield,
   BiErrorCircle,
 } from 'react-icons/bi';
 
@@ -281,7 +281,7 @@ export default function CreatorReviewsPage() {
                               : 'bg-amber-50 text-amber-700 border-amber-200'
                           }`}
                         >
-                          <BiShieldCheck className="text-sm" />
+                          <BiCheckShield className="text-sm" />
                           <span>Status: {rev?.status || 'PENDING'}</span>
                         </span>
                         <span className="text-[11px] font-medium text-slate-400">

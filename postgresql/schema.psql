@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS contacts (
     subject VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
-    admin_reply TEXT,
+    reply TEXT,
     replied_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

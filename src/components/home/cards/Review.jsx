@@ -1,5 +1,5 @@
 import React from 'react';
-import { BiUser, BiStar, BiShieldCheck, BiCube } from 'react-icons/bi';
+import { BiUser, BiStar, BiCheckShield, BiCube } from 'react-icons/bi';
 
 export default function Review({ review }) {
   if (!review) return null;
@@ -23,7 +23,7 @@ export default function Review({ review }) {
             ))}
           </div>
           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-            <BiShieldCheck className="text-xs" />
+            <BiCheckShield className="text-xs" />
             <span>Verified</span>
           </span>
         </div>

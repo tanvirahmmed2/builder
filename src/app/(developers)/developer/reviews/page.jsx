@@ -11,7 +11,7 @@ import {
   BiRefresh,
   BiCube,
   BiUser,
-  BiShieldCheck,
+  BiCheckShield,
   BiTimeFive,
   BiLoaderAlt,
   BiMessageSquareDetail,
@@ -183,7 +183,7 @@ export default function AdminReviewsPage() {
       {/* Role Permission Notice if not admin or manager */}
       {!canModerate && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2">
-          <BiShieldCheck className="text-base shrink-0" />
+          <BiCheckShield className="text-base shrink-0" />
           <span>
             You are signed in as <strong className="capitalize">{userRole || 'staff'}</strong>. Only <strong>Admin</strong> and <strong>Manager</strong> accounts have authority to approve or reject reviews.
           </span>

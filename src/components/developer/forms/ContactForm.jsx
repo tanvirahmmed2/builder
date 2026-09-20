@@ -10,7 +10,7 @@ export default function ContactForm({ onSuccess, onCancel, apiEndpoint = '/api/d
     subject: '',
     message: '',
     status: 'NEW',
-    admin_reply: '',
+    reply: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ export default function ContactForm({ onSuccess, onCancel, apiEndpoint = '/api/d
       });
       const data = await res.json();
       if (data.success) {
-        setFormData({ name: '', email: '', subject: '', message: '', status: 'NEW', admin_reply: '' });
+        setFormData({ name: '', email: '', subject: '', message: '', status: 'NEW', reply: '' });
         if (onSuccess) onSuccess(data.record);
       } else {
         setError(data.error || 'Failed to submit contact entry');
@@ -136,12 +136,12 @@ export default function ContactForm({ onSuccess, onCancel, apiEndpoint = '/api/d
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Admin Internal Reply Note</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1">Reply / Follow-up Notes</label>
           <textarea
             rows={2}
             placeholder="Log staff response or email follow-up notes..."
-            value={formData.admin_reply}
-            onChange={(e) => setFormData({ ...formData, admin_reply: e.target.value })}
+            value={formData.reply}
+            onChange={(e) => setFormData({ ...formData, reply: e.target.value })}
             className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
           />
         </div>

@@ -10,7 +10,7 @@ import {
   BiMessageSquareDetail,
   BiUser,
   BiArrowBack,
-  BiShieldCheck,
+  BiCheckShield,
   BiCube,
 } from 'react-icons/bi';
 import { SITE_NAME } from '@/lib/db/secret';
@@ -196,7 +196,7 @@ export default function PublicReviewsPage() {
                   </div>
 
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    <BiShieldCheck className="text-xs" />
+                    <BiCheckShield className="text-xs" />
                     <span>Verified Creator</span>
                   </span>
                 </div>
