@@ -338,12 +338,48 @@ CREATE TABLE IF NOT EXISTS support_images (
 CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
 
 -- ============================================================================
--- 10. PAYMENT
+-- 10. CREATORS (Creators who purchase package subscriptions & build websites)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS creators (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email CITEXT UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    avatar_url TEXT,
+    bio TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code VARCHAR(10),
+    verification_expires_at TIMESTAMPTZ,
+    two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    two_factor_secret VARCHAR(255),
+    two_factor_code VARCHAR(10),
+    two_factor_expires_at TIMESTAMPTZ,
+    recovery_token VARCHAR(255),
+    recovery_token_expires_at TIMESTAMPTZ,
+    last_login_at TIMESTAMPTZ,
+    last_login_ip VARCHAR(45),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_creators_email ON creators (email);
+
+DROP TRIGGER IF EXISTS trg_creators_updated_at ON creators;
+CREATE TRIGGER trg_creators_updated_at
+BEFORE UPDATE ON creators
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 11. PAYMENT
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS payment (
     id SERIAL PRIMARY KEY,
-    creator_id INTEGER,
+    creator_id INTEGER REFERENCES creators(id) ON DELETE CASCADE,
     package_id INTEGER REFERENCES packages(id) ON DELETE RESTRICT,
     subscription_id INTEGER,
     amount_in_cents INTEGER NOT NULL DEFAULT 0,
@@ -358,13 +394,13 @@ CREATE INDEX IF NOT EXISTS idx_payment_creator ON payment (creator_id);
 CREATE INDEX IF NOT EXISTS idx_payment_txn ON payment (transaction_id);
 
 -- ============================================================================
--- 11. SUBSCRIPTION
+-- 12. SUBSCRIPTION
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS subscription (
     id SERIAL PRIMARY KEY,
     app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
-    creator_id INTEGER NOT NULL,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
     package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -384,12 +420,12 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 12. WEBSITES
+-- 13. WEBSITES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS websites (
     id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     subdomain CITEXT UNIQUE NOT NULL,
     custom_domain CITEXT UNIQUE,

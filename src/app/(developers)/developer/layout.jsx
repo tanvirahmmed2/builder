@@ -26,7 +26,7 @@ export const ROLE_PERMISSIONS = {
   ],
   marketer: [
     'overview', 'blogs', 'themes', 'leads', 'subscribers',
-    'packages', 'reviews', 'creators', 'profile', 'settings'
+    'packages', 'reviews', 'profile', 'settings'
   ],
   support: [
     'overview', 'live-chats', 'contacts', 'support', 'reports',

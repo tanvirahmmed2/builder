@@ -3,51 +3,76 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BiLoaderAlt, BiLockAlt } from 'react-icons/bi';
 
 export default function CreatorLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('alex.creator@designcraft.com');
-  const [password, setPassword] = useState('Creator@123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // In local demo mode, direct to Creator dashboard
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 400);
+    setError('');
+
+    try {
+      const res = await fetch('/api/creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          email,
+          password,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.creator) {
+        router.push(`/creator/${data.creator.id}`);
+      } else {
+        setError(data.error || 'Authentication failed. Check your email and password.');
+      }
+    } catch (err) {
+      setError('Server error during sign in.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900/80 border border-white/10 shadow-2xl space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50">
+      <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-xl mx-auto shadow-lg shadow-emerald-500/25">
-            C
-          </div>
-          <h1 className="text-2xl font-black text-white">Creator & Manager Sign In</h1>
-          <p className="text-xs text-slate-400">
-            Access your portfolio site, update modules, and check visitor bookings.
+          
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Login</h1>
+          <p className="text-xs text-slate-500">
+            Access your creator dashboard, manage subscriptions, and build portfolio websites.
           </p>
         </div>
 
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-slate-300">Password</label>
-              <Link href="/creator/recovery" className="text-xs text-emerald-400 hover:underline">
+              <label className="text-xs font-semibold text-slate-700">Password</label>
+              <Link href="/creator/recovery" className="text-xs text-slate-600 hover:text-slate-900 hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -56,31 +81,33 @@ export default function CreatorLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all"
+            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
+            {loading ? (
+              <>
+                <BiLoaderAlt className="animate-spin text-base" />
+                <span>Authenticating...</span>
+              </>
+            ) : (
+              <span>Continue →</span>
+            )}
           </button>
         </form>
 
-        <div className="text-center pt-2 text-xs text-slate-400 space-y-2">
-          <div>
+        <div className="text-center pt-2 border-t border-slate-100 space-y-2">
+          <p className="text-xs text-slate-500">
             Don&apos;t have an account yet?{' '}
-            <Link href="/creator/register" className="text-emerald-400 hover:underline font-semibold">
-              Create account
+            <Link href="/creator/register" className="font-semibold text-slate-900 hover:underline">
+              Create Account
             </Link>
-          </div>
-          <div>
-            <Link href="/" className="text-slate-500 hover:text-slate-400">
-              ← Return to Platform Home
-            </Link>
-          </div>
+          </p>
         </div>
       </div>
     </div>
