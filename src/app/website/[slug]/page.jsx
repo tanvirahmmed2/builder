@@ -1,16 +1,16 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantNavbar from '@/components/website/TenantNavbar';
-import TenantHero from '@/components/website/TenantHero';
-import TenantServices from '@/components/website/TenantServices';
-import TenantExperiences from '@/components/website/TenantExperiences';
-import TenantProducts from '@/components/website/TenantProducts';
-import TenantGallery from '@/components/website/TenantGallery';
-import TenantBlogs from '@/components/website/TenantBlogs';
-import TenantAppointments from '@/components/website/TenantAppointments';
-import TenantContact from '@/components/website/TenantContact';
-import TenantFooter from '@/components/website/TenantFooter';
+import TenantNavbar from '@/components/website/bars/TenantNavbar';
+import TenantHero from '@/components/website/cards/TenantHero';
+import TenantServices from '@/components/website/cards/TenantServices';
+import TenantExperiences from '@/components/website/cards/TenantExperiences';
+import TenantProducts from '@/components/website/cards/TenantProducts';
+import TenantGallery from '@/components/website/cards/TenantGallery';
+import TenantBlogs from '@/components/website/cards/TenantBlogs';
+import TenantAppointments from '@/components/website/forms/TenantAppointments';
+import TenantContact from '@/components/website/forms/TenantContact';
+import TenantFooter from '@/components/website/bars/TenantFooter';
 import { BiLoaderAlt, BiShoppingBag, BiX } from 'react-icons/bi';
 
 export default function TenantWebsiteHomePage({ params }) {

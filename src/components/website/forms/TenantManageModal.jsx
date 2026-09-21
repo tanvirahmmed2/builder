@@ -6,7 +6,7 @@ import { BiCheck, BiLoaderAlt, BiX } from 'react-icons/bi';
 export default function TenantManageModal({
   isOpen,
   onClose,
-  type, // 'product' | 'blog' | 'experience' | 'gallery'
+  type, // 'product' | 'blog' | 'experience' | 'gallery' | 'service' | 'offer'
   onSave,
   primaryColor = '#6366f1',
 }) {
@@ -51,6 +51,8 @@ export default function TenantManageModal({
       case 'blog': return 'Create Blog Post';
       case 'experience': return 'Add Work Experience';
       case 'gallery': return 'Add Gallery Item';
+      case 'service': return 'Add Service';
+      case 'offer': return 'Add Promo Offer';
       default: return 'Add Item';
     }
   };
@@ -86,7 +88,7 @@ export default function TenantManageModal({
             />
           </div>
 
-          {type === 'product' && (
+          {(type === 'product' || type === 'service') && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Price in USD ($) *

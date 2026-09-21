@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BiCalendar, BiCheckCircle, BiClock, BiLoaderAlt, BiUser } from 'react-icons/bi';
+import { BiCalendar, BiCheckCircle, BiLoaderAlt } from 'react-icons/bi';
 
 export default function TenantAppointments({ websiteId, services = [], primaryColor = '#6366f1', preselectedService = '' }) {
   const [clientName, setClientName] = useState('');

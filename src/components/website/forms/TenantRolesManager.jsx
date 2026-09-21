@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   BiCheck,
   BiCheckCircle,
-  BiKey,
   BiLoaderAlt,
-  BiLockAlt,
   BiPlus,
   BiShield,
   BiTrash,

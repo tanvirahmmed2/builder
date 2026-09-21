@@ -1,6 +1,7 @@
 'use client';
 
-import { BiArrowToBottom, BiCalendarCheck, BiCheckCircle, BiRightArrowAlt } from 'react-icons/bi';
+import Link from 'next/link';
+import { BiCalendarCheck, BiRightArrowAlt } from 'react-icons/bi';
 
 export default function TenantHero({ website, stats = {} }) {
   const settings = website?.settings || {};
@@ -8,6 +9,7 @@ export default function TenantHero({ website, stats = {} }) {
   const tagline = settings.tagline || 'Full-Stack Developer, Designer & Creator';
   const bio = settings.bio || 'Building world-class digital products, web experiences, and scalable solutions for ambitious clients and high-growth businesses.';
   const primaryColor = settings.primary_color || website?.theme_config?.primaryColor || '#6366f1';
+  const subdomain = website?.subdomain || 'site';
 
   return (
     <section id="hero" className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28">
@@ -44,29 +46,29 @@ export default function TenantHero({ website, stats = {} }) {
 
         {/* Hero CTA Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-          <a
-            href="#appointments"
+          <Link
+            href={`/website/${subdomain}/appointments`}
             className="px-6 py-3 rounded-full text-xs font-bold text-white shadow-md transition-all hover:opacity-95 hover:scale-102 flex items-center gap-2 cursor-pointer"
             style={{ backgroundColor: primaryColor }}
           >
             <BiCalendarCheck className="text-base" />
             <span>Book an Appointment</span>
-          </a>
+          </Link>
 
-          <a
-            href="#products"
+          <Link
+            href={`/website/${subdomain}/products`}
             className="px-6 py-3 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
           >
             <span>Explore Products</span>
             <BiRightArrowAlt className="text-base" />
-          </a>
+          </Link>
 
-          <a
-            href="#contact"
+          <Link
+            href={`/website/${subdomain}/contact`}
             className="px-6 py-3 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             Contact Directly
-          </a>
+          </Link>
         </div>
 
         {/* Highlights Row */}

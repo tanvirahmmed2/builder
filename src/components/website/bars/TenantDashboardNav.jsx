@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BiDesktop, BiGlobe, BiLinkExternal, BiShieldQuarter } from 'react-icons/bi';
+import { BiGlobe, BiLinkExternal } from 'react-icons/bi';
 
 export default function TenantDashboardNav({ website }) {
   const settings = website?.settings || {};
@@ -13,25 +13,27 @@ export default function TenantDashboardNav({ website }) {
   return (
     <header className="sticky top-0 z-30 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-xs"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {siteTitle.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-              {siteTitle}
-            </h1>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold uppercase">
-              Tenant Portal
+        <Link href={`/website/${subdomain}/dashboard`} className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-xs"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {siteTitle.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                {siteTitle}
+              </h1>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold uppercase">
+                Tenant Portal
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-slate-500 block">
+              {subdomain}.saasplatform.com
             </span>
           </div>
-          <span className="text-[11px] font-mono text-slate-500 block">
-            {subdomain}.saasplatform.com
-          </span>
-        </div>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2.5">

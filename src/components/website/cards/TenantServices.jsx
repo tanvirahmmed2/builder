@@ -1,8 +1,9 @@
 'use client';
 
-import { BiCheckCircle, BiCodeAlt, BiLayer, BiRocket } from 'react-icons/bi';
+import Link from 'next/link';
+import { BiCheckCircle, BiCodeAlt } from 'react-icons/bi';
 
-export default function TenantServices({ services = [], primaryColor = '#6366f1', onSelectService }) {
+export default function TenantServices({ services = [], primaryColor = '#6366f1', subdomain = '' }) {
   if (!services || services.length === 0) return null;
 
   return (
@@ -68,13 +69,12 @@ export default function TenantServices({ services = [], primaryColor = '#6366f1'
                 </div>
 
                 <div className="pt-6">
-                  <a
-                    href="#appointments"
-                    onClick={() => onSelectService && onSelectService(s.title)}
+                  <Link
+                    href={subdomain ? `/website/${subdomain}/appointments?service=${encodeURIComponent(s.title)}` : '#appointments'}
                     className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>Inquire / Book Service</span>
-                  </a>
+                  </Link>
                 </div>
               </div>
             );

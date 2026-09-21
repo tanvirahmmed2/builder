@@ -1,6 +1,6 @@
 'use client';
 
-import { BiBriefcase, BiCalendar, BiMapPin } from 'react-icons/bi';
+import { BiBriefcase, BiMapPin } from 'react-icons/bi';
 
 export default function TenantExperiences({ experiences = [], skills = [], primaryColor = '#6366f1' }) {
   return (

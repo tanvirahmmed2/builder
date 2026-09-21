@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BiCart, BiCheckCircle, BiDownload, BiShoppingBag, BiTag, BiX } from 'react-icons/bi';
+import { BiCart, BiCheckCircle, BiDownload, BiShoppingBag, BiX } from 'react-icons/bi';
 
 export default function TenantProducts({ products = [], primaryColor = '#6366f1', onAddToCart }) {
   const [selectedProduct, setSelectedProduct] = useState(null);

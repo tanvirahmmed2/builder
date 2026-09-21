@@ -6,9 +6,7 @@ import { BiShieldQuarter } from 'react-icons/bi';
 export default function TenantFooter({ website }) {
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'Studio Brand';
-  const primaryColor = settings.primary_color || website?.theme_config?.primaryColor || '#6366f1';
   const subdomain = website?.subdomain || 'site';
-  const socialLinks = settings.social_links || {};
 
   return (
     <footer className="w-full bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-12 text-slate-600 dark:text-slate-400 text-xs">
@@ -24,13 +22,13 @@ export default function TenantFooter({ website }) {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 font-medium text-slate-600 dark:text-slate-300">
-            <a href="#services" className="hover:text-slate-900 dark:hover:text-white transition-colors">Services</a>
-            <a href="#experiences" className="hover:text-slate-900 dark:hover:text-white transition-colors">Experience</a>
-            <a href="#products" className="hover:text-slate-900 dark:hover:text-white transition-colors">Store</a>
-            <a href="#gallery" className="hover:text-slate-900 dark:hover:text-white transition-colors">Gallery</a>
-            <a href="#blogs" className="hover:text-slate-900 dark:hover:text-white transition-colors">Blog</a>
-            <a href="#appointments" className="hover:text-slate-900 dark:hover:text-white transition-colors">Book</a>
-            <a href="#contact" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</a>
+            <Link href={`/website/${subdomain}/services`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Services</Link>
+            <Link href={`/website/${subdomain}/experiences`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Experience</Link>
+            <Link href={`/website/${subdomain}/products`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Store</Link>
+            <Link href={`/website/${subdomain}/gallery`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Gallery</Link>
+            <Link href={`/website/${subdomain}/blogs`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Blog</Link>
+            <Link href={`/website/${subdomain}/appointments`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Book</Link>
+            <Link href={`/website/${subdomain}/contact`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</Link>
           </div>
         </div>
 
