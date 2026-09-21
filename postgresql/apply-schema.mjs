@@ -344,6 +344,142 @@ async function migrate() {
       CREATE INDEX IF NOT EXISTS idx_support_creator ON support (creator_id);
     `);
 
+    console.log('Applying website-schema.psql for tenant websites...');
+    const websiteSchemaPath = path.resolve(__dirname, 'website-schema.psql');
+    if (fs.existsSync(websiteSchemaPath)) {
+      const websiteSql = fs.readFileSync(websiteSchemaPath, 'utf8');
+      await client.query(websiteSql);
+      console.log('website-schema.psql applied successfully!');
+    }
+
+    // Seed default modules, roles, and settings for any existing websites that don't have them
+    const allWebsites = await client.query('SELECT id, name, subdomain, theme_config FROM websites');
+    for (const w of allWebsites.rows) {
+      // 1. Settings
+      const setCheck = await client.query('SELECT id FROM tenant_settings WHERE website_id = $1', [w.id]);
+      if (setCheck.rows.length === 0) {
+        const theme = typeof w.theme_config === 'object' && w.theme_config !== null ? w.theme_config : {};
+        await client.query(`
+          INSERT INTO tenant_settings (website_id, site_title, tagline, primary_color, font_family)
+          VALUES ($1, $2, 'Portfolio & Showcase', $3, $4)
+          ON CONFLICT (website_id) DO NOTHING
+        `, [w.id, w.name || 'My Portfolio', theme.primaryColor || '#6366f1', theme.fontFamily || 'Inter']);
+      }
+
+      // 2. Default Modules
+      const defaultModules = [
+        { name: 'Products & Store', slug: 'products', description: 'E-commerce products, digital downloads & inventory' },
+        { name: 'Blog & Articles', slug: 'blogs', description: 'Articles, news and blog publishing' },
+        { name: 'Appointment Booking', slug: 'appointments', description: 'Client booking and schedule management' },
+        { name: 'Support Tickets', slug: 'support', description: 'Customer inquiry and support ticketing' },
+        { name: 'Portfolio Gallery', slug: 'gallery', description: 'Media showcase and portfolio visual gallery' },
+        { name: 'Experiences Timeline', slug: 'experiences', description: 'Work history, education and milestones' },
+        { name: 'Services Offered', slug: 'services', description: 'Bespoke service packages and pricing' },
+        { name: 'Client Testimonials', slug: 'testimonials', description: 'Customer reviews and endorsements' },
+        { name: 'Contact Inquiries', slug: 'contact', description: 'Direct contact messaging and leads' },
+      ];
+
+      for (const m of defaultModules) {
+        await client.query(`
+          INSERT INTO tenant_modules (website_id, name, slug, description, is_enabled)
+          VALUES ($1, $2, $3, $4, TRUE)
+          ON CONFLICT (website_id, slug) DO NOTHING
+        `, [w.id, m.name, m.slug, m.description]);
+      }
+
+      // 3. Default Roles (Owner, Admin, Editor, Customer)
+      const defaultRoles = [
+        { name: 'Owner', slug: 'owner', description: 'Full owner access with all privileges', is_system: true },
+        { name: 'Admin', slug: 'admin', description: 'Site administrator with full management rights', is_system: true },
+        { name: 'Editor', slug: 'editor', description: 'Content editor for blogs, products & portfolio', is_system: false },
+        { name: 'Support Specialist', slug: 'support-specialist', description: 'Support ticket and inquiry handler', is_system: false },
+      ];
+
+      for (const r of defaultRoles) {
+        await client.query(`
+          INSERT INTO tenant_roles (website_id, name, slug, description, is_system)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (website_id, slug) DO NOTHING
+        `, [w.id, r.name, r.slug, r.description, r.is_system]);
+      }
+
+      // 4. Default Permissions for standard modules
+      const modRows = await client.query('SELECT id, slug FROM tenant_modules WHERE website_id = $1', [w.id]);
+      const actions = ['view', 'create', 'edit', 'delete', 'manage'];
+      for (const mod of modRows.rows) {
+        for (const act of actions) {
+          const pName = `${act.charAt(0).toUpperCase() + act.slice(1)} ${mod.slug}`;
+          const pSlug = `${mod.slug}.${act}`;
+          await client.query(`
+            INSERT INTO tenant_permissions (website_id, module_id, name, slug, action, is_custom)
+            VALUES ($1, $2, $3, $4, $5, FALSE)
+            ON CONFLICT (website_id, slug) DO NOTHING
+          `, [w.id, mod.id, pName, pSlug, act]);
+        }
+      }
+
+      // 5. Seed owner role permissions (grant all)
+      const ownerRole = await client.query('SELECT id FROM tenant_roles WHERE website_id = $1 AND slug = $2', [w.id, 'owner']);
+      if (ownerRole.rows.length > 0) {
+        const allPerms = await client.query('SELECT id FROM tenant_permissions WHERE website_id = $1', [w.id]);
+        for (const p of allPerms.rows) {
+          await client.query(`
+            INSERT INTO tenant_role_permissions (role_id, permission_id)
+            VALUES ($1, $2)
+            ON CONFLICT (role_id, permission_id) DO NOTHING
+          `, [ownerRole.rows[0].id, p.id]);
+        }
+      }
+
+      // 6. Seed sample services, experiences, skills, blogs & products if none exist
+      const servicesCount = await client.query('SELECT COUNT(*)::int AS count FROM tenant_services WHERE website_id = $1', [w.id]);
+      if (servicesCount.rows[0].count === 0) {
+        await client.query(`
+          INSERT INTO tenant_services (website_id, title, slug, description, price_starting_at, features) VALUES
+          ($1, 'Full-Stack Web Architecture', 'full-stack-architecture', 'Bespoke high-performance web applications built with Next.js, Node.js and PostgreSQL.', 1499, '["End-to-End Development", "Custom Database Schema", "Responsive UI/UX", "SEO Optimization"]'::jsonb),
+          ($1, 'UI/UX & Brand Design', 'ui-ux-design', 'Elevate your brand with award-winning visual identities and interactive component systems.', 899, '["Design System", "Figma Prototypes", "Dark/Light Modes", "Mobile-First Layouts"]'::jsonb),
+          ($1, 'Technical Consulting & Audit', 'technical-consulting', 'Deep-dive security, performance, and scalability code reviews for growing digital products.', 499, '["Code Audit", "Performance Profiling", "Security Hardening", "Architecture Roadmap"]'::jsonb)
+        `, [w.id]);
+      }
+
+      const expCount = await client.query('SELECT COUNT(*)::int AS count FROM tenant_experiences WHERE website_id = $1', [w.id]);
+      if (expCount.rows[0].count === 0) {
+        await client.query(`
+          INSERT INTO tenant_experiences (website_id, role_title, organization, location, start_date, is_current, description, skills_used, sort_order) VALUES
+          ($1, 'Lead Full-Stack Engineer', 'Apex Digital Studio', 'San Francisco, CA', '2023-01-01', TRUE, 'Architected distributed SaaS platforms, increased core web vitals by 45%, and spearheaded design system revamp.', ARRAY['Next.js', 'PostgreSQL', 'TailwindCSS', 'TypeScript'], 1),
+          ($1, 'Senior Frontend Developer', 'Pulse Cloud Systems', 'Remote', '2021-03-01', FALSE, 'Built real-time interactive analytics dashboards, streaming websocket interfaces, and accessible design components.', ARRAY['React', 'JavaScript', 'Node.js', 'WebSockets'], 2)
+        `, [w.id]);
+      }
+
+      const prodCount = await client.query('SELECT COUNT(*)::int AS count FROM tenant_products WHERE website_id = $1', [w.id]);
+      if (prodCount.rows[0].count === 0) {
+        await client.query(`
+          INSERT INTO tenant_products (website_id, name, slug, description, short_description, price_in_cents, compare_at_price_in_cents, status, is_featured, is_digital) VALUES
+          ($1, 'Next.js Ultimate SaaS Starter Kit', 'saas-starter-kit', 'Production-ready starter boilerplate with auth, PostgreSQL, Stripe payments, and modular dashboards.', 'Complete multi-tenant SaaS starter kit.', 4900, 7900, 'ACTIVE', TRUE, TRUE),
+          ($1, 'Minimalist Portfolio & Blog Template', 'minimalist-portfolio-template', 'Ultra-clean responsive portfolio layout tailored for designers, creators, and engineers.', 'Responsive portfolio template with dark mode.', 2900, 4900, 'ACTIVE', TRUE, TRUE)
+        `, [w.id]);
+      }
+
+      const blogCount = await client.query('SELECT COUNT(*)::int AS count FROM tenant_blogs WHERE website_id = $1', [w.id]);
+      if (blogCount.rows[0].count === 0) {
+        await client.query(`
+          INSERT INTO tenant_blogs (website_id, title, slug, excerpt, content, is_published, views_count) VALUES
+          ($1, 'Building Resilient Multi-Tenant Architectures in 2026', 'building-resilient-multi-tenant-architectures', 'An in-depth exploration of database partitioning, role-based access control, and subdomain routing.', '<p>Modern SaaS applications demand flexibility, isolation, and speed. By architecting tenant models with dedicated foreign keys, customizable roles, and fine-grained module permissions, platforms can scale seamlessly.</p><p>In this guide, we break down best practices for multi-tenant state and permissions management.</p>', TRUE, 128)
+        `, [w.id]);
+      }
+
+      const skillsCount = await client.query('SELECT COUNT(*)::int AS count FROM tenant_skills WHERE website_id = $1', [w.id]);
+      if (skillsCount.rows[0].count === 0) {
+        await client.query(`
+          INSERT INTO tenant_skills (website_id, name, category, proficiency, sort_order) VALUES
+          ($1, 'Next.js & React 19', 'Frontend', 95, 1),
+          ($1, 'PostgreSQL & Database Architecture', 'Backend', 90, 2),
+          ($1, 'TailwindCSS & Modern UI', 'Design', 92, 3),
+          ($1, 'Node.js & REST APIs', 'Backend', 88, 4)
+        `, [w.id]);
+      }
+    }
+
     console.log('Migration completed successfully!');
   } catch (err) {
     console.error('Migration failed:', err);

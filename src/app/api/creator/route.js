@@ -501,26 +501,41 @@ export async function POST(request) {
         [creatorId, packageId, subscription.id, pkg.price_in_cents, pkg.currency || 'USD', paymentMethod, txnId]
       );
 
-      // Auto-provision initial website if requested or if creator has none
-      let website = null;
-      if (body.provisionWebsite !== false) {
-        const existingWebsites = await queryDb('SELECT id FROM websites WHERE creator_id = $1 LIMIT 1', [creatorId]);
-        if (existingWebsites.rows.length === 0) {
+        // Auto-provision initial website if requested or if creator has none
+        let website = null;
+        if (body.provisionWebsite !== false) {
           const rawSubdomain = (body.subdomain || `portfolio-${creatorId}`).toLowerCase().replace(/[^a-z0-9-]/g, '');
+          if (!rawSubdomain || rawSubdomain.length < 3) {
+            return NextResponse.json({ success: false, error: 'Subdomain is mandatory and must be at least 3 characters.' }, { status: 400 });
+          }
+
+          const existingSub = await queryDb('SELECT id FROM websites WHERE LOWER(subdomain) = $1 LIMIT 1', [rawSubdomain]);
+          if (existingSub.rows.length > 0) {
+            return NextResponse.json({ success: false, error: `Subdomain "${rawSubdomain}" is already claimed. Please choose another.` }, { status: 409 });
+          }
+
+          const themeConfig = {
+            primaryColor: '#6366f1',
+            fontFamily: 'Inter',
+            accent: '#10b981',
+            mode: 'dark',
+          };
+
           const wCreate = await queryDb(
             `INSERT INTO websites (creator_id, name, subdomain, custom_domain, status, storage_used_mb, is_published, theme_config)
-             VALUES ($1, $2, $3, $4, 'ACTIVE', 15, TRUE, '{"primaryColor": "#6366f1", "fontFamily": "Inter", "accent": "#10b981", "mode": "dark"}'::jsonb)
+             VALUES ($1, $2, $3, $4, 'ACTIVE', 15, TRUE, $5)
              RETURNING *`,
             [
               creatorId,
-              body.websiteName || 'My Portfolio Website',
+              (body.websiteName || 'My Portfolio & Store').trim(),
               rawSubdomain,
               body.customDomain || null,
+              JSON.stringify(themeConfig),
             ]
           );
           website = wCreate.rows[0];
+          await seedTenantWebsiteDefaults(website.id, website.name, themeConfig);
         }
-      }
 
       return NextResponse.json({
         success: true,
@@ -592,7 +607,9 @@ export async function POST(request) {
           JSON.stringify(themeConfig),
         ]
       );
-      return NextResponse.json({ success: true, website: res.rows[0] });
+      const newWebsite = res.rows[0];
+      await seedTenantWebsiteDefaults(newWebsite.id, newWebsite.name, themeConfig);
+      return NextResponse.json({ success: true, website: newWebsite });
     }
 
     // 6. Update Website
@@ -752,3 +769,103 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+async function seedTenantWebsiteDefaults(websiteId, websiteName, themeConfig = {}) {
+  try {
+    const primaryColor = themeConfig.primaryColor || '#6366f1';
+    const fontFamily = themeConfig.fontFamily || 'Inter';
+
+    // 1. Settings
+    await queryDb(`
+      INSERT INTO tenant_settings (website_id, site_title, tagline, primary_color, font_family)
+      VALUES ($1, $2, 'Portfolio & Showcase', $3, $4)
+      ON CONFLICT (website_id) DO NOTHING
+    `, [websiteId, websiteName || 'My Portfolio & Store', primaryColor, fontFamily]);
+
+    // 2. Modules
+    const defaultModules = [
+      { name: 'Products & Store', slug: 'products', description: 'E-commerce products, digital downloads & inventory' },
+      { name: 'Blog & Articles', slug: 'blogs', description: 'Articles, news and blog publishing' },
+      { name: 'Appointment Booking', slug: 'appointments', description: 'Client booking and schedule management' },
+      { name: 'Support Tickets', slug: 'support', description: 'Customer inquiry and support ticketing' },
+      { name: 'Portfolio Gallery', slug: 'gallery', description: 'Media showcase and portfolio visual gallery' },
+      { name: 'Experiences Timeline', slug: 'experiences', description: 'Work history, education and milestones' },
+      { name: 'Services Offered', slug: 'services', description: 'Bespoke service packages and pricing' },
+      { name: 'Client Testimonials', slug: 'testimonials', description: 'Customer reviews and endorsements' },
+      { name: 'Contact Inquiries', slug: 'contact', description: 'Direct contact messaging and leads' },
+    ];
+    for (const m of defaultModules) {
+      await queryDb(`
+        INSERT INTO tenant_modules (website_id, name, slug, description, is_enabled)
+        VALUES ($1, $2, $3, $4, TRUE)
+        ON CONFLICT (website_id, slug) DO NOTHING
+      `, [websiteId, m.name, m.slug, m.description]);
+    }
+
+    // 3. Roles
+    const defaultRoles = [
+      { name: 'Owner', slug: 'owner', description: 'Full owner access with all privileges', is_system: true },
+      { name: 'Admin', slug: 'admin', description: 'Site administrator with full management rights', is_system: true },
+      { name: 'Editor', slug: 'editor', description: 'Content editor for blogs, products & portfolio', is_system: false },
+      { name: 'Support Specialist', slug: 'support-specialist', description: 'Support ticket and inquiry handler', is_system: false },
+    ];
+    for (const r of defaultRoles) {
+      await queryDb(`
+        INSERT INTO tenant_roles (website_id, name, slug, description, is_system)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (website_id, slug) DO NOTHING
+      `, [websiteId, r.name, r.slug, r.description, r.is_system]);
+    }
+
+    // 4. Permissions
+    const modRows = await queryDb('SELECT id, slug FROM tenant_modules WHERE website_id = $1', [websiteId]);
+    const actions = ['view', 'create', 'edit', 'delete', 'manage'];
+    for (const mod of modRows.rows) {
+      for (const act of actions) {
+        const pName = `${act.charAt(0).toUpperCase() + act.slice(1)} ${mod.slug}`;
+        const pSlug = `${mod.slug}.${act}`;
+        await queryDb(`
+          INSERT INTO tenant_permissions (website_id, module_id, name, slug, action, is_custom)
+          VALUES ($1, $2, $3, $4, $5, FALSE)
+          ON CONFLICT (website_id, slug) DO NOTHING
+        `, [websiteId, mod.id, pName, pSlug, act]);
+      }
+    }
+
+    // 5. Grant Owner all permissions
+    const ownerRole = await queryDb('SELECT id FROM tenant_roles WHERE website_id = $1 AND slug = $2', [websiteId, 'owner']);
+    if (ownerRole.rows.length > 0) {
+      const allPerms = await queryDb('SELECT id FROM tenant_permissions WHERE website_id = $1', [websiteId]);
+      for (const p of allPerms.rows) {
+        await queryDb(`
+          INSERT INTO tenant_role_permissions (role_id, permission_id)
+          VALUES ($1, $2)
+          ON CONFLICT (role_id, permission_id) DO NOTHING
+        `, [ownerRole.rows[0].id, p.id]);
+      }
+    }
+
+    // 6. Sample services, experiences, products
+    await queryDb(`
+      INSERT INTO tenant_services (website_id, title, slug, description, price_starting_at, features) VALUES
+      ($1, 'Full-Stack Web Architecture', 'full-stack-architecture', 'Bespoke web applications built with Next.js & PostgreSQL.', 1499, '["Full-Stack Design", "Modern Database", "SEO Ready"]'::jsonb),
+      ($1, 'UI/UX & Brand Design', 'ui-ux-design', 'Award-winning visual identities and interactive component systems.', 899, '["Design System", "Prototypes", "Responsive UI"]'::jsonb)
+      ON CONFLICT (website_id, slug) DO NOTHING
+    `, [websiteId]);
+
+    await queryDb(`
+      INSERT INTO tenant_products (website_id, name, slug, description, short_description, price_in_cents, status, is_featured, is_digital) VALUES
+      ($1, 'Flagship Creator Digital Bundle', 'creator-bundle', 'Complete suite of digital assets, design kits, and templates.', 'Exclusive creator starter bundle.', 3900, 'ACTIVE', TRUE, TRUE)
+      ON CONFLICT (website_id, slug) DO NOTHING
+    `, [websiteId]);
+
+    await queryDb(`
+      INSERT INTO tenant_blogs (website_id, title, slug, excerpt, content, is_published) VALUES
+      ($1, 'Welcome to Our New Website', 'welcome-to-our-new-website', 'We are delighted to launch our official website and showcase our latest works.', '<p>Welcome! Explore our services, portfolio, and digital offerings. Feel free to contact us or book a consultation anytime.</p>', TRUE)
+      ON CONFLICT (website_id, slug) DO NOTHING
+    `, [websiteId]);
+  } catch (err) {
+    console.error('Error seeding tenant website defaults:', err);
+  }
+}
+

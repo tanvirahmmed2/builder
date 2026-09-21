@@ -38,6 +38,7 @@ export default function CreatorWebsitesPage() {
   const [updateErr, setUpdateErr] = useState('');
 
   const [deletingId, setDeletingId] = useState(null);
+  const [selectedDnsWebsite, setSelectedDnsWebsite] = useState(null);
 
   const maxWebsites = stats?.maxWebsites || activeSubscription?.max_portfolios || 1;
 
@@ -201,7 +202,7 @@ export default function CreatorWebsitesPage() {
                     {w.name}
                   </h3>
                   <a
-                    href={`/sites/${w.subdomain}`}
+                    href={`/website/${w.subdomain}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-mono text-secondary hover:underline flex items-center gap-1 mt-1 font-semibold"
@@ -217,9 +218,18 @@ export default function CreatorWebsitesPage() {
                       <BiGlobe className="text-sm text-slate-600" />
                       <span>Custom Domain:</span>
                     </span>
-                    <span className="font-mono text-slate-900 font-semibold">
-                      {w.custom_domain || 'Not configured'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-slate-900 font-semibold">
+                        {w.custom_domain || 'Not connected'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDnsWebsite(w)}
+                        className="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded font-medium cursor-pointer"
+                      >
+                        DNS Setup
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 flex items-center gap-1">
@@ -237,20 +247,27 @@ export default function CreatorWebsitesPage() {
                   type="button"
                   onClick={() => handleOpenEdit(w)}
                   className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                  title="Configure Website Settings"
+                  title="Configure Website Settings & Custom Domain"
                 >
                   <BiEdit className="text-lg" />
                 </button>
 
                 <div className="flex items-center gap-2">
                   <a
-                    href={`/sites/${w.subdomain}`}
+                    href={`/website/${w.subdomain}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1 transition-colors"
                   >
-                    <span>Live</span>
+                    <span>Visit Live</span>
                     <BiLinkExternal className="text-sm text-secondary" />
+                  </a>
+
+                  <a
+                    href={`/website/${w.subdomain}/dashboard`}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    <span>Dashboard</span>
                   </a>
 
                   <a
@@ -415,6 +432,106 @@ export default function CreatorWebsitesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Domain DNS Instructions Modal */}
+      {selectedDnsWebsite && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800 text-xl">
+                  <BiGlobe />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Custom Domain DNS Setup</h3>
+                  <p className="text-xs text-slate-500 font-mono">{selectedDnsWebsite.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDnsWebsite(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <BiX className="text-2xl" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
+              <p>
+                To point your custom domain (e.g., <strong className="font-mono text-slate-900">{selectedDnsWebsite.custom_domain || 'yourdomain.com'}</strong>) to this website, log in to your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.) and add the following DNS records:
+              </p>
+
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3 font-mono">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-sans font-semibold">
+                    <span>Record 1 (CNAME for subdomains or www)</span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Recommended</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Type</span>
+                      <strong className="text-slate-900">CNAME</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Name / Host</span>
+                      <strong className="text-slate-900">@ or www</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Target / Value</span>
+                      <strong className="text-slate-900 text-[11px] truncate">cname.saasplatform.com</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-sans font-semibold">
+                    <span>Record 2 (Apex A Record)</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Type</span>
+                      <strong className="text-slate-900">A</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Name / Host</span>
+                      <strong className="text-slate-900">@</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-sans">Value / IP</span>
+                      <strong className="text-slate-900">76.76.21.21</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px]">
+                💡 <strong>DNS Propagation Note:</strong> DNS changes typically take 5 to 60 minutes to propagate worldwide. Once active, automatic SSL certificates are provisioned with zero configuration.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const w = selectedDnsWebsite;
+                  setSelectedDnsWebsite(null);
+                  handleOpenEdit(w);
+                }}
+                className="px-4 py-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 text-xs font-semibold cursor-pointer"
+              >
+                Change Custom Domain Name
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDnsWebsite(null)}
+                className="px-5 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -41,6 +41,13 @@ function CheckoutContent() {
     setLoading(true);
     setError('');
 
+    const cleanSubdomain = (subdomain || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!cleanSubdomain || cleanSubdomain.length < 3) {
+      setError('Subdomain is mandatory and must be at least 3 characters long (letters, numbers, hyphens only).');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/creator', {
         method: 'POST',
@@ -51,8 +58,8 @@ function CheckoutContent() {
           packageId: selectedPkgId || selectedPkg?.id || 1,
           paymentMethod,
           provisionWebsite: true,
-          websiteName,
-          subdomain,
+          websiteName: (websiteName || 'My Portfolio & Store').trim(),
+          subdomain: cleanSubdomain,
         }),
       });
       const data = await res.json();
@@ -76,9 +83,9 @@ function CheckoutContent() {
           <BiLockAlt className="text-slate-500" />
           <span>Secure Checkout Gateway</span>
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Choose Package & Launch Website</h1>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Choose Package & Claim Your Subdomain</h1>
         <p className="text-xs text-slate-500 max-w-xl mx-auto">
-          Select your package duration, specify your initial portfolio subdomain, and activate your creator workspace.
+          Every package includes an instantly provisioned tenant website hosted on your chosen subdomain with complimentary SSL.
         </p>
       </div>
 
@@ -94,9 +101,9 @@ function CheckoutContent() {
             <BiCheckCircle />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Subscription Active!</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Website Provisioned!</h2>
             <p className="text-xs text-slate-500 mt-1">
-              Your package duration is live and your flagship portfolio website is ready.
+              Your package is active and your tenant website is ready at your claimed subdomain.
             </p>
           </div>
 
@@ -106,33 +113,40 @@ function CheckoutContent() {
               <strong className="text-slate-900 font-semibold">{selectedPkg?.name}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Website Subdomain:</span>
-              <strong className="text-slate-900 font-mono">
+              <span className="text-slate-500">Claimed Subdomain:</span>
+              <strong className="text-slate-900 font-mono text-emerald-600">
                 {createdWebsite?.subdomain || subdomain}.saasplatform.com
               </strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Status:</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold uppercase text-[10px]">
-                Active
+                Live & Active
               </span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={() => router.push(`/creator/${creatorId}`)}
-              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            <a
+              href={`/website/${createdWebsite?.subdomain || subdomain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2"
             >
-              Open Creator Dashboard →
-            </button>
+              <span>Visit Live Tenant Website →</span>
+            </a>
+            <a
+              href={`/website/${createdWebsite?.subdomain || subdomain}/dashboard`}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2"
+            >
+              <span>Open Tenant Management Dashboard</span>
+            </a>
             <button
               type="button"
               onClick={() => router.push(`/creator/${creatorId}/webites`)}
               className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all cursor-pointer"
             >
-              Manage Portfolio Websites
+              Manage in Creator Portal
             </button>
           </div>
         </div>
@@ -211,19 +225,27 @@ function CheckoutContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Free Subdomain *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Mandatory Subdomain *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">min 3 chars, lowercase & hyphens</span>
                   </label>
                   <div className="flex items-center">
                     <input
                       type="text"
                       required
+                      placeholder="e.g. acmestudio"
                       value={subdomain}
                       onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                       className="w-full bg-slate-50 border border-slate-200 rounded-l-xl px-4 py-2 text-sm text-slate-900 font-mono focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
                     />
                     <span className="bg-slate-100 border border-l-0 border-slate-200 rounded-r-xl px-3 py-2 text-xs text-slate-500 font-mono">
-                      .saas
+                      .saasplatform.com
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <span>Live preview:</span>
+                    <span className="font-mono text-emerald-600 font-semibold truncate">
+                      https://{subdomain ? subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '') : 'yourbrand'}.saasplatform.com
                     </span>
                   </div>
                 </div>
