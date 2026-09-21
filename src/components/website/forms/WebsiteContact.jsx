@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiCheckCircle, BiEnvelope, BiLoaderAlt, BiMapPin, BiPhone, BiSend } from 'react-icons/bi';
 
-export default function TenantContact({ websiteId, settings = {}, primaryColor = '#6366f1' }) {
+export default function WebsiteContact({ websiteId, settings = {}, primaryColor = '#6366f1' }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');

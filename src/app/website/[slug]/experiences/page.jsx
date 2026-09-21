@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantExperiences from '@/components/website/cards/TenantExperiences';
+import WebsiteExperiences from '@/components/website/cards/WebsiteExperiences';
 import { BiLoaderAlt } from 'react-icons/bi';
 
 export default function PublicExperiencesPage({ params }) {
@@ -52,7 +52,7 @@ export default function PublicExperiencesPage({ params }) {
       </div>
 
       {/* Experience & Skills */}
-      <TenantExperiences
+      <WebsiteExperiences
         experiences={experiences}
         skills={skills}
         primaryColor={primaryColor}

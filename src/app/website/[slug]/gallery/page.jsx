@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantGallery from '@/components/website/cards/TenantGallery';
+import WebsiteGallery from '@/components/website/cards/WebsiteGallery';
 import { BiLoaderAlt, BiImage } from 'react-icons/bi';
 
 export default function PublicGalleryPage({ params }) {
@@ -52,7 +52,7 @@ export default function PublicGalleryPage({ params }) {
       </div>
 
       {/* Gallery Showcase */}
-      <TenantGallery
+      <WebsiteGallery
         gallery={gallery}
         primaryColor={primaryColor}
       />

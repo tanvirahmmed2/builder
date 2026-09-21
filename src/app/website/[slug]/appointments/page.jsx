@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantAppointments from '@/components/website/forms/TenantAppointments';
+import WebsiteAppointments from '@/components/website/forms/WebsiteAppointments';
 import { BiLoaderAlt } from 'react-icons/bi';
 
 export default function PublicAppointmentsPage({ params }) {
@@ -52,7 +52,7 @@ export default function PublicAppointmentsPage({ params }) {
       </div>
 
       {/* Appointments Booking Form */}
-      <TenantAppointments
+      <WebsiteAppointments
         website={website}
         services={services}
         primaryColor={primaryColor}

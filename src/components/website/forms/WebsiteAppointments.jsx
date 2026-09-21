@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiCalendar, BiCheckCircle, BiLoaderAlt } from 'react-icons/bi';
 
-export default function TenantAppointments({ websiteId, services = [], primaryColor = '#6366f1', preselectedService = '' }) {
+export default function WebsiteAppointments({ websiteId, services = [], primaryColor = '#6366f1', preselectedService = '' }) {
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');

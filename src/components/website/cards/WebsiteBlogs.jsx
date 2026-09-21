@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiCalendar, BiRightArrowAlt, BiShow, BiX } from 'react-icons/bi';
 
-export default function TenantBlogs({ blogs = [], primaryColor = '#6366f1' }) {
+export default function WebsiteBlogs({ blogs = [], primaryColor = '#6366f1' }) {
   const [activeArticle, setActiveArticle] = useState(null);
 
   if (!blogs || blogs.length === 0) return null;

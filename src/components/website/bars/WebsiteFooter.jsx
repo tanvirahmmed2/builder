@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { BiShieldQuarter } from 'react-icons/bi';
 
-export default function TenantFooter({ website }) {
+export default function WebsiteFooter({ website }) {
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'Studio Brand';
   const subdomain = website?.subdomain || 'site';
@@ -35,7 +35,7 @@ export default function TenantFooter({ website }) {
         <div className="pt-6 border-t border-slate-100 dark:border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
           <div>
             © {new Date().getFullYear()} {siteTitle}. Powered by{' '}
-            <strong className="text-slate-700 dark:text-slate-200 font-semibold">Multi-Tenant Platform</strong>.
+            <strong className="text-slate-700 dark:text-slate-200 font-semibold">Multi-Website Platform</strong>.
           </div>
 
           <div className="flex items-center gap-4">

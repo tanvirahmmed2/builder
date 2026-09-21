@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function POST(request, context) {
@@ -28,14 +28,14 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(`
-      INSERT INTO tenant_appointments (website_id, client_name, client_email, client_phone, service_name, appointment_date, time_slot, notes, status)
+      INSERT INTO website_appointments (website_id, client_name, client_email, client_phone, service_name, appointment_date, time_slot, notes, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PENDING')
       RETURNING *
     `, [websiteId, clientName, clientEmail, clientPhone, serviceName, appointmentDate, timeSlot, notes]);
 
     return NextResponse.json({ success: true, appointment: res.rows[0] });
   } catch (error) {
-    console.error('Tenant appointment submit error:', error);
+    console.error('Website appointment submit error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

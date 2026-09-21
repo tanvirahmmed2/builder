@@ -128,7 +128,7 @@ export default function UsersPage({ params }) {
           <BiGroup className="mx-auto text-4xl text-slate-300 mb-2" />
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No users found</h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            Team members with access to this tenant site will be listed here.
+            Team members with access to this website will be listed here.
           </p>
         </div>
       ) : (

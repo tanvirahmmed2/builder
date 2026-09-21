@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function POST(request, context) {
@@ -24,7 +24,7 @@ export async function POST(request, context) {
       const priceInCents = Number(body.price || body.price_in_cents || 0);
 
       const res = await queryDb(`
-        INSERT INTO tenant_products (website_id, name, slug, description, price_in_cents, status, is_featured, is_digital)
+        INSERT INTO website_products (website_id, name, slug, description, price_in_cents, status, is_featured, is_digital)
         VALUES ($1, $2, $3, $4, $5, 'ACTIVE', TRUE, TRUE)
         RETURNING *
       `, [websiteId, name, productSlug, description, priceInCents]);
@@ -34,7 +34,7 @@ export async function POST(request, context) {
 
     // 2. Delete Product
     if (action === 'delete_product') {
-      await queryDb('DELETE FROM tenant_products WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
+      await queryDb('DELETE FROM website_products WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
       return NextResponse.json({ success: true, id: body.id });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request, context) {
       const excerpt = body.excerpt || content.slice(0, 150);
 
       const res = await queryDb(`
-        INSERT INTO tenant_blogs (website_id, title, slug, content, excerpt, is_published)
+        INSERT INTO website_blogs (website_id, title, slug, content, excerpt, is_published)
         VALUES ($1, $2, $3, $4, $5, TRUE)
         RETURNING *
       `, [websiteId, title, blogSlug, content, excerpt]);
@@ -56,7 +56,7 @@ export async function POST(request, context) {
 
     // 4. Delete Blog
     if (action === 'delete_blog') {
-      await queryDb('DELETE FROM tenant_blogs WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
+      await queryDb('DELETE FROM website_blogs WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
       return NextResponse.json({ success: true, id: body.id });
     }
 
@@ -68,7 +68,7 @@ export async function POST(request, context) {
       const description = (body.description || '').trim();
 
       const res = await queryDb(`
-        INSERT INTO tenant_experiences (website_id, role_title, organization, location, description, is_current)
+        INSERT INTO website_experiences (website_id, role_title, organization, location, description, is_current)
         VALUES ($1, $2, $3, $4, $5, TRUE)
         RETURNING *
       `, [websiteId, roleTitle, organization, location, description]);
@@ -78,7 +78,7 @@ export async function POST(request, context) {
 
     // 6. Delete Experience
     if (action === 'delete_experience') {
-      await queryDb('DELETE FROM tenant_experiences WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
+      await queryDb('DELETE FROM website_experiences WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
       return NextResponse.json({ success: true, id: body.id });
     }
 
@@ -90,7 +90,7 @@ export async function POST(request, context) {
       const category = (body.category || 'Portfolio').trim();
 
       const res = await queryDb(`
-        INSERT INTO tenant_gallery (website_id, title, image_url, caption, category)
+        INSERT INTO website_gallery (website_id, title, image_url, caption, category)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING *
       `, [websiteId, title, imageUrl, caption, category]);
@@ -100,7 +100,7 @@ export async function POST(request, context) {
 
     // 8. Delete Gallery Item
     if (action === 'delete_gallery') {
-      await queryDb('DELETE FROM tenant_gallery WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
+      await queryDb('DELETE FROM website_gallery WHERE id = $1 AND website_id = $2', [body.id, websiteId]);
       return NextResponse.json({ success: true, id: body.id });
     }
 
@@ -108,7 +108,7 @@ export async function POST(request, context) {
     if (action === 'update_appointment_status') {
       const { id, status } = body;
       const res = await queryDb(`
-        UPDATE tenant_appointments
+        UPDATE website_appointments
         SET status = $1
         WHERE id = $2 AND website_id = $3
         RETURNING *
@@ -121,7 +121,7 @@ export async function POST(request, context) {
     if (action === 'reply_contact') {
       const { id, reply } = body;
       const res = await queryDb(`
-        UPDATE tenant_contact
+        UPDATE website_contact
         SET status = 'REPLIED', reply = $1, replied_at = CURRENT_TIMESTAMP
         WHERE id = $2 AND website_id = $3
         RETURNING *
@@ -134,7 +134,7 @@ export async function POST(request, context) {
     if (action === 'toggle_module') {
       const { moduleId, isEnabled } = body;
       await queryDb(`
-        UPDATE tenant_modules
+        UPDATE website_modules
         SET is_enabled = $1
         WHERE id = $2 AND website_id = $3
       `, [Boolean(isEnabled), moduleId, websiteId]);
@@ -144,7 +144,7 @@ export async function POST(request, context) {
 
     return NextResponse.json({ success: false, error: `Invalid action: ${action}` }, { status: 400 });
   } catch (error) {
-    console.error('Tenant manage API error:', error);
+    console.error('Website manage API error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

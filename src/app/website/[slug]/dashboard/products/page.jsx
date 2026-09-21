@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantManageModal from '@/components/website/forms/TenantManageModal';
+import WebsiteManageModal from '@/components/website/forms/WebsiteManageModal';
 import {
   BiPlus,
   BiSearch,
@@ -224,7 +224,7 @@ export default function ProductsPage({ params }) {
       )}
 
       {/* Modal */}
-      <TenantManageModal
+      <WebsiteManageModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleCreateProduct}

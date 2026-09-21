@@ -1,8 +1,8 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantNavbar from '@/components/website/bars/TenantNavbar';
-import TenantFooter from '@/components/website/bars/TenantFooter';
+import WebsiteNavbar from '@/components/website/bars/WebsiteNavbar';
+import WebsiteFooter from '@/components/website/bars/WebsiteFooter';
 
 export default function GalleryPublicLayout({ children, params }) {
   const unwrappedParams = use(params);
@@ -21,11 +21,11 @@ export default function GalleryPublicLayout({ children, params }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <TenantNavbar website={website} />
+      <WebsiteNavbar website={website} />
       <div className="flex-1">
         {children}
       </div>
-      <TenantFooter website={website} />
+      <WebsiteFooter website={website} />
     </div>
   );
 }

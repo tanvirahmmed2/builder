@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function GET(request, context) {
@@ -25,14 +25,14 @@ export async function GET(request, context) {
       testimonialsRes,
       offersRes,
     ] = await Promise.all([
-      queryDb('SELECT * FROM tenant_services WHERE website_id = $1 AND is_active = TRUE ORDER BY sort_order ASC, id ASC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_products WHERE website_id = $1 AND status = $2 ORDER BY is_featured DESC, id DESC', [websiteId, 'ACTIVE']).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_blogs WHERE website_id = $1 AND is_published = TRUE ORDER BY published_at DESC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_experiences WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_gallery WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_skills WHERE website_id = $1 ORDER BY sort_order ASC, proficiency DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_testimonials WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_offers WHERE website_id = $1 AND is_active = TRUE ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_services WHERE website_id = $1 AND is_active = TRUE ORDER BY sort_order ASC, id ASC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_products WHERE website_id = $1 AND status = $2 ORDER BY is_featured DESC, id DESC', [websiteId, 'ACTIVE']).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_blogs WHERE website_id = $1 AND is_published = TRUE ORDER BY published_at DESC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_experiences WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_gallery WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_skills WHERE website_id = $1 ORDER BY sort_order ASC, proficiency DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_testimonials WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_offers WHERE website_id = $1 AND is_active = TRUE ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
     ]);
 
     return NextResponse.json({
@@ -58,7 +58,7 @@ export async function GET(request, context) {
       offers: offersRes.rows,
     });
   } catch (error) {
-    console.error('Tenant public website API error:', error);
+    console.error('Website public website API error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -76,11 +76,11 @@ export async function PUT(request, context) {
     const body = await request.json();
     const websiteId = website.id;
 
-    // 1. Update tenant_settings
+    // 1. Update website_settings
     if (body.settings) {
       const s = body.settings;
       await queryDb(`
-        UPDATE tenant_settings
+        UPDATE website_settings
         SET site_title = COALESCE($1, site_title),
             tagline = COALESCE($2, tagline),
             bio = COALESCE($3, bio),
@@ -124,7 +124,7 @@ export async function PUT(request, context) {
     const updatedWebsite = await resolveWebsiteFromRequest(request, slug);
     return NextResponse.json({ success: true, website: updatedWebsite });
   } catch (error) {
-    console.error('Update tenant website API error:', error);
+    console.error('Update website website API error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

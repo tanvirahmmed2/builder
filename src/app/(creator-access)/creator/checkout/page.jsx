@@ -85,7 +85,7 @@ function CheckoutContent() {
         </div>
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Choose Package & Claim Your Subdomain</h1>
         <p className="text-xs text-slate-500 max-w-xl mx-auto">
-          Every package includes an instantly provisioned tenant website hosted on your chosen subdomain with complimentary SSL.
+          Every package includes an instantly provisioned website hosted on your chosen subdomain with complimentary SSL.
         </p>
       </div>
 
@@ -103,7 +103,7 @@ function CheckoutContent() {
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Website Provisioned!</h2>
             <p className="text-xs text-slate-500 mt-1">
-              Your package is active and your tenant website is ready at your claimed subdomain.
+              Your package is active and your website is ready at your claimed subdomain.
             </p>
           </div>
 
@@ -133,13 +133,13 @@ function CheckoutContent() {
               rel="noopener noreferrer"
               className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2"
             >
-              <span>Visit Live Tenant Website →</span>
+              <span>Visit Live Website →</span>
             </a>
             <a
               href={`/website/${createdWebsite?.subdomain || subdomain}/dashboard`}
               className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2"
             >
-              <span>Open Tenant Management Dashboard</span>
+              <span>Open Website Management Dashboard</span>
             </a>
             <button
               type="button"

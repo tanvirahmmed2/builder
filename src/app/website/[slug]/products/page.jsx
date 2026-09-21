@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantProducts from '@/components/website/cards/TenantProducts';
+import WebsiteProducts from '@/components/website/cards/WebsiteProducts';
 import { BiLoaderAlt, BiShoppingBag, BiX, BiCheckCircle } from 'react-icons/bi';
 
 export default function PublicProductsPage({ params }) {
@@ -110,7 +110,7 @@ export default function PublicProductsPage({ params }) {
       </div>
 
       {/* Products Grid */}
-      <TenantProducts
+      <WebsiteProducts
         products={products}
         primaryColor={primaryColor}
         onAddToCart={handleAddToCart}

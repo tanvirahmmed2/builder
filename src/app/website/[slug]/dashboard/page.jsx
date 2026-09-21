@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import TenantStatsCard from '@/components/website/cards/TenantStatsCard';
+import WebsiteStatsCard from '@/components/website/cards/WebsiteStatsCard';
 import {
   BiBarChartSquare,
   BiBookOpen,
@@ -23,7 +23,7 @@ import {
   BiChevronRight,
 } from 'react-icons/bi';
 
-export default function TenantDashboardOverviewPage({ params }) {
+export default function WebsiteDashboardOverviewPage({ params }) {
   const unwrappedParams = use(params);
   const slug = unwrappedParams.slug;
 
@@ -91,7 +91,7 @@ export default function TenantDashboardOverviewPage({ params }) {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Active Tenant Site
+            Active Website
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {website?.settings?.site_title || website?.name || 'Creator Studio'}
@@ -120,28 +120,28 @@ export default function TenantDashboardOverviewPage({ params }) {
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <TenantStatsCard
+        <WebsiteStatsCard
           title="Total Revenue"
           value={`$${(Number(kpis.total_revenue || 0) / 100).toFixed(2)}`}
           subtext="From store orders"
           icon={BiDollarCircle}
           color="emerald"
         />
-        <TenantStatsCard
+        <WebsiteStatsCard
           title="Orders Placed"
           value={kpis.total_orders || 0}
           subtext="Purchases processed"
           icon={BiShoppingBag}
           color="indigo"
         />
-        <TenantStatsCard
+        <WebsiteStatsCard
           title="Appointments"
           value={kpis.total_appointments || 0}
           subtext={`${kpis.pending_appointments || 0} awaiting action`}
           icon={BiCalendar}
           color="blue"
         />
-        <TenantStatsCard
+        <WebsiteStatsCard
           title="Inquiries / Leads"
           value={kpis.total_inquiries || 0}
           subtext="Contact messages"

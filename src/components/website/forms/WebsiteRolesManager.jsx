@@ -13,7 +13,7 @@ import {
   BiX,
 } from 'react-icons/bi';
 
-export default function TenantRolesManager({ websiteId, slug, primaryColor = '#6366f1' }) {
+export default function WebsiteRolesManager({ websiteId, slug, primaryColor = '#6366f1' }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState([]);
   const [modules, setModules] = useState([]);

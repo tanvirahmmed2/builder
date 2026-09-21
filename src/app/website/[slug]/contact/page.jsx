@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantContact from '@/components/website/forms/TenantContact';
+import WebsiteContact from '@/components/website/forms/WebsiteContact';
 import { BiLoaderAlt } from 'react-icons/bi';
 
 export default function PublicContactPage({ params }) {
@@ -52,7 +52,7 @@ export default function PublicContactPage({ params }) {
       </div>
 
       {/* Contact Form & Contact Details */}
-      <TenantContact
+      <WebsiteContact
         website={website}
         primaryColor={primaryColor}
       />

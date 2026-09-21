@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiImage, BiX } from 'react-icons/bi';
 
-export default function TenantGallery({ gallery = [], primaryColor = '#6366f1' }) {
+export default function WebsiteGallery({ gallery = [], primaryColor = '#6366f1' }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [activeCategory, setActiveCategory] = useState('ALL');
 

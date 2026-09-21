@@ -1,19 +1,19 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantNavbar from '@/components/website/bars/TenantNavbar';
-import TenantHero from '@/components/website/cards/TenantHero';
-import TenantServices from '@/components/website/cards/TenantServices';
-import TenantExperiences from '@/components/website/cards/TenantExperiences';
-import TenantProducts from '@/components/website/cards/TenantProducts';
-import TenantGallery from '@/components/website/cards/TenantGallery';
-import TenantBlogs from '@/components/website/cards/TenantBlogs';
-import TenantAppointments from '@/components/website/forms/TenantAppointments';
-import TenantContact from '@/components/website/forms/TenantContact';
-import TenantFooter from '@/components/website/bars/TenantFooter';
+import WebsiteNavbar from '@/components/website/bars/WebsiteNavbar';
+import WebsiteHero from '@/components/website/cards/WebsiteHero';
+import WebsiteServices from '@/components/website/cards/WebsiteServices';
+import WebsiteExperiences from '@/components/website/cards/WebsiteExperiences';
+import WebsiteProducts from '@/components/website/cards/WebsiteProducts';
+import WebsiteGallery from '@/components/website/cards/WebsiteGallery';
+import WebsiteBlogs from '@/components/website/cards/WebsiteBlogs';
+import WebsiteAppointments from '@/components/website/forms/WebsiteAppointments';
+import WebsiteContact from '@/components/website/forms/WebsiteContact';
+import WebsiteFooter from '@/components/website/bars/WebsiteFooter';
 import { BiLoaderAlt, BiShoppingBag, BiX } from 'react-icons/bi';
 
-export default function TenantWebsiteHomePage({ params }) {
+export default function WebsiteHomePage({ params }) {
   const unwrappedParams = use(params);
   const slug = unwrappedParams.slug;
 
@@ -64,7 +64,7 @@ export default function TenantWebsiteHomePage({ params }) {
         </div>
         <h1 className="text-2xl font-black">Website Not Found</h1>
         <p className="text-xs text-slate-500 max-w-sm">
-          {error || `The tenant website "${slug}" is either inactive, unpublished, or has not been provisioned yet.`}
+          {error || `The website "${slug}" is either inactive, unpublished, or has not been provisioned yet.`}
         </p>
       </div>
     );
@@ -90,7 +90,7 @@ export default function TenantWebsiteHomePage({ params }) {
       `}</style>
 
       {/* Header */}
-      <TenantNavbar
+      <WebsiteNavbar
         website={website}
         cartCount={cart.length}
         onOpenCart={() => setCartOpen(true)}
@@ -98,11 +98,11 @@ export default function TenantWebsiteHomePage({ params }) {
 
       <main className="space-y-4">
         {/* Hero */}
-        <TenantHero website={website} />
+        <WebsiteHero website={website} />
 
         {/* Services */}
         {services?.length > 0 && (
-          <TenantServices
+          <WebsiteServices
             services={services}
             primaryColor={primaryColor}
             onSelectService={(serviceTitle) => setSelectedService(serviceTitle)}
@@ -111,7 +111,7 @@ export default function TenantWebsiteHomePage({ params }) {
 
         {/* Experiences & Skills */}
         {(experiences?.length > 0 || skills?.length > 0) && (
-          <TenantExperiences
+          <WebsiteExperiences
             experiences={experiences}
             skills={skills}
             primaryColor={primaryColor}
@@ -120,7 +120,7 @@ export default function TenantWebsiteHomePage({ params }) {
 
         {/* Products / Store */}
         {products?.length > 0 && (
-          <TenantProducts
+          <WebsiteProducts
             products={products}
             primaryColor={primaryColor}
             onAddToCart={handleAddToCart}
@@ -129,16 +129,16 @@ export default function TenantWebsiteHomePage({ params }) {
 
         {/* Portfolio Gallery */}
         {gallery?.length > 0 && (
-          <TenantGallery gallery={gallery} primaryColor={primaryColor} />
+          <WebsiteGallery gallery={gallery} primaryColor={primaryColor} />
         )}
 
         {/* Blogs / Insights */}
         {blogs?.length > 0 && (
-          <TenantBlogs blogs={blogs} primaryColor={primaryColor} />
+          <WebsiteBlogs blogs={blogs} primaryColor={primaryColor} />
         )}
 
         {/* Appointments Calendar */}
-        <TenantAppointments
+        <WebsiteAppointments
           websiteId={website.id}
           services={services}
           primaryColor={primaryColor}
@@ -146,7 +146,7 @@ export default function TenantWebsiteHomePage({ params }) {
         />
 
         {/* Contact Form */}
-        <TenantContact
+        <WebsiteContact
           websiteId={website.id}
           settings={settings}
           primaryColor={primaryColor}
@@ -154,7 +154,7 @@ export default function TenantWebsiteHomePage({ params }) {
       </main>
 
       {/* Footer */}
-      <TenantFooter website={website} />
+      <WebsiteFooter website={website} />
 
       {/* Slide-over Cart Drawer */}
       {cartOpen && (

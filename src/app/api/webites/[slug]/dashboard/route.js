@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function GET(request, context) {
@@ -27,16 +27,16 @@ export async function GET(request, context) {
       servicesRes,
       rolesRes,
     ] = await Promise.all([
-      queryDb('SELECT * FROM tenant_purchase WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_appointments WHERE website_id = $1 ORDER BY appointment_date DESC, id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_contact WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_support WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_products WHERE website_id = $1 ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_blogs WHERE website_id = $1 ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_experiences WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_gallery WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT * FROM tenant_services WHERE website_id = $1 ORDER BY sort_order ASC, id ASC', [websiteId]).catch(() => ({ rows: [] })),
-      queryDb('SELECT COUNT(*)::int AS count FROM tenant_roles WHERE website_id = $1', [websiteId]).catch(() => ({ rows: [{ count: 0 }] })),
+      queryDb('SELECT * FROM website_purchase WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_appointments WHERE website_id = $1 ORDER BY appointment_date DESC, id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_contact WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_support WHERE website_id = $1 ORDER BY id DESC LIMIT 20', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_products WHERE website_id = $1 ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_blogs WHERE website_id = $1 ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_experiences WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_gallery WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT * FROM website_services WHERE website_id = $1 ORDER BY sort_order ASC, id ASC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb('SELECT COUNT(*)::int AS count FROM website_roles WHERE website_id = $1', [websiteId]).catch(() => ({ rows: [{ count: 0 }] })),
     ]);
 
     const orders = ordersRes.rows;
@@ -80,7 +80,7 @@ export async function GET(request, context) {
       services: servicesRes.rows,
     });
   } catch (error) {
-    console.error('Tenant dashboard API error:', error);
+    console.error('Website dashboard API error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

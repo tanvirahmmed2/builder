@@ -20,7 +20,7 @@ import {
   BiTimeFive,
 } from 'react-icons/bi';
 
-export default function TenantDashboardSidebar({ slug, website }) {
+export default function WebsiteDashboardSidebar({ slug, website }) {
   const pathname = usePathname();
   const primaryColor = website?.settings?.primary_color || '#6366f1';
 
@@ -45,7 +45,7 @@ export default function TenantDashboardSidebar({ slug, website }) {
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 shrink-0 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">
       <div className="space-y-1">
         <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Tenant Website Management
+          Website Website Management
         </div>
 
         <nav className="space-y-1">
@@ -75,7 +75,7 @@ export default function TenantDashboardSidebar({ slug, website }) {
       </div>
 
       <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500">
-        <div className="font-bold text-slate-700 dark:text-slate-300">Tenant Portal</div>
+        <div className="font-bold text-slate-700 dark:text-slate-300">Website Portal</div>
         <div className="text-[10px] text-slate-400 mt-0.5 truncate">{slug}.saasplatform.com</div>
       </div>
     </aside>

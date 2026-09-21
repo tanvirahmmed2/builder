@@ -2,7 +2,7 @@
 
 import { BiBriefcase, BiMapPin } from 'react-icons/bi';
 
-export default function TenantExperiences({ experiences = [], skills = [], primaryColor = '#6366f1' }) {
+export default function WebsiteExperiences({ experiences = [], skills = [], primaryColor = '#6366f1' }) {
   return (
     <section id="experiences" className="py-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">

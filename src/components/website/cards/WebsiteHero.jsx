@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { BiCalendarCheck, BiRightArrowAlt } from 'react-icons/bi';
 
-export default function TenantHero({ website, stats = {} }) {
+export default function WebsiteHero({ website, stats = {} }) {
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'Studio Brand';
   const tagline = settings.tagline || 'Full-Stack Developer, Designer & Creator';

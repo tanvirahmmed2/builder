@@ -10,7 +10,7 @@ import {
   BiShieldQuarter,
 } from 'react-icons/bi';
 
-export default function TenantNavbar({ website, onOpenCart, cartCount = 0 }) {
+export default function WebsiteNavbar({ website, onOpenCart, cartCount = 0 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const settings = website?.settings || {};
@@ -98,7 +98,7 @@ export default function TenantNavbar({ website, onOpenCart, cartCount = 0 }) {
             <span>Book Now</span>
           </Link>
 
-          {/* Tenant Dashboard Shortcut */}
+          {/* Website Dashboard Shortcut */}
           <Link
             href={`/website/${subdomain}/dashboard`}
             className="hidden lg:inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"

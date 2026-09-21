@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { BiCheckCircle, BiCodeAlt } from 'react-icons/bi';
 
-export default function TenantServices({ services = [], primaryColor = '#6366f1', subdomain = '' }) {
+export default function WebsiteServices({ services = [], primaryColor = '#6366f1', subdomain = '' }) {
   if (!services || services.length === 0) return null;
 
   return (

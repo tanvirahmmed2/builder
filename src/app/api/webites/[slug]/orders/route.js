@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function POST(request, context) {
@@ -35,7 +35,7 @@ export async function POST(request, context) {
 
     // Insert purchase order
     const oRes = await queryDb(`
-      INSERT INTO tenant_purchase (website_id, order_number, customer_name, customer_email, total_amount_in_cents, currency, status, payment_status, items)
+      INSERT INTO website_purchase (website_id, order_number, customer_name, customer_email, total_amount_in_cents, currency, status, payment_status, items)
       VALUES ($1, $2, $3, $4, $5, 'USD', 'COMPLETED', 'PAID', $6)
       RETURNING *
     `, [websiteId, orderNumber, customerName, customerEmail, totalAmountInCents, JSON.stringify(items)]);
@@ -44,13 +44,13 @@ export async function POST(request, context) {
 
     // Insert purchase payment record
     await queryDb(`
-      INSERT INTO tenant_purchase_payments (purchase_id, website_id, amount_in_cents, currency, payment_method, transaction_id, status)
+      INSERT INTO website_purchase_payments (purchase_id, website_id, amount_in_cents, currency, payment_method, transaction_id, status)
       VALUES ($1, $2, $3, 'USD', 'CARD', $4, 'SUCCESS')
     `, [order.id, websiteId, totalAmountInCents, txnId]);
 
     return NextResponse.json({ success: true, order });
   } catch (error) {
-    console.error('Tenant order checkout error:', error);
+    console.error('Website order checkout error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

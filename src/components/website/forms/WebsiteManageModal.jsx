@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiCheck, BiLoaderAlt, BiX } from 'react-icons/bi';
 
-export default function TenantManageModal({
+export default function WebsiteManageModal({
   isOpen,
   onClose,
   type, // 'product' | 'blog' | 'experience' | 'gallery' | 'service' | 'offer'

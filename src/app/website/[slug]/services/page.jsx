@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import TenantServices from '@/components/website/cards/TenantServices';
+import WebsiteServices from '@/components/website/cards/WebsiteServices';
 import { BiLoaderAlt, BiCalendar, BiLayer } from 'react-icons/bi';
 
 export default function PublicServicesPage({ params }) {
@@ -54,7 +54,7 @@ export default function PublicServicesPage({ params }) {
 
       {/* Services List */}
       {services.length > 0 ? (
-        <TenantServices
+        <WebsiteServices
           services={services}
           primaryColor={primaryColor}
         />

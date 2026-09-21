@@ -1,8 +1,8 @@
 -- ============================================================================
--- Domain: Tenant Website System (website-schema.psql)
+-- Domain: Website Website System (website-schema.psql)
 -- Platform: Multi-Website SaaS Portfolio & E-Commerce Builder
 -- Database Engine: PostgreSQL 14+
--- Description: Tenant database schema for customer websites provisioned after package purchase.
+-- Description: Website database schema for customer websites provisioned after package purchase.
 --              Includes multi-tenancy (website_id FK to websites.id), Users, Multiple Roles,
 --              Custom Roles, Modules, Custom Permissions per Module, Role Permissions,
 --              Blogs, Blog Images, Products, Product Images, Support Tickets, Support Messages,
@@ -23,9 +23,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- 2. TENANT MODULES (Toggleable & configurable feature modules for the website)
+-- . WEBSITE MODULES (Toggleable & configurable feature modules for the website)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_modules (
+CREATE TABLE IF NOT EXISTS website_modules (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -35,21 +35,21 @@ CREATE TABLE IF NOT EXISTS tenant_modules (
     settings JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_modules_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_modules_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_modules_web ON tenant_modules (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_modules_web ON website_modules (website_id);
 
-DROP TRIGGER IF EXISTS trg_tenant_modules_updated_at ON tenant_modules;
-CREATE TRIGGER trg_tenant_modules_updated_at
-BEFORE UPDATE ON tenant_modules
+DROP TRIGGER IF EXISTS trg_website_modules_updated_at ON website_modules;
+CREATE TRIGGER trg_website_modules_updated_at
+BEFORE UPDATE ON website_modules
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 3. TENANT ROLES (System roles + Customer-created custom roles)
+-- . WEBSITE ROLES (System roles + Customer-created custom roles)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_roles (
+CREATE TABLE IF NOT EXISTS website_roles (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -58,54 +58,54 @@ CREATE TABLE IF NOT EXISTS tenant_roles (
     is_system BOOLEAN NOT NULL DEFAULT FALSE, -- TRUE for default 'owner', 'admin'
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_roles_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_roles_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_roles_web ON tenant_roles (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_roles_web ON website_roles (website_id);
 
-DROP TRIGGER IF EXISTS trg_tenant_roles_updated_at ON tenant_roles;
-CREATE TRIGGER trg_tenant_roles_updated_at
-BEFORE UPDATE ON tenant_roles
+DROP TRIGGER IF EXISTS trg_website_roles_updated_at ON website_roles;
+CREATE TRIGGER trg_website_roles_updated_at
+BEFORE UPDATE ON website_roles
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 4. TENANT PERMISSIONS (Custom & standard permissions linked to modules)
+-- . WEBSITE PERMISSIONS (Custom & standard permissions linked to modules)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_permissions (
+CREATE TABLE IF NOT EXISTS website_permissions (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    module_id INTEGER REFERENCES tenant_modules(id) ON DELETE CASCADE,
+    module_id INTEGER REFERENCES website_modules(id) ON DELETE CASCADE,
     name VARCHAR(150) NOT NULL,
     slug VARCHAR(150) NOT NULL, -- e.g. 'products.view', 'products.create', 'products.edit', 'products.delete', 'blogs.publish'
     action VARCHAR(50) NOT NULL DEFAULT 'manage', -- 'view', 'create', 'edit', 'delete', 'publish', 'manage'
     description TEXT,
     is_custom BOOLEAN NOT NULL DEFAULT FALSE, -- Customer can add custom permissions
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_permissions_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_permissions_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_permissions_web ON tenant_permissions (website_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_permissions_module ON tenant_permissions (module_id);
+CREATE INDEX IF NOT EXISTS idx_website_permissions_web ON website_permissions (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_permissions_module ON website_permissions (module_id);
 
 -- ============================================================================
--- 5. TENANT ROLE PERMISSIONS (Mapping roles to granted permissions)
+-- . WEBSITE ROLE PERMISSIONS (Mapping roles to granted permissions)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_role_permissions (
+CREATE TABLE IF NOT EXISTS website_role_permissions (
     id SERIAL PRIMARY KEY,
-    role_id INTEGER NOT NULL REFERENCES tenant_roles(id) ON DELETE CASCADE,
-    permission_id INTEGER NOT NULL REFERENCES tenant_permissions(id) ON DELETE CASCADE,
+    role_id INTEGER NOT NULL REFERENCES website_roles(id) ON DELETE CASCADE,
+    permission_id INTEGER NOT NULL REFERENCES website_permissions(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_role_permission UNIQUE (role_id, permission_id)
+    CONSTRAINT uq_website_role_permission UNIQUE (role_id, permission_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_role_perm_role ON tenant_role_permissions (role_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_role_perm_perm ON tenant_role_permissions (permission_id);
+CREATE INDEX IF NOT EXISTS idx_website_role_perm_role ON website_role_permissions (role_id);
+CREATE INDEX IF NOT EXISTS idx_website_role_perm_perm ON website_role_permissions (permission_id);
 
 -- ============================================================================
--- 6. TENANT USERS (End customers, team members, staff on the tenant website)
+-- . WEBSITE USERS (End customers, team members, staff on the website website)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_users (
+CREATE TABLE IF NOT EXISTS website_users (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -119,36 +119,36 @@ CREATE TABLE IF NOT EXISTS tenant_users (
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_users_web_email UNIQUE (website_id, email)
+    CONSTRAINT uq_website_users_web_email UNIQUE (website_id, email)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_users_web ON tenant_users (website_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_users_email ON tenant_users (website_id, email);
+CREATE INDEX IF NOT EXISTS idx_website_users_web ON website_users (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_users_email ON website_users (website_id, email);
 
-DROP TRIGGER IF EXISTS trg_tenant_users_updated_at ON tenant_users;
-CREATE TRIGGER trg_tenant_users_updated_at
-BEFORE UPDATE ON tenant_users
+DROP TRIGGER IF EXISTS trg_website_users_updated_at ON website_users;
+CREATE TRIGGER trg_website_users_updated_at
+BEFORE UPDATE ON website_users
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 7. TENANT USER ROLES (Supporting multiple roles per user!)
+-- . WEBSITE USER ROLES (Supporting multiple roles per user!)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_user_roles (
+CREATE TABLE IF NOT EXISTS website_user_roles (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES tenant_users(id) ON DELETE CASCADE,
-    role_id INTEGER NOT NULL REFERENCES tenant_roles(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
+    role_id INTEGER NOT NULL REFERENCES website_roles(id) ON DELETE CASCADE,
     assigned_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_user_role UNIQUE (user_id, role_id)
+    CONSTRAINT uq_website_user_role UNIQUE (user_id, role_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_user_roles_user ON tenant_user_roles (user_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_user_roles_role ON tenant_user_roles (role_id);
+CREATE INDEX IF NOT EXISTS idx_website_user_roles_user ON website_user_roles (user_id);
+CREATE INDEX IF NOT EXISTS idx_website_user_roles_role ON website_user_roles (role_id);
 
 -- ============================================================================
--- 8. TENANT SETTINGS (Theme branding, colors, typography, SEO, social links)
+-- . WEBSITE SETTINGS (Theme branding, colors, typography, SEO, social links)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_settings (
+CREATE TABLE IF NOT EXISTS website_settings (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE UNIQUE,
     site_title VARCHAR(255) NOT NULL DEFAULT 'My Portfolio & Store',
@@ -172,18 +172,18 @@ CREATE TABLE IF NOT EXISTS tenant_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_settings_web ON tenant_settings (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_settings_web ON website_settings (website_id);
 
-DROP TRIGGER IF EXISTS trg_tenant_settings_updated_at ON tenant_settings;
-CREATE TRIGGER trg_tenant_settings_updated_at
-BEFORE UPDATE ON tenant_settings
+DROP TRIGGER IF EXISTS trg_website_settings_updated_at ON website_settings;
+CREATE TRIGGER trg_website_settings_updated_at
+BEFORE UPDATE ON website_settings
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 9. TENANT CATEGORIES (For organizing Products and Blogs)
+-- . WEBSITE CATEGORIES (For organizing Products and Blogs)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_categories (
+CREATE TABLE IF NOT EXISTS website_categories (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -191,19 +191,19 @@ CREATE TABLE IF NOT EXISTS tenant_categories (
     type VARCHAR(50) NOT NULL DEFAULT 'PRODUCT', -- 'PRODUCT', 'BLOG', 'GALLERY', 'SERVICE'
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_categories_web_slug UNIQUE (website_id, type, slug)
+    CONSTRAINT uq_website_categories_web_slug UNIQUE (website_id, type, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_categories_web ON tenant_categories (website_id, type);
+CREATE INDEX IF NOT EXISTS idx_website_categories_web ON website_categories (website_id, type);
 
 -- ============================================================================
--- 10. TENANT BLOGS & BLOG IMAGES
+-- . WEBSITE BLOGS & BLOG IMAGES
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_blogs (
+CREATE TABLE IF NOT EXISTS website_blogs (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    author_id INTEGER REFERENCES tenant_users(id) ON DELETE SET NULL,
-    category_id INTEGER REFERENCES tenant_categories(id) ON DELETE SET NULL,
+    author_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL,
     excerpt TEXT,
@@ -217,21 +217,21 @@ CREATE TABLE IF NOT EXISTS tenant_blogs (
     seo_description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_blogs_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_blogs_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_blogs_web ON tenant_blogs (website_id, is_published);
-CREATE INDEX IF NOT EXISTS idx_tenant_blogs_slug ON tenant_blogs (website_id, slug);
+CREATE INDEX IF NOT EXISTS idx_website_blogs_web ON website_blogs (website_id, is_published);
+CREATE INDEX IF NOT EXISTS idx_website_blogs_slug ON website_blogs (website_id, slug);
 
-DROP TRIGGER IF EXISTS trg_tenant_blogs_updated_at ON tenant_blogs;
-CREATE TRIGGER trg_tenant_blogs_updated_at
-BEFORE UPDATE ON tenant_blogs
+DROP TRIGGER IF EXISTS trg_website_blogs_updated_at ON website_blogs;
+CREATE TRIGGER trg_website_blogs_updated_at
+BEFORE UPDATE ON website_blogs
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS tenant_blog_images (
+CREATE TABLE IF NOT EXISTS website_blog_images (
     id SERIAL PRIMARY KEY,
-    blog_id INTEGER NOT NULL REFERENCES tenant_blogs(id) ON DELETE CASCADE,
+    blog_id INTEGER NOT NULL REFERENCES website_blogs(id) ON DELETE CASCADE,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
     alt_text VARCHAR(255),
@@ -240,15 +240,15 @@ CREATE TABLE IF NOT EXISTS tenant_blog_images (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_blog_images_blog ON tenant_blog_images (blog_id);
+CREATE INDEX IF NOT EXISTS idx_website_blog_images_blog ON website_blog_images (blog_id);
 
 -- ============================================================================
--- 11. TENANT PRODUCTS & PRODUCT IMAGES (E-Commerce & Digital Goods)
+-- . WEBSITE PRODUCTS & PRODUCT IMAGES (E-Commerce & Digital Goods)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_products (
+CREATE TABLE IF NOT EXISTS website_products (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    category_id INTEGER REFERENCES tenant_categories(id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL,
     description TEXT,
@@ -265,21 +265,21 @@ CREATE TABLE IF NOT EXISTS tenant_products (
     is_featured BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_products_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_products_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_products_web ON tenant_products (website_id, status);
-CREATE INDEX IF NOT EXISTS idx_tenant_products_slug ON tenant_products (website_id, slug);
+CREATE INDEX IF NOT EXISTS idx_website_products_web ON website_products (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_products_slug ON website_products (website_id, slug);
 
-DROP TRIGGER IF EXISTS trg_tenant_products_updated_at ON tenant_products;
-CREATE TRIGGER trg_tenant_products_updated_at
-BEFORE UPDATE ON tenant_products
+DROP TRIGGER IF EXISTS trg_website_products_updated_at ON website_products;
+CREATE TRIGGER trg_website_products_updated_at
+BEFORE UPDATE ON website_products
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS tenant_product_images (
+CREATE TABLE IF NOT EXISTS website_product_images (
     id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL REFERENCES tenant_products(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES website_products(id) ON DELETE CASCADE,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
     alt_text VARCHAR(255),
@@ -288,16 +288,16 @@ CREATE TABLE IF NOT EXISTS tenant_product_images (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_product_images_prod ON tenant_product_images (product_id);
+CREATE INDEX IF NOT EXISTS idx_website_product_images_prod ON website_product_images (product_id);
 
 -- ============================================================================
--- 12. TENANT SUPPORT, SUPPORT MESSAGES & SUPPORT IMAGES
+-- . WEBSITE SUPPORT, SUPPORT MESSAGES & SUPPORT IMAGES
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_support (
+CREATE TABLE IF NOT EXISTS website_support (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     ticket_number VARCHAR(100) NOT NULL,
-    user_id INTEGER REFERENCES tenant_users(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
     requester_name VARCHAR(255) NOT NULL,
     requester_email CITEXT NOT NULL,
     subject VARCHAR(255) NOT NULL,
@@ -305,20 +305,20 @@ CREATE TABLE IF NOT EXISTS tenant_support (
     status VARCHAR(50) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_support_web_ticket UNIQUE (website_id, ticket_number)
+    CONSTRAINT uq_website_support_web_ticket UNIQUE (website_id, ticket_number)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_support_web ON tenant_support (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_support_web ON website_support (website_id, status);
 
-DROP TRIGGER IF EXISTS trg_tenant_support_updated_at ON tenant_support;
-CREATE TRIGGER trg_tenant_support_updated_at
-BEFORE UPDATE ON tenant_support
+DROP TRIGGER IF EXISTS trg_website_support_updated_at ON website_support;
+CREATE TRIGGER trg_website_support_updated_at
+BEFORE UPDATE ON website_support
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS tenant_support_messages (
+CREATE TABLE IF NOT EXISTS website_support_messages (
     id SERIAL PRIMARY KEY,
-    support_id INTEGER NOT NULL REFERENCES tenant_support(id) ON DELETE CASCADE,
+    support_id INTEGER NOT NULL REFERENCES website_support(id) ON DELETE CASCADE,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     sender_type VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER', -- 'CUSTOMER', 'ADMIN', 'AGENT'
     sender_id INTEGER,
@@ -327,24 +327,24 @@ CREATE TABLE IF NOT EXISTS tenant_support_messages (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_support_messages_sup ON tenant_support_messages (support_id);
+CREATE INDEX IF NOT EXISTS idx_website_support_messages_sup ON website_support_messages (support_id);
 
-CREATE TABLE IF NOT EXISTS tenant_support_images (
+CREATE TABLE IF NOT EXISTS website_support_images (
     id SERIAL PRIMARY KEY,
-    support_id INTEGER NOT NULL REFERENCES tenant_support(id) ON DELETE CASCADE,
-    message_id INTEGER REFERENCES tenant_support_messages(id) ON DELETE SET NULL,
+    support_id INTEGER NOT NULL REFERENCES website_support(id) ON DELETE CASCADE,
+    message_id INTEGER REFERENCES website_support_messages(id) ON DELETE SET NULL,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
     file_name VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_support_images_sup ON tenant_support_images (support_id);
+CREATE INDEX IF NOT EXISTS idx_website_support_images_sup ON website_support_images (support_id);
 
 -- ============================================================================
--- 13. TENANT CONTACT (Contact inquiries submitted from tenant website)
+-- . WEBSITE CONTACT (Contact inquiries submitted from website website)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_contact (
+CREATE TABLE IF NOT EXISTS website_contact (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -359,18 +359,18 @@ CREATE TABLE IF NOT EXISTS tenant_contact (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_contact_web ON tenant_contact (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_contact_web ON website_contact (website_id, status);
 
-DROP TRIGGER IF EXISTS trg_tenant_contact_updated_at ON tenant_contact;
-CREATE TRIGGER trg_tenant_contact_updated_at
-BEFORE UPDATE ON tenant_contact
+DROP TRIGGER IF EXISTS trg_website_contact_updated_at ON website_contact;
+CREATE TRIGGER trg_website_contact_updated_at
+BEFORE UPDATE ON website_contact
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 14. TENANT OFFERS (Coupons, discount promotions, banner sales)
+-- . WEBSITE OFFERS (Coupons, discount promotions, banner sales)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_offers (
+CREATE TABLE IF NOT EXISTS website_offers (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -386,25 +386,25 @@ CREATE TABLE IF NOT EXISTS tenant_offers (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_offers_web_code UNIQUE (website_id, code)
+    CONSTRAINT uq_website_offers_web_code UNIQUE (website_id, code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_offers_web ON tenant_offers (website_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_website_offers_web ON website_offers (website_id, is_active);
 
-DROP TRIGGER IF EXISTS trg_tenant_offers_updated_at ON tenant_offers;
-CREATE TRIGGER trg_tenant_offers_updated_at
-BEFORE UPDATE ON tenant_offers
+DROP TRIGGER IF EXISTS trg_website_offers_updated_at ON website_offers;
+CREATE TRIGGER trg_website_offers_updated_at
+BEFORE UPDATE ON website_offers
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 15. TENANT PURCHASE (Customer purchases & orders placed on website)
+-- . WEBSITE PURCHASE (Customer purchases & orders placed on website)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_purchase (
+CREATE TABLE IF NOT EXISTS website_purchase (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     order_number VARCHAR(100) NOT NULL,
-    user_id INTEGER REFERENCES tenant_users(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
     customer_name VARCHAR(255) NOT NULL,
     customer_email CITEXT NOT NULL,
     customer_phone VARCHAR(50),
@@ -419,23 +419,23 @@ CREATE TABLE IF NOT EXISTS tenant_purchase (
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_purchase_web_order UNIQUE (website_id, order_number)
+    CONSTRAINT uq_website_purchase_web_order UNIQUE (website_id, order_number)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_purchase_web ON tenant_purchase (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_purchase_web ON website_purchase (website_id, status);
 
-DROP TRIGGER IF EXISTS trg_tenant_purchase_updated_at ON tenant_purchase;
-CREATE TRIGGER trg_tenant_purchase_updated_at
-BEFORE UPDATE ON tenant_purchase
+DROP TRIGGER IF EXISTS trg_website_purchase_updated_at ON website_purchase;
+CREATE TRIGGER trg_website_purchase_updated_at
+BEFORE UPDATE ON website_purchase
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 16. TENANT PURCHASE PAYMENTS (Transactions related to tenant orders)
+-- . WEBSITE PURCHASE PAYMENTS (Transactions related to website orders)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_purchase_payments (
+CREATE TABLE IF NOT EXISTS website_purchase_payments (
     id SERIAL PRIMARY KEY,
-    purchase_id INTEGER NOT NULL REFERENCES tenant_purchase(id) ON DELETE CASCADE,
+    purchase_id INTEGER NOT NULL REFERENCES website_purchase(id) ON DELETE CASCADE,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     amount_in_cents INTEGER NOT NULL DEFAULT 0,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
@@ -446,16 +446,16 @@ CREATE TABLE IF NOT EXISTS tenant_purchase_payments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_payments_purchase ON tenant_purchase_payments (purchase_id);
-CREATE INDEX IF NOT EXISTS idx_tenant_payments_web ON tenant_purchase_payments (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_payments_purchase ON website_purchase_payments (purchase_id);
+CREATE INDEX IF NOT EXISTS idx_website_payments_web ON website_purchase_payments (website_id);
 
 -- ============================================================================
--- 17. TENANT APPOINTMENTS (Booking schedule for services / consultations)
+-- . WEBSITE APPOINTMENTS (Booking schedule for services / consultations)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_appointments (
+CREATE TABLE IF NOT EXISTS website_appointments (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES tenant_users(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
     client_name VARCHAR(255) NOT NULL,
     client_email CITEXT NOT NULL,
     client_phone VARCHAR(50),
@@ -468,19 +468,19 @@ CREATE TABLE IF NOT EXISTS tenant_appointments (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_appointments_web ON tenant_appointments (website_id, status);
-CREATE INDEX IF NOT EXISTS idx_tenant_appointments_date ON tenant_appointments (website_id, appointment_date);
+CREATE INDEX IF NOT EXISTS idx_website_appointments_web ON website_appointments (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_appointments_date ON website_appointments (website_id, appointment_date);
 
-DROP TRIGGER IF EXISTS trg_tenant_appointments_updated_at ON tenant_appointments;
-CREATE TRIGGER trg_tenant_appointments_updated_at
-BEFORE UPDATE ON tenant_appointments
+DROP TRIGGER IF EXISTS trg_website_appointments_updated_at ON website_appointments;
+CREATE TRIGGER trg_website_appointments_updated_at
+BEFORE UPDATE ON website_appointments
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 18. TENANT EXPERIENCES (Portfolio timeline, roles, employment history)
+-- . WEBSITE EXPERIENCES (Portfolio timeline, roles, employment history)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_experiences (
+CREATE TABLE IF NOT EXISTS website_experiences (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     role_title VARCHAR(255) NOT NULL,
@@ -497,18 +497,18 @@ CREATE TABLE IF NOT EXISTS tenant_experiences (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_experiences_web ON tenant_experiences (website_id, sort_order ASC);
+CREATE INDEX IF NOT EXISTS idx_website_experiences_web ON website_experiences (website_id, sort_order ASC);
 
-DROP TRIGGER IF EXISTS trg_tenant_experiences_updated_at ON tenant_experiences;
-CREATE TRIGGER trg_tenant_experiences_updated_at
-BEFORE UPDATE ON tenant_experiences
+DROP TRIGGER IF EXISTS trg_website_experiences_updated_at ON website_experiences;
+CREATE TRIGGER trg_website_experiences_updated_at
+BEFORE UPDATE ON website_experiences
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 19. TENANT GALLERY (Portfolio media showcase)
+-- . WEBSITE GALLERY (Portfolio media showcase)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_gallery (
+CREATE TABLE IF NOT EXISTS website_gallery (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -523,18 +523,18 @@ CREATE TABLE IF NOT EXISTS tenant_gallery (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_gallery_web ON tenant_gallery (website_id, sort_order ASC);
+CREATE INDEX IF NOT EXISTS idx_website_gallery_web ON website_gallery (website_id, sort_order ASC);
 
-DROP TRIGGER IF EXISTS trg_tenant_gallery_updated_at ON tenant_gallery;
-CREATE TRIGGER trg_tenant_gallery_updated_at
-BEFORE UPDATE ON tenant_gallery
+DROP TRIGGER IF EXISTS trg_website_gallery_updated_at ON website_gallery;
+CREATE TRIGGER trg_website_gallery_updated_at
+BEFORE UPDATE ON website_gallery
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 20. TENANT SERVICES (Services provided by the creator/brand)
+-- . WEBSITE SERVICES (Services provided by the creator/brand)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_services (
+CREATE TABLE IF NOT EXISTS website_services (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -548,21 +548,21 @@ CREATE TABLE IF NOT EXISTS tenant_services (
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_tenant_services_web_slug UNIQUE (website_id, slug)
+    CONSTRAINT uq_website_services_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_services_web ON tenant_services (website_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_website_services_web ON website_services (website_id, is_active);
 
-DROP TRIGGER IF EXISTS trg_tenant_services_updated_at ON tenant_services;
-CREATE TRIGGER trg_tenant_services_updated_at
-BEFORE UPDATE ON tenant_services
+DROP TRIGGER IF EXISTS trg_website_services_updated_at ON website_services;
+CREATE TRIGGER trg_website_services_updated_at
+BEFORE UPDATE ON website_services
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- 21. TENANT TESTIMONIALS (Client reviews and endorsements)
+-- . WEBSITE TESTIMONIALS (Client reviews and endorsements)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_testimonials (
+CREATE TABLE IF NOT EXISTS website_testimonials (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     client_name VARCHAR(255) NOT NULL,
@@ -576,12 +576,12 @@ CREATE TABLE IF NOT EXISTS tenant_testimonials (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_testimonials_web ON tenant_testimonials (website_id, is_featured);
+CREATE INDEX IF NOT EXISTS idx_website_testimonials_web ON website_testimonials (website_id, is_featured);
 
 -- ============================================================================
--- 22. TENANT SKILLS (Technical/professional skills for portfolio)
+-- . WEBSITE SKILLS (Technical/professional skills for portfolio)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tenant_skills (
+CREATE TABLE IF NOT EXISTS website_skills (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -592,4 +592,4 @@ CREATE TABLE IF NOT EXISTS tenant_skills (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_tenant_skills_web ON tenant_skills (website_id, sort_order ASC);
+CREATE INDEX IF NOT EXISTS idx_website_skills_web ON website_skills (website_id, sort_order ASC);

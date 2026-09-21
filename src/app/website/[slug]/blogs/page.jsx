@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantBlogs from '@/components/website/cards/TenantBlogs';
+import WebsiteBlogs from '@/components/website/cards/WebsiteBlogs';
 import { BiLoaderAlt, BiBookOpen, BiSearch } from 'react-icons/bi';
 
 export default function PublicBlogsPage({ params }) {
@@ -70,7 +70,7 @@ export default function PublicBlogsPage({ params }) {
       </div>
 
       {/* Blog Cards */}
-      <TenantBlogs
+      <WebsiteBlogs
         blogs={filtered}
         primaryColor={primaryColor}
       />

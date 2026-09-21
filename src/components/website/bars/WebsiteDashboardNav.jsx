@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { BiGlobe, BiLinkExternal } from 'react-icons/bi';
 
-export default function TenantDashboardNav({ website }) {
+export default function WebsiteDashboardNav({ website }) {
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'My Website';
   const subdomain = website?.subdomain || 'site';
@@ -26,7 +26,7 @@ export default function TenantDashboardNav({ website }) {
                 {siteTitle}
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold uppercase">
-                Tenant Portal
+                Website Portal
               </span>
             </div>
             <span className="text-[11px] font-mono text-slate-500 block">

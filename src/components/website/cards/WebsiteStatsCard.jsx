@@ -1,6 +1,6 @@
 'use client';
 
-export default function TenantStatsCard({ title, value, subtext, icon: Icon, color = '#6366f1' }) {
+export default function WebsiteStatsCard({ title, value, subtext, icon: Icon, color = '#6366f1' }) {
   return (
     <div className="bg-white dark:bg-slate-800/90 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-between gap-4">
       <div className="space-y-1">

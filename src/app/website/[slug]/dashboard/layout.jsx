@@ -1,11 +1,11 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import TenantDashboardNav from '@/components/website/bars/TenantDashboardNav';
-import TenantDashboardSidebar from '@/components/website/bars/TenantDashboardSidebar';
+import WebsiteDashboardNav from '@/components/website/bars/WebsiteDashboardNav';
+import WebsiteDashboardSidebar from '@/components/website/bars/WebsiteDashboardSidebar';
 import { BiLoaderAlt } from 'react-icons/bi';
 
-export default function TenantDashboardLayout({ children, params }) {
+export default function WebsiteDashboardLayout({ children, params }) {
   const unwrappedParams = use(params);
   const slug = unwrappedParams.slug;
 
@@ -42,9 +42,9 @@ export default function TenantDashboardLayout({ children, params }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
-      <TenantDashboardNav website={website} slug={slug} />
+      <WebsiteDashboardNav website={website} slug={slug} />
       <div className="flex-1 flex overflow-hidden">
-        <TenantDashboardSidebar slug={slug} website={website} />
+        <WebsiteDashboardSidebar slug={slug} website={website} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
           {children}
         </main>

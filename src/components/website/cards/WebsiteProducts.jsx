@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BiCart, BiCheckCircle, BiDownload, BiShoppingBag, BiX } from 'react-icons/bi';
 
-export default function TenantProducts({ products = [], primaryColor = '#6366f1', onAddToCart }) {
+export default function WebsiteProducts({ products = [], primaryColor = '#6366f1', onAddToCart }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [buyQuantity, setBuyQuantity] = useState(1);
   const [customerEmail, setCustomerEmail] = useState('');

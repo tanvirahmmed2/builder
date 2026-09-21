@@ -1,7 +1,7 @@
 'use client';
 
 import { use } from 'react';
-import TenantRolesManager from '@/components/website/forms/TenantRolesManager';
+import WebsiteRolesManager from '@/components/website/forms/WebsiteRolesManager';
 
 export default function RolesPage({ params }) {
   const unwrappedParams = use(params);
@@ -9,7 +9,7 @@ export default function RolesPage({ params }) {
 
   return (
     <div className="space-y-6">
-      <TenantRolesManager slug={slug} />
+      <WebsiteRolesManager slug={slug} />
     </div>
   );
 }

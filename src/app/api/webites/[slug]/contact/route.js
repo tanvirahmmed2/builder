@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resolveWebsiteFromRequest } from '@/lib/user';
+import { resolveWebsiteFromRequest } from '@/lib/middleware/user';
 import { queryDb } from '@/lib/db/pg';
 
 export async function POST(request, context) {
@@ -26,14 +26,14 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(`
-      INSERT INTO tenant_contact (website_id, name, email, phone, subject, message, status)
+      INSERT INTO website_contact (website_id, name, email, phone, subject, message, status)
       VALUES ($1, $2, $3, $4, $5, $6, 'NEW')
       RETURNING *
     `, [websiteId, name, email, phone, subject, message]);
 
     return NextResponse.json({ success: true, contact: res.rows[0] });
   } catch (error) {
-    console.error('Tenant contact submit error:', error);
+    console.error('Website contact submit error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
