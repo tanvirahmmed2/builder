@@ -206,13 +206,19 @@ export default function SingleAppPage({ params }) {
               </div>
             </div>
 
-            <div className="pt-3">
+            <div className="pt-3 space-y-2">
               <Link
-                href="/creator/login"
+                href={`/creator/checkout?appId=${app.id}`}
                 className="w-full py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
               >
-                <span>Launch with this App</span>
+                <span>Deploy with Package →</span>
                 <BiRightArrowAlt className="text-base" />
+              </Link>
+              <Link
+                href="/packages"
+                className="w-full py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center transition-colors"
+              >
+                View All Plans
               </Link>
             </div>
           </div>

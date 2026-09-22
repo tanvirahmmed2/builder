@@ -384,15 +384,39 @@ CREATE TABLE IF NOT EXISTS support_images (
 );
 
 CREATE INDEX IF NOT EXISTS idx_support_images_sup ON support_images (support_id);
+-- ============================================================================
+-- 11. PURCHASES & PAYMENT
+-- ============================================================================
 
--- ============================================================================
--- 11. PAYMENT
--- ============================================================================
+CREATE TABLE IF NOT EXISTS purchases (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
+    payment_id INTEGER,
+    amount_in_cents INTEGER NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    billing_interval VARCHAR(50) NOT NULL DEFAULT 'MONTHLY',
+    status VARCHAR(50) NOT NULL DEFAULT 'UNPAID', -- 'UNPAID', 'PENDING', 'COMPLETED', 'CANCELLED', 'FAILED'
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchases_creator ON purchases (creator_id);
+CREATE INDEX IF NOT EXISTS idx_purchases_package ON purchases (package_id);
+CREATE INDEX IF NOT EXISTS idx_purchases_payment ON purchases (payment_id);
+
+DROP TRIGGER IF EXISTS trg_purchases_updated_at ON purchases;
+CREATE TRIGGER trg_purchases_updated_at
+BEFORE UPDATE ON purchases
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
 CREATE TABLE IF NOT EXISTS payment (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER REFERENCES creators(id) ON DELETE CASCADE,
     package_id INTEGER REFERENCES packages(id) ON DELETE RESTRICT,
+    purchase_id INTEGER REFERENCES purchases(id) ON DELETE SET NULL,
     subscription_id INTEGER,
     amount_in_cents INTEGER NOT NULL DEFAULT 0,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
@@ -403,7 +427,9 @@ CREATE TABLE IF NOT EXISTS payment (
 );
 
 CREATE INDEX IF NOT EXISTS idx_payment_creator ON payment (creator_id);
+CREATE INDEX IF NOT EXISTS idx_payment_purchase ON payment (purchase_id);
 CREATE INDEX IF NOT EXISTS idx_payment_txn ON payment (transaction_id);
+
 
 -- ============================================================================
 -- 12. SUBSCRIPTION
@@ -417,201 +443,6 @@ CREATE TABLE IF NOT EXISTS subscription (
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     current_period_end TIMESTAMPTZ NOT NULL,
-    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscription_app ON subscription (app_id);
-CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
-
-DROP TRIGGER IF EXISTS trg_subscription_updated_at ON subscription;
-CREATE TRIGGER trg_subscription_updated_at
-BEFORE UPDATE ON subscription
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 13. WEBSITES
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS websites (
-    id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    subdomain CITEXT UNIQUE NOT NULL,
-    custom_domain CITEXT UNIQUE,
-    theme_config JSONB NOT NULL DEFAULT '{}'::jsonb,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-    storage_used_mb INTEGER NOT NULL DEFAULT 0,
-    is_published BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_websites_subdomain ON websites (subdomain);
-CREATE INDEX IF NOT EXISTS idx_websites_creator ON websites (creator_id);
-
-DROP TRIGGER IF EXISTS trg_websites_updated_at ON websites;
-CREATE TRIGGER trg_websites_updated_at
-BEFORE UPDATE ON websites
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 13. REPORTS
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS reports (
-    id SERIAL PRIMARY KEY,
-    reporter_name VARCHAR(255) NOT NULL,
-    reporter_email CITEXT NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
-    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
-    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
-    admin_response TEXT,
-    resolved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
-    resolved_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, priority);
-
-DROP TRIGGER IF EXISTS trg_reports_updated_at ON reports;
-CREATE TRIGGER trg_reports_updated_at
-BEFORE UPDATE ON reports
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 14. LEADS & SUBSCRIBERS
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS leads (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email CITEXT NOT NULL,
-    phone VARCHAR(50),
-    company VARCHAR(255),
-    source VARCHAR(100) DEFAULT 'WEBSITE',
-    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at DESC);
-
-DROP TRIGGER IF EXISTS trg_leads_updated_at ON leads;
-CREATE TRIGGER trg_leads_updated_at
-BEFORE UPDATE ON leads
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
-CREATE TABLE IF NOT EXISTS subscribers (
-    id SERIAL PRIMARY KEY,
-    email CITEXT UNIQUE NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'SUBSCRIBED',
-    source VARCHAR(100) DEFAULT 'FOOTER',
-    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
-
--- ============================================================================
--- 15. THEMES
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS themes (
-    id SERIAL PRIMARY KEY,
-    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    slug VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    category VARCHAR(50) NOT NULL DEFAULT 'Modern',
-    preview_image TEXT,
-    theme_config JSONB NOT NULL DEFAULT '{
-        "primaryColor": "#6366f1",
-        "backgroundColor": "#090d16",
-        "textColor": "#f8fafc",
-        "fontFamily": "Inter"
-    }'::jsonb,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_premium BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_themes_app ON themes (app_id);
-
-DROP TRIGGER IF EXISTS trg_themes_updated_at ON themes;
-CREATE TRIGGER trg_themes_updated_at
-BEFORE UPDATE ON themes
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 16. FAQS (Frequently Asked Questions)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS faqs (
-    id SERIAL PRIMARY KEY,
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
-CREATE TRIGGER trg_faqs_updated_at
-BEFORE UPDATE ON faqs
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 17. UPDATES (Product Changelog & Announcements)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS updates (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    slug VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
-CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
-
-DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
-CREATE TRIGGER trg_updates_updated_at
-BEFORE UPDATE ON updates
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 18. REVIEWS (One review per subscription by a creator)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS reviews (
-    id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
-    subscription_id INTEGER NOT NULL REFERENCES subscription(id) ON DELETE CASCADE,
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    title VARCHAR(255),
-    comment TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
-    approved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
-    approved_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_creator_subscription_review UNIQUE (subscription_id)
-);
     cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -1040,64 +871,6 @@ CREATE TRIGGER trg_tutorials_updated_at
 BEFORE UPDATE ON tutorials
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 24. FAQS (Admin & Manager CRUD, Public View)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS faqs (
-    id SERIAL PRIMARY KEY,
-    question TEXT NOT NULL,
-    answer TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_faqs_created_at ON faqs (created_at ASC);
-
-DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
-CREATE TRIGGER trg_faqs_updated_at
-BEFORE UPDATE ON faqs
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 25. UPDATES (Product Releases & Changelog - Admin & Manager CRUD, Public View)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS updates (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
-CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
-
-DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
-CREATE TRIGGER trg_updates_updated_at
-BEFORE UPDATE ON updates
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- 26. SUBSCRIBERS (Newsletter & Platform Audience Subscriptions)
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS subscribers (
-    id SERIAL PRIMARY KEY,
-    email CITEXT NOT NULL UNIQUE,
-    status VARCHAR(50) NOT NULL DEFAULT 'SUBSCRIBED' CHECK (status IN ('SUBSCRIBED', 'UNSUBSCRIBED', 'PENDING')),
-    source VARCHAR(100) DEFAULT 'FOOTER',
-    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
-CREATE INDEX IF NOT EXISTS idx_subscribers_status ON subscribers (status);
 
 -- ============================================================================
 -- 27. META MESSAGING (Facebook Messages, Instagram Messages, WhatsApp Messages)

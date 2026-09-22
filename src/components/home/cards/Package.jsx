@@ -53,14 +53,14 @@ const Package = ({pkg,price}) => {
 
               <div className="pt-8">
                 <Link
-                  href={`/checkout?packageId=${pkg.id}`}
+                  href={`/creator/checkout?packageId=${pkg.id}`}
                   className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
                     pkg.popular
                       ? 'bg-secondary text-white hover:opacity-95 shadow-indigo-500/25'
                       : 'bg-white/10 hover:bg-white/20 text-white'
                   }`}
                 >
-                  <span>{pkg.cta}</span>
+                  <span>{pkg.cta || 'Get Started'}</span>
                   <span>→</span>
                 </Link>
               </div>
