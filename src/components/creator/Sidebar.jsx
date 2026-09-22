@@ -24,6 +24,7 @@ export const CREATOR_NAV_SECTIONS = [
     links: [
       { href: '', label: 'Overview', icon: BiLayer, exact: true },
       { href: '/webites', label: 'My Websites', icon: BiDesktop },
+      { href: '/subscription', label: 'My Subscription', icon: BiCheckShield },
       { href: '/purchases', label: 'Packages & Plans', icon: BiCube },
       { href: '/payments', label: 'Billing & Invoices', icon: BiCreditCard },
     ],
