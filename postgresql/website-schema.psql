@@ -116,11 +116,21 @@ CREATE TABLE IF NOT EXISTS website_users (
     bio TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code VARCHAR(255),
+    verification_expires_at TIMESTAMPTZ,
+    reset_token VARCHAR(255),
+    reset_expires_at TIMESTAMPTZ,
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_website_users_web_email UNIQUE (website_id, email)
 );
+
+-- Backwards compatibility migrations if table already exists
+ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(255);
+ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);
+ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_website_users_web ON website_users (website_id);
 CREATE INDEX IF NOT EXISTS idx_website_users_email ON website_users (website_id, email);
