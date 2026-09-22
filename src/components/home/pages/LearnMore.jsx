@@ -5,7 +5,7 @@ import { DiDatabase } from 'react-icons/di'
 
 const LearnMore = () => {
     return (
-        <div className='w-full flex flex-col items-center justify-center gap-16 rounded-2xl py-20 bg-light'>
+        <div className='w-full flex flex-col items-center justify-center gap-16 rounded-3xl py-20 px-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-colors'>
             <div className='w-full flex flex-col items-center justify-center gap-6 max-w-6xl mx-auto'>
                 <p className='text-2xl md:text-4xl lg:text-5xl text-center'>Drag & drop tool to build page instantly with live preview</p>
                 <div className='flex flex-col w-full items-center justify-center gap-4'>

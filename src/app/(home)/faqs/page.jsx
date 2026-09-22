@@ -49,7 +49,7 @@ export default function FaqsPage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 py-16 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -57,10 +57,10 @@ export default function FaqsPage() {
             <BiHelpCircle className="text-base" />
             <span>Help & Knowledge Base</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Frequently Asked Questions
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
             Everything you need to know about building, launching, and managing your portfolio websites, custom domains, and creator tools.
           </p>
 
@@ -73,7 +73,7 @@ export default function FaqsPage() {
                 placeholder="Search any question or keyword..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-sm shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm shadow-xs focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
           </div>
@@ -81,22 +81,22 @@ export default function FaqsPage() {
 
         {/* FAQs Accordion Section */}
         {loading ? (
-          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
             <BiLoaderAlt className="animate-spin text-3xl text-primary" />
-            <p className="text-xs text-slate-500 font-medium">Loading answers for you...</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Loading answers for you...</p>
           </div>
         ) : filteredFaqs.length === 0 ? (
-          <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-2xl">
               <BiSearch />
             </div>
-            <h3 className="text-base font-bold text-slate-800">No matching questions found</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">No matching questions found</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               We couldn&apos;t find an answer matching &ldquo;{searchTerm}&rdquo;. Feel free to reach out to our team directly!
             </p>
             <button
               onClick={() => setSearchTerm('')}
-              className="text-xs text-primary hover:underline font-semibold"
+              className="text-xs text-primary hover:underline font-semibold cursor-pointer"
             >
               Clear search filter
             </button>
@@ -108,10 +108,10 @@ export default function FaqsPage() {
               return (
                 <div
                   key={faq.id}
-                  className={`bg-white border rounded-2xl transition-all duration-200 overflow-hidden shadow-xs ${
+                  className={`bg-white dark:bg-slate-900 border rounded-2xl transition-all duration-200 overflow-hidden shadow-xs ${
                     isOpen
-                      ? 'border-primary/40 ring-1 ring-primary/20'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-primary/40 dark:border-primary/50 ring-1 ring-primary/20'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <button
@@ -120,12 +120,12 @@ export default function FaqsPage() {
                     className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                    <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                       {faq.question}
                     </span>
                     <span
                       className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'bg-primary text-white rotate-180' : 'bg-slate-100 text-slate-500'
+                        isOpen ? 'bg-primary text-white rotate-180' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       <BiChevronDown className="text-xl" />
@@ -133,7 +133,7 @@ export default function FaqsPage() {
                   </button>
 
                   {isOpen && (
-                    <div className="px-6 pb-6 pt-1 text-slate-600 text-xs sm:text-sm leading-relaxed border-t border-slate-100 whitespace-pre-line">
+                    <div className="px-6 pb-6 pt-1 text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed border-t border-slate-100 dark:border-slate-800 whitespace-pre-line">
                       {faq.answer}
                     </div>
                   )}

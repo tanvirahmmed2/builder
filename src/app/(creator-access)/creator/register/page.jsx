@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BiLoaderAlt } from 'react-icons/bi';
+import { BiLoaderAlt, BiUserPlus, BiEnvelope, BiBuilding, BiPhone, BiLockAlt, BiUser } from 'react-icons/bi';
 
 export default function CreatorRegisterPage() {
   const router = useRouter();
@@ -11,6 +11,8 @@ export default function CreatorRegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [company, setCompany] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [registered, setRegistered] = useState(false);
@@ -29,18 +31,24 @@ export default function CreatorRegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'register',
-          creatorData: { name, email, password, phone },
+          creatorData: {
+            name: name.trim(),
+            email: email.trim(),
+            password,
+            phone: phone.trim() || undefined,
+            company: company.trim() || undefined,
+          },
         }),
       });
       const data = await res.json();
       if (data.success && data.creator) {
         setRegistered(true);
-        setRegisteredEmail(email);
+        setRegisteredEmail(email.trim());
       } else {
-        setError(data.error || 'Registration failed.');
+        setError(data.error || 'Registration failed. Please check your details.');
       }
-    } catch (err) {
-      setError('Server error during registration.');
+    } catch (_) {
+      setError('Server error during registration. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +70,7 @@ export default function CreatorRegisterPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setResendMsg(data.message || 'A new verification link has been sent to your email.');
+        setResendMsg(data.message || 'A new verification code has been sent to your email.');
       } else {
         setError(data.error || 'Failed to resend verification link.');
       }
@@ -75,51 +83,58 @@ export default function CreatorRegisterPage() {
 
   if (registered) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl mx-auto border border-emerald-100">
-            ✉️
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mx-auto border border-emerald-100 dark:border-emerald-800">
+            <BiEnvelope />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Check Your Email</h1>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              We&apos;ve sent an activation link to <span className="font-semibold text-slate-800">{registeredEmail}</span>. Please click the link in your email to verify your account before logging in.
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Check Your Email</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              We&apos;ve sent a 6-digit verification code to <span className="font-semibold text-slate-800 dark:text-slate-200">{registeredEmail}</span>. Enter the code to activate your creator account.
             </p>
           </div>
 
           {resendMsg && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
               {resendMsg}
             </div>
           )}
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
               {error}
             </div>
           )}
 
           <div className="pt-2 space-y-3">
             <Link
-              href="/creator/login"
-              className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all text-center"
+              href={`/creator/verify?email=${encodeURIComponent(registeredEmail)}`}
+              className="w-full block py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all text-center"
             >
-              Proceed to Sign In →
+              Enter Verification Code →
+            </Link>
+
+            <Link
+              href="/creator/login"
+              className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all text-center"
+            >
+              Proceed to Sign In
             </Link>
 
             <button
               type="button"
               onClick={handleResend}
               disabled={resending}
-              className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {resending ? (
                 <>
                   <BiLoaderAlt className="animate-spin text-sm" />
-                  <span>Resending link...</span>
+                  <span>Resending code...</span>
                 </>
               ) : (
-                <span>Resend Verification Email</span>
+                <span>Resend 6-Digit Code</span>
               )}
             </button>
           </div>
@@ -129,70 +144,101 @@ export default function CreatorRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
+      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
         <div className="text-center space-y-2">
-          
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Register Now!</h1>
-          <p className="text-xs text-slate-500">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
+            <BiUserPlus />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Create Creator Account</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Build, publish, and scale your personal portfolio websites with ease.
           </p>
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
             {error}
           </div>
         )}
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Your Full Name *</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
-            />
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Full Name *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Alex Morgan"
+                className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Email Address *
+            </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
+              placeholder="alex@example.com"
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Password *</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Password *
+            </label>
             <input
               type="password"
               required
+              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
+              placeholder="At least 6 characters"
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 555 0192"
+                className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Company / Studio
+              </label>
+              <input
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Morgan Designs"
+                className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
           >
             {loading ? (
               <>
@@ -200,15 +246,15 @@ export default function CreatorRegisterPage() {
                 <span>Creating Account...</span>
               </>
             ) : (
-              <span>Continue →</span>
+              <span>Create Account →</span>
             )}
           </button>
         </form>
 
-        <div className="text-center pt-2 border-t border-slate-100">
-          <p className="text-xs text-slate-500">
+        <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Already have a creator account?{' '}
-            <Link href="/creator/login" className="font-semibold text-slate-900 hover:underline">
+            <Link href="/creator/login" className="font-semibold text-slate-900 dark:text-white hover:underline">
               Sign In
             </Link>
           </p>

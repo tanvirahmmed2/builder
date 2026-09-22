@@ -39,12 +39,18 @@ export async function POST(request) {
         );
       }
 
+      const hashedPassword = await hashPassword(newPassword.trim());
       await queryDb(
         `UPDATE developers 
          SET password = $1, forget_token = NULL, forget_token_expires_at = NULL 
          WHERE id = $2`,
-        [newPassword, adminRes.rows[0].id]
+        [hashedPassword, adminRes.rows[0].id]
       );
+
+      // Invalidate existing sessions for security
+      try {
+        await queryDb('UPDATE session SET is_revoked = TRUE WHERE developer_id = $1', [adminRes.rows[0].id]);
+      } catch (_) {}
 
       return NextResponse.json({
         success: true,

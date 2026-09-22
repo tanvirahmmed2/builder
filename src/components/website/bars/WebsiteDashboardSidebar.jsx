@@ -18,11 +18,23 @@ import {
   BiSupport,
   BiTag,
   BiTimeFive,
+  BiLockAlt,
 } from 'react-icons/bi';
 
 export default function WebsiteDashboardSidebar({ slug, website }) {
   const pathname = usePathname();
   const primaryColor = website?.settings?.primary_color || '#6366f1';
+  const allowedModules = Array.isArray(website?.allowed_modules) ? website.allowed_modules : [];
+
+  const isAllowed = (label) => {
+    if (label === 'Overview' || label === 'Settings & Domain') return true;
+    if (allowedModules.length === 0) return true;
+    const target = label.toLowerCase();
+    return allowedModules.some((m) => {
+      const mod = String(m || '').toLowerCase();
+      return mod === target || target.includes(mod) || mod.includes(target);
+    });
+  };
 
   const menuItems = [
     { label: 'Overview', href: `/website/${slug}/dashboard`, icon: BiBarChartSquare, exact: true },
@@ -45,15 +57,32 @@ export default function WebsiteDashboardSidebar({ slug, website }) {
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 shrink-0 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">
       <div className="space-y-1">
         <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Website Website Management
+          Website Management
         </div>
 
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const allowed = isAllowed(item.label);
             const isActive = item.exact
               ? pathname === item.href || pathname === item.href.replace('/website/', '/webites/')
               : pathname.startsWith(item.href) || pathname.startsWith(item.href.replace('/website/', '/webites/'));
+
+            if (!allowed) {
+              return (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-medium text-slate-400 dark:text-slate-600 opacity-60 cursor-not-allowed bg-slate-50/50 dark:bg-slate-800/30"
+                  title="This module is not enabled in your subscription package."
+                >
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon className="text-lg shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  <BiLockAlt className="text-sm shrink-0 text-slate-400" />
+                </div>
+              );
+            }
 
             return (
               <Link

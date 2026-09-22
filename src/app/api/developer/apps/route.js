@@ -1,5 +1,5 @@
 import { query } from '@/lib/db/pg';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
 import cloudinary, { uploadToCloudinary, deleteFromCloudinary } from '@/lib/db/cloudinary';
 
 function slugify(text) {
@@ -14,6 +14,11 @@ function slugify(text) {
 
 export async function GET(req) {
   try {
+    const auth = await authenticateStaff(req);
+    if (!auth.success) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const url = new URL(req.url);
     const appId = url.searchParams.get('id');
     const search = url.searchParams.get('search') || url.searchParams.get('q');

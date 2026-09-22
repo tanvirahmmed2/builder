@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function HomeLayout({ children }) {
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 relative">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative transition-colors duration-200">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />

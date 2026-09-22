@@ -3,34 +3,40 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BiLoaderAlt, BiCheckCircle, BiErrorCircle, BiEnvelope } from 'react-icons/bi';
+import { BiLoaderAlt, BiCheckCircle, BiErrorCircle, BiEnvelope, BiKey, BiShieldQuarter } from 'react-icons/bi';
 
 function CreatorVerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  const emailParam = searchParams.get('email');
+  const tokenParam = searchParams.get('token') || searchParams.get('code') || '';
+  const emailParam = searchParams.get('email') || '';
 
-  const [loading, setLoading] = useState(Boolean(token && emailParam));
+  const [emailInput, setEmailInput] = useState(emailParam);
+  const [codeInput, setCodeInput] = useState(tokenParam);
+  const [loading, setLoading] = useState(false);
+  const [verifyingAuto, setVerifyingAuto] = useState(Boolean(tokenParam && emailParam));
   const [success, setSuccess] = useState(false);
+  const [creatorId, setCreatorId] = useState(null);
   const [alreadyVerified, setAlreadyVerified] = useState(false);
   const [error, setError] = useState('');
-  const [emailInput, setEmailInput] = useState(emailParam || '');
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
 
+  // Auto-verify if URL parameters are present
   useEffect(() => {
-    if (!token || !emailParam) return;
+    if (!tokenParam || !emailParam) return;
 
     let ignore = false;
-    async function verifyAccount() {
+    async function verifyFromUrl() {
+      setVerifyingAuto(true);
+      setError('');
       try {
         const res = await fetch('/api/creator', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'verify',
-            token,
+            code: tokenParam,
             email: emailParam,
           }),
         });
@@ -38,34 +44,71 @@ function CreatorVerifyContent() {
         if (!ignore) {
           if (data.success) {
             setSuccess(true);
-            if (data.alreadyVerified) {
-              setAlreadyVerified(true);
-            }
+            if (data.creator?.id) setCreatorId(data.creator.id);
+            if (data.alreadyVerified) setAlreadyVerified(true);
           } else {
-            setError(data.error || 'Account verification failed.');
+            setError(data.error || 'Verification link expired or invalid.');
           }
         }
-      } catch (err) {
+      } catch (_) {
         if (!ignore) {
-          setError('Network error while attempting to verify account.');
+          setError('Network error while verifying your account.');
         }
       } finally {
         if (!ignore) {
-          setLoading(false);
+          setVerifyingAuto(false);
         }
       }
     }
 
-    verifyAccount();
+    verifyFromUrl();
     return () => {
       ignore = true;
     };
-  }, [token, emailParam]);
+  }, [tokenParam, emailParam]);
 
-  const handleResend = async (e) => {
-    if (e) e.preventDefault();
-    if (!emailInput) {
-      setError('Please enter your email address to receive a verification link.');
+  // Manual verification handler
+  const handleManualVerify = async (e) => {
+    e.preventDefault();
+    if (!emailInput || !codeInput) {
+      setError('Please provide both your email address and 6-digit code.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResendMsg('');
+
+    try {
+      const res = await fetch('/api/creator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          code: codeInput.trim(),
+          email: emailInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(true);
+        if (data.creator?.id) setCreatorId(data.creator.id);
+        if (data.alreadyVerified) setAlreadyVerified(true);
+      } else {
+        setError(data.error || 'Invalid verification code.');
+      }
+    } catch (_) {
+      setError('Network error during verification. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend verification code handler
+  const handleResend = async () => {
+    const targetEmail = emailInput || emailParam;
+    if (!targetEmail) {
+      setError('Please enter your email address to receive a new code.');
       return;
     }
 
@@ -79,127 +122,170 @@ function CreatorVerifyContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'resend_verification',
-          email: emailInput,
+          email: targetEmail.trim(),
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setResendMsg(data.message || 'Verification link sent! Please check your inbox.');
+        setResendMsg(data.message || 'A new 6-digit code has been sent to your email.');
       } else {
-        setError(data.error || 'Failed to resend verification link.');
+        setError(data.error || 'Failed to resend verification code.');
       }
     } catch (_) {
-      setError('Server error while requesting new verification link.');
+      setError('Server error while requesting new code.');
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-6 text-center">
-        {/* State 1: Verifying */}
-        {loading && (
-          <div className="space-y-4 py-6">
-            <BiLoaderAlt className="animate-spin text-4xl text-slate-900 mx-auto" />
-            <h2 className="text-xl font-bold text-slate-900">Verifying Your Account...</h2>
-            <p className="text-xs text-slate-500">
-              Validating security token for <span className="font-semibold text-slate-700">{emailParam}</span>.
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
+      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+        {/* State 1: Auto-verifying from URL */}
+        {verifyingAuto && (
+          <div className="text-center space-y-4 py-8">
+            <BiLoaderAlt className="animate-spin text-4xl text-slate-900 dark:text-white mx-auto" />
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Verifying Your Account...</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Validating security token for <span className="font-semibold text-slate-700 dark:text-slate-200">{emailParam}</span>.
             </p>
           </div>
         )}
 
         {/* State 2: Verified Successfully */}
-        {!loading && success && (
-          <div className="space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-4xl mx-auto border border-emerald-100">
+        {!verifyingAuto && success && (
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-4xl mx-auto border border-emerald-100 dark:border-emerald-800">
               <BiCheckCircle />
             </div>
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                {alreadyVerified ? 'Account Already Verified' : 'Account Verified!'}
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {alreadyVerified ? 'Account Already Verified' : 'Account Confirmed!'}
               </h1>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Your creator account has been successfully confirmed. You can now sign in to your Creator Studio.
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Your creator account is fully verified and active. You can now access your Creator Studio.
               </p>
             </div>
 
-            <div className="pt-2">
-              <Link
-                href="/creator/login"
-                className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all text-center cursor-pointer"
-              >
-                Login →
-              </Link>
+            <div className="pt-2 space-y-2">
+              {creatorId ? (
+                <Link
+                  href={`/creator/${creatorId}`}
+                  className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all text-center cursor-pointer"
+                >
+                  Enter Creator Studio →
+                </Link>
+              ) : (
+                <Link
+                  href="/creator/login"
+                  className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all text-center cursor-pointer"
+                >
+                  Proceed to Sign In →
+                </Link>
+              )}
             </div>
           </div>
         )}
 
-        {/* State 3: Error or Missing Link */}
-        {!loading && !success && (
-          <div className="space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-4xl mx-auto border border-rose-100">
-              <BiErrorCircle />
-            </div>
-
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Verification Problem</h1>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {error || 'We could not verify your email address. The token may be invalid or expired.'}
+        {/* State 3: Manual Code Entry & Error Recovery */}
+        {!verifyingAuto && !success && (
+          <div className="space-y-5">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
+                <BiShieldQuarter />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Verify Email Address
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Enter your registered email and the 6-digit verification code received.
               </p>
             </div>
 
             {resendMsg && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
                 {resendMsg}
               </div>
             )}
 
-            <form onSubmit={handleResend} className="pt-2 space-y-3 text-left">
+            {error && (
+              <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleManualVerify} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Email Address
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="Enter your registered email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
+                  placeholder="alex@example.com"
+                  className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  6-Digit Verification Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  className="w-full text-center tracking-[8px] font-mono text-xl font-bold bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:border-indigo-600 transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={resending}
-                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                disabled={loading}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
               >
-                {resending ? (
+                {loading ? (
                   <>
-                    <BiLoaderAlt className="animate-spin text-sm" />
-                    <span>Sending link...</span>
+                    <BiLoaderAlt className="animate-spin text-base" />
+                    <span>Verifying Code...</span>
                   </>
                 ) : (
-                  <>
-                    <BiEnvelope className="text-base" />
-                    <span>Send New Verification Link</span>
-                  </>
+                  <span>Verify Account →</span>
                 )}
               </button>
             </form>
 
-            <div className="text-center pt-2 border-t border-slate-100">
-              <p className="text-xs text-slate-500">
-                Back to{' '}
-                <Link href="/creator/login" className="font-semibold text-slate-900 hover:underline">
-                  Login
-                </Link>
-                {' '}or{' '}
-                <Link href="/creator/register" className="font-semibold text-slate-900 hover:underline">
-                  Create Account
-                </Link>
-              </p>
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-70"
+              >
+                {resending ? (
+                  <>
+                    <BiLoaderAlt className="animate-spin text-xs" />
+                    <span>Resending...</span>
+                  </>
+                ) : (
+                  <>
+                    <BiEnvelope className="text-xs" />
+                    <span>Resend 6-Digit Code</span>
+                  </>
+                )}
+              </button>
+
+              <Link
+                href="/creator/login"
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
+              >
+                Back to Sign In
+              </Link>
             </div>
           </div>
         )}
@@ -212,8 +298,8 @@ export default function CreatorVerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <BiLoaderAlt className="animate-spin text-3xl text-slate-800" />
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <BiLoaderAlt className="animate-spin text-3xl text-slate-800 dark:text-white" />
         </div>
       }
     >

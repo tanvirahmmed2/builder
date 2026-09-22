@@ -30,7 +30,10 @@ async function handleCreateAdmin(d) {
     [name, email, hashedPassword, role, isActive, verificationCode]
   );
 
-  const newAdmin = insertRes.rows[0];
+  const newAdmin = {
+    ...insertRes.rows[0],
+    verification_code: verificationCode,
+  };
 
   try {
     await sendEmail({
@@ -102,18 +105,28 @@ const ALLOWED_ROLES = new Set(['admin', 'manager', 'support', 'developer', 'mark
 
 export async function POST(request) {
   try {
-    const authCheck = await isAdmin(request);
-    if (!authCheck.success) {
-      return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts or create administrators.' },
-        { status: authCheck.status || 403 }
-      );
+    const devCountRes = await queryDb('SELECT COUNT(*)::int AS count FROM developers');
+    const devCount = devCountRes.rows[0]?.count || 0;
+
+    // Only bypass auth if there are ZERO developers in the system (initial bootstrap)
+    if (devCount > 0) {
+      const authCheck = await isAdmin(request);
+      if (!authCheck.success) {
+        return NextResponse.json(
+          { success: false, error: authCheck.message || 'Forbidden: Only admin roles can create developer accounts.' },
+          { status: authCheck.status || 403 }
+        );
+      }
     }
 
     const body = await request.json();
-    const { action } = body;
-    // POST is strictly for creating developer/admin account
-    const newAdmin = await handleCreateAdmin(body.data || body.adminData || body);
+    const data = body.data || body.adminData || body;
+    if (devCount === 0) {
+      // First user is always admin and verified
+      data.role = 'admin';
+    }
+
+    const newAdmin = await handleCreateAdmin(data);
 
     return NextResponse.json({
       success: true,

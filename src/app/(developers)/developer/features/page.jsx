@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
+import { Context } from '@/components/helper/Context';
 import {
   BiSearch,
   BiPlus,
@@ -14,10 +15,14 @@ import {
   BiXCircle,
   BiLayer,
   BiInfoCircle,
+  BiLockAlt,
 } from 'react-icons/bi';
 import FeatureForm from '@/components/developer/forms/FeatureForm';
 
 export default function AdminFeaturesPage() {
+  const { user } = useContext(Context) || {};
+  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -47,12 +52,20 @@ export default function AdminFeaturesPage() {
   }, []);
 
   const handleEditClick = (feat) => {
+    if (!isAdminUser) {
+      showNotification('Access Denied: Only Admin role can edit platform features.', 'error');
+      return;
+    }
     setEditingFeature(feat);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCreateClick = () => {
+    if (!isAdminUser) {
+      showNotification('Access Denied: Only Admin role can create platform features.', 'error');
+      return;
+    }
     setEditingFeature(null);
     setShowForm((prev) => !prev);
   };
@@ -64,6 +77,10 @@ export default function AdminFeaturesPage() {
   };
 
   const handleDelete = async (id, name) => {
+    if (!isAdminUser) {
+      showNotification('Access Denied: Only Admin role can delete features.', 'error');
+      return;
+    }
     if (!confirm(`Are you sure you want to delete feature "${name || `#${id}`}"? This cannot be undone.`)) {
       return;
     }
@@ -83,7 +100,7 @@ export default function AdminFeaturesPage() {
         }
         showNotification(`Feature "${name}" was deleted successfully.`);
       } else {
-        showNotification(data.error || 'Failed to delete feature. Admin or Manager role required.', 'error');
+        showNotification(data.error || 'Failed to delete feature. Admin role required.', 'error');
       }
     } catch (e) {
       console.error('Error deleting feature:', e);
@@ -140,6 +157,12 @@ export default function AdminFeaturesPage() {
             <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
               Capabilities
             </span>
+            {!isAdminUser && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <BiLockAlt className="text-xs" />
+                <span>Read-Only</span>
+              </span>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500">
             Catalog of modular builder capabilities that can be bundled into platform packages and tiers.
@@ -155,18 +178,25 @@ export default function AdminFeaturesPage() {
           >
             <BiRefresh className="text-xl" />
           </button>
-          <button
-            type="button"
-            onClick={handleCreateClick}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              showForm && !editingFeature
-                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                : 'bg-secondary hover:bg-secondary-dark text-white'
-            }`}
-          >
-            {showForm && !editingFeature ? <BiMinus className="text-lg" /> : <BiPlus className="text-lg" />}
-            <span>{showForm && !editingFeature ? 'Hide Form' : 'Add Feature'}</span>
-          </button>
+          {isAdminUser ? (
+            <button
+              type="button"
+              onClick={handleCreateClick}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                showForm && !editingFeature
+                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-secondary hover:bg-secondary-dark text-white'
+              }`}
+            >
+              {showForm && !editingFeature ? <BiMinus className="text-lg" /> : <BiPlus className="text-lg" />}
+              <span>{showForm && !editingFeature ? 'Hide Form' : 'Add Feature'}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold">
+              <BiLockAlt className="text-sm" />
+              <span>Admin Role Required to Create</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -207,7 +237,7 @@ export default function AdminFeaturesPage() {
       </div>
 
       {/* Feature Form (Create or Edit) */}
-      {showForm && (
+      {showForm && isAdminUser && (
         <FeatureForm
           initialData={editingFeature}
           onSuccess={(savedFeat) => {
@@ -319,26 +349,30 @@ export default function AdminFeaturesPage() {
                     </td>
 
                     <td className="px-5 py-4 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleEditClick(feat)}
-                          className="p-1.5 text-slate-500 hover:text-secondary hover:bg-secondary/10 rounded-lg transition-colors cursor-pointer"
-                          title="Edit feature"
-                        >
-                          <BiEdit className="text-base" />
-                        </button>
+                      {isAdminUser ? (
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditClick(feat)}
+                            className="p-1.5 text-slate-500 hover:text-secondary hover:bg-secondary/10 rounded-lg transition-colors cursor-pointer"
+                            title="Edit feature"
+                          >
+                            <BiEdit className="text-base" />
+                          </button>
 
-                        <button
-                          type="button"
-                          disabled={deletingId === feat.id}
-                          onClick={() => handleDelete(feat.id, feat.name)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete feature"
-                        >
-                          <BiTrash className="text-base" />
-                        </button>
-                      </div>
+                          <button
+                            type="button"
+                            disabled={deletingId === feat.id}
+                            onClick={() => handleDelete(feat.id, feat.name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete feature"
+                          >
+                            <BiTrash className="text-base" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 italic">View Only</span>
+                      )}
                     </td>
                   </tr>
                 ))

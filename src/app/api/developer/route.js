@@ -170,7 +170,7 @@ export async function PUT(request) {
 
     const updatedDev = updateRes.rows[0];
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Developer profile updated successfully.',
       developer: {
@@ -178,7 +178,36 @@ export async function PUT(request) {
         isAdmin: (updatedDev.role || '').toLowerCase() === 'admin',
         isManager: (updatedDev.role || '').toLowerCase() === 'manager' || (updatedDev.role || '').toLowerCase() === 'admin',
       },
+      user: {
+        id: updatedDev.id,
+        name: updatedDev.name,
+        email: updatedDev.email,
+        role: updatedDev.role,
+        isAdmin: (updatedDev.role || '').toLowerCase() === 'admin',
+        isActive: updatedDev.is_active !== false,
+        isVerified: updatedDev.is_verified === true,
+      },
     });
+
+    if (newEmail !== currentDev.email.toLowerCase()) {
+      try {
+        const { generateToken, setAdminSessionCookie } = await import('@/lib/middleware/developer');
+        const refreshedToken = generateToken(
+          { id: updatedDev.id, email: newEmail, role: updatedDev.role },
+          '7d'
+        );
+        await queryDb('UPDATE session SET token = $1 WHERE developer_id = $2 AND token = $3', [
+          refreshedToken,
+          updatedDev.id,
+          authUser.current_session_token,
+        ]).catch(() => {});
+        await setAdminSessionCookie(response, refreshedToken);
+      } catch (cErr) {
+        console.warn('Could not refresh session cookie in api/developer/route.js:', cErr);
+      }
+    }
+
+    return response;
   } catch (error) {
     console.error('Error updating developer profile:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

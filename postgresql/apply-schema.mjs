@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -403,6 +404,12 @@ async function migrate() {
         `, [w.id, w.name || 'My Portfolio', theme.primaryColor || '#6366f1', theme.fontFamily || 'Inter']);
       }
 
+      // Check if website already has modules seeded to prevent redundant round-trips
+      const existingMods = await client.query('SELECT COUNT(*)::int AS count FROM website_modules WHERE website_id = $1', [w.id]);
+      if (existingMods.rows[0].count > 0) {
+        continue;
+      }
+
       // 2. Default Modules
       const defaultModules = [
         { name: 'Products & Store', slug: 'products', description: 'E-commerce products, digital downloads & inventory' },
@@ -515,6 +522,283 @@ async function migrate() {
           ($1, 'Node.js & REST APIs', 'Backend', 88, 4)
         `, [w.id]);
       }
+    }
+
+    // =========================================================================
+    // DEVELOPERS INITIAL SUPER ADMIN SEED
+    // =========================================================================
+    console.log('Checking developers table and seeding initial Super Admin if empty...');
+    const devCount = await client.query('SELECT COUNT(*)::int AS count FROM developers');
+    if (devCount.rows[0].count === 0) {
+      console.log('Seeding initial Super Admin developer...');
+      const adminPass = await bcrypt.hash('admin123456', 10);
+      await client.query(`
+        INSERT INTO developers (name, email, password, role, is_active, is_verified)
+        VALUES ('Super Admin', 'admin@portfoliobuilder.com', $1, 'admin', TRUE, TRUE)
+      `, [adminPass]);
+    }
+
+    // =========================================================================
+    // PAYROLL TABLES
+    // =========================================================================
+    console.log('Creating payrolls, developer_payrolls, and payroll_payments tables...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payrolls (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          pay_period_start DATE NOT NULL,
+          pay_period_end DATE NOT NULL,
+          status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED')),
+          total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+          notes TEXT,
+          created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls (status);
+      CREATE INDEX IF NOT EXISTS idx_payrolls_period ON payrolls (pay_period_start, pay_period_end);
+
+      DROP TRIGGER IF EXISTS trg_payrolls_updated_at ON payrolls;
+      CREATE TRIGGER trg_payrolls_updated_at
+      BEFORE UPDATE ON payrolls
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+
+      CREATE TABLE IF NOT EXISTS developer_payrolls (
+          id SERIAL PRIMARY KEY,
+          payroll_id INTEGER NOT NULL REFERENCES payrolls(id) ON DELETE CASCADE,
+          developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+          base_salary NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+          bonus NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+          deductions NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+          net_salary NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+          payment_status VARCHAR(50) NOT NULL DEFAULT 'UNPAID' CHECK (payment_status IN ('UNPAID', 'PROCESSING', 'PAID', 'FAILED')),
+          payment_method VARCHAR(50) DEFAULT 'BANK_TRANSFER' CHECK (payment_method IN ('BANK_TRANSFER', 'STRIPE', 'PAYPAL', 'CASH', 'CRYPTO', 'CHECK')),
+          notes TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT uq_developer_payroll UNIQUE (payroll_id, developer_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_developer_payrolls_payroll ON developer_payrolls (payroll_id);
+      CREATE INDEX IF NOT EXISTS idx_developer_payrolls_developer ON developer_payrolls (developer_id);
+      CREATE INDEX IF NOT EXISTS idx_developer_payrolls_status ON developer_payrolls (payment_status);
+
+      DROP TRIGGER IF EXISTS trg_developer_payrolls_updated_at ON developer_payrolls;
+      CREATE TRIGGER trg_developer_payrolls_updated_at
+      BEFORE UPDATE ON developer_payrolls
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+
+      CREATE TABLE IF NOT EXISTS payroll_payments (
+          id SERIAL PRIMARY KEY,
+          developer_payroll_id INTEGER NOT NULL REFERENCES developer_payrolls(id) ON DELETE CASCADE,
+          payroll_id INTEGER NOT NULL REFERENCES payrolls(id) ON DELETE CASCADE,
+          developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+          amount NUMERIC(12, 2) NOT NULL,
+          payment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          payment_method VARCHAR(50) NOT NULL,
+          transaction_reference VARCHAR(255),
+          status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED' CHECK (status IN ('COMPLETED', 'PENDING', 'FAILED', 'REFUNDED')),
+          processed_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          notes TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_payroll_payments_developer_payroll ON payroll_payments (developer_payroll_id);
+      CREATE INDEX IF NOT EXISTS idx_payroll_payments_developer ON payroll_payments (developer_id);
+      CREATE INDEX IF NOT EXISTS idx_payroll_payments_date ON payroll_payments (payment_date DESC);
+    `);
+
+    // =========================================================================
+    // INTERNAL CHAT TABLES
+    // =========================================================================
+    console.log('Creating internal_chats, chat_participants, chat_messages, chat_images tables...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS internal_chats (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255),
+          type VARCHAR(50) NOT NULL DEFAULT 'DIRECT' CHECK (type IN ('DIRECT', 'GROUP')),
+          created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_internal_chats_type ON internal_chats (type);
+      CREATE INDEX IF NOT EXISTS idx_internal_chats_updated_at ON internal_chats (updated_at DESC);
+
+      DROP TRIGGER IF EXISTS trg_internal_chats_updated_at ON internal_chats;
+      CREATE TRIGGER trg_internal_chats_updated_at
+      BEFORE UPDATE ON internal_chats
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+
+      CREATE TABLE IF NOT EXISTS chat_participants (
+          id SERIAL PRIMARY KEY,
+          chat_id INTEGER NOT NULL REFERENCES internal_chats(id) ON DELETE CASCADE,
+          developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+          joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          last_read_at TIMESTAMPTZ,
+          CONSTRAINT uq_chat_participant UNIQUE (chat_id, developer_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_chat_participants_chat ON chat_participants (chat_id);
+      CREATE INDEX IF NOT EXISTS idx_chat_participants_developer ON chat_participants (developer_id);
+
+      CREATE TABLE IF NOT EXISTS chat_messages (
+          id SERIAL PRIMARY KEY,
+          chat_id INTEGER NOT NULL REFERENCES internal_chats(id) ON DELETE CASCADE,
+          sender_developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+          message TEXT,
+          is_system BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_created ON chat_messages (chat_id, created_at ASC);
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages (sender_developer_id);
+
+      CREATE TABLE IF NOT EXISTS chat_images (
+          id SERIAL PRIMARY KEY,
+          message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+          image_url TEXT NOT NULL,
+          file_name VARCHAR(255),
+          file_size INTEGER,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_chat_images_message ON chat_images (message_id);
+    `);
+
+    // =========================================================================
+    // TASKS & TASK COMMENTS TABLES
+    // =========================================================================
+    console.log('Creating tasks and task_comments tables...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          status VARCHAR(50) NOT NULL DEFAULT 'TODO' CHECK (status IN ('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'BLOCKED')),
+          priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
+          assigned_to_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          due_date TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status);
+      CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks (priority);
+      CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks (assigned_to_developer_id);
+      CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks (created_at DESC);
+
+      DROP TRIGGER IF EXISTS trg_tasks_updated_at ON tasks;
+      CREATE TRIGGER trg_tasks_updated_at
+      BEFORE UPDATE ON tasks
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+
+      CREATE TABLE IF NOT EXISTS task_comments (
+          id SERIAL PRIMARY KEY,
+          task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+          developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+          comment TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_task_comments_task ON task_comments (task_id, created_at ASC);
+      CREATE INDEX IF NOT EXISTS idx_task_comments_developer ON task_comments (developer_id);
+
+      DROP TRIGGER IF EXISTS trg_task_comments_updated_at ON task_comments;
+      CREATE TRIGGER trg_task_comments_updated_at
+      BEFORE UPDATE ON task_comments
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+    `);
+
+    // =========================================================================
+    // NOTICES TABLE
+    // =========================================================================
+    console.log('Creating notices table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notices (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          priority VARCHAR(50) NOT NULL DEFAULT 'NORMAL' CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
+          category VARCHAR(100) NOT NULL DEFAULT 'GENERAL' CHECK (category IN ('GENERAL', 'ANNOUNCEMENT', 'MAINTENANCE', 'SECURITY', 'POLICY')),
+          is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+          target_role VARCHAR(50) NOT NULL DEFAULT 'ALL',
+          created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          expires_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_notices_pinned_created ON notices (is_pinned DESC, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_notices_target_role ON notices (target_role);
+
+      DROP TRIGGER IF EXISTS trg_notices_updated_at ON notices;
+      CREATE TRIGGER trg_notices_updated_at
+      BEFORE UPDATE ON notices
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+    `);
+
+    // Seed starter notices if empty
+    const noticesCount = await client.query('SELECT COUNT(*)::int AS count FROM notices');
+    if (noticesCount.rows[0].count === 0) {
+      console.log('Seeding initial company notice...');
+      await client.query(`
+        INSERT INTO notices (title, content, priority, category, is_pinned, target_role)
+        VALUES (
+          'Welcome to the Multi-Website Platform Developer Center',
+          'All developers, managers, and administrators now have centralized access to team sprints, internal communications, company notices, and operational modules. Please ensure your profile credentials and security settings are up to date.',
+          'HIGH',
+          'ANNOUNCEMENT',
+          TRUE,
+          'ALL'
+        )
+      `);
+    }
+
+    // =========================================================================
+    // TUTORIALS TABLE
+    // =========================================================================
+    console.log('Creating tutorials table, indexes and trigger...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tutorials (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          youtube_link VARCHAR(500) NOT NULL,
+          created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tutorials_created_at ON tutorials (created_at DESC);
+
+      DROP TRIGGER IF EXISTS trg_tutorials_updated_at ON tutorials;
+      CREATE TRIGGER trg_tutorials_updated_at
+      BEFORE UPDATE ON tutorials
+      FOR EACH ROW
+      EXECUTE FUNCTION trigger_set_timestamp();
+    `);
+
+    // Seed starter tutorials if empty
+    const tutsCount = await client.query('SELECT COUNT(*)::int AS count FROM tutorials');
+    if (tutsCount.rows[0].count === 0) {
+      console.log('Seeding initial tutorials...');
+      await client.query(`
+        INSERT INTO tutorials (title, description, youtube_link) VALUES
+        ('Building Your First Portfolio Website in Under 5 Minutes', 'Learn how to choose a theme, customize typography and colors, and launch your personal portfolio on a fast custom subdomain.', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        ('Connecting Custom Domains and Configuring SSL Provisioning', 'A step-by-step walkthrough explaining how to point DNS CNAME and A records to publish your portfolio to your personal domain name.', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        ('Managing E-commerce Products & Digital Storefronts', 'Discover how to add digital downloads, set up payment methods, organize inventory categories, and receive client inquiries.', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+        ('Role-Based Staff Access & Client Permissions Guide', 'A comprehensive operational guide on assigning granular roles (Owner, Admin, Editor) and permissions to team members.', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+      `);
     }
 
     console.log('Migration completed successfully!');

@@ -28,6 +28,11 @@ import {
   BiCog,
   BiHelpCircle,
   BiBell,
+  BiTask,
+  BiVideo,
+  BiLogoFacebookCircle,
+  BiLogoInstagram,
+  BiLogoWhatsapp,
 } from 'react-icons/bi';
 import { ROLE_PERMISSIONS } from '@/app/(developers)/developer/layout';
 
@@ -36,7 +41,10 @@ export const ADMIN_NAV_SECTIONS = [
     title: 'Platform Core',
     links: [
       { href: '/developer', label: 'Overview', icon: BiLayer, exact: true },
+      { href: '/developer/tasks', label: 'Tasks & Sprints', icon: BiTask },
+      { href: '/developer/notices', label: 'Company Notices', icon: BiBell },
       { href: '/developer/profile', label: 'My Profile', icon: BiUser },
+      { href: '/developer/my-salaries', label: 'My Salaries', icon: BiCreditCard },
       { href: '/developer/settings', label: 'Settings', icon: BiCog },
       { href: '/developer/developers', label: 'Developers Team', icon: BiUserCheck },
       { href: '/developer/creators', label: 'Creators', icon: BiGroup },
@@ -51,6 +59,7 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/themes', label: 'Themes', icon: BiPalette },
       { href: '/developer/faqs', label: 'FAQs', icon: BiHelpCircle },
       { href: '/developer/updates', label: 'Product Updates', icon: BiBell },
+      { href: '/developer/tutorials', label: 'Video Tutorials', icon: BiVideo },
     ],
   },
   {
@@ -58,19 +67,31 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/developer/packages', label: 'Packages', icon: BiCube },
       { href: '/developer/features', label: 'Features', icon: BiCheckShield },
+      { href: '/developer/modules', label: 'Database Modules', icon: BiGridAlt },
       { href: '/developer/payments', label: 'Payments', icon: BiCreditCard },
       { href: '/developer/subscriptions', label: 'Subscriptions', icon: BiCheckShield },
+      { href: '/developer/payroll', label: 'Payroll & Salaries', icon: BiCreditCard },
     ],
   },
   {
     title: 'Support & Comms',
     links: [
+      { href: '/developer/chats', label: 'Internal Chat', icon: BiMessageSquareDetail },
       { href: '/developer/live-chats', label: 'Live Chats', icon: BiChat },
       { href: '/developer/contacts', label: 'Contacts', icon: BiEnvelope },
       { href: '/developer/support', label: 'Support Tickets', icon: BiHeadphone },
       { href: '/developer/reports', label: 'Reports', icon: BiMessageSquareDetail },
     ],
   },
+  {
+    title: 'Meta Channels',
+    links: [
+      { href: '/developer/facebook-messages', label: 'Facebook Messages', icon: BiLogoFacebookCircle },
+      { href: '/developer/instagram-messages', label: 'Instagram Messages', icon: BiLogoInstagram },
+      { href: '/developer/whatsapp-messages', label: 'WhatsApp Messages', icon: BiLogoWhatsapp },
+    ],
+  },
+
   {
     title: 'Security & Trust',
     links: [
@@ -122,7 +143,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
 
   const navContent = (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-10">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10 transition-colors">
        
 
         {onClose && (
@@ -145,7 +166,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
 
           return (
             <div key={section.title} className="space-y-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-1">
                 {section.title}
               </div>
               {visibleLinks.map((link) => {
@@ -158,8 +179,8 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
                     onClick={onClose}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                       active
-                        ? 'bg-primary/15 text-slate-900 border-l-4 border-primary font-bold shadow-xs'
-                        : 'text-slate-600 hover:text-primary hover:bg-slate-50'
+                        ? 'bg-primary/15 text-slate-900 dark:text-white border-l-4 border-primary font-bold shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <Icon className={`text-base ${active ? 'text-primary' : 'text-slate-400'}`} />
@@ -173,11 +194,11 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
       </div>
 
       {/* Footer CTA and Actions */}
-      <div className="p-3 border-t border-slate-100 bg-white space-y-2 sticky bottom-0">
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2 sticky bottom-0 transition-colors">
         <Link
           href="/"
           onClick={onClose}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition-colors"
         >
           <BiHome className="text-sm" />
           <span>Platform Home</span>
@@ -207,7 +228,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
 
       {/* Mobile Drawer */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white z-50 md:hidden flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 md:hidden flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Developer Mobile Navigation"
@@ -217,7 +238,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
 
       {/* Desktop Persistent Sidebar */}
       <aside
-        className="hidden md:flex md:w-64 md:flex-col md:shrink-0 bg-white border-r border-slate-200 h-screen sticky top-0 z-30"
+        className="hidden md:flex md:w-64 md:flex-col md:shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-screen sticky top-0 z-30 transition-colors"
         aria-label="Developer Desktop Navigation"
       >
         {navContent}

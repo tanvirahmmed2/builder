@@ -1,15 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { BiShieldQuarter } from 'react-icons/bi';
+import { BiShieldQuarter, BiSun, BiMoon } from 'react-icons/bi';
+import { useWebsite } from '@/components/website/context/WebsiteContext';
 
 export default function WebsiteFooter({ website }) {
+  const { theme = 'light', toggleTheme } = useWebsite();
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'Studio Brand';
   const subdomain = website?.subdomain || 'site';
 
+  const isDark = theme === 'dark';
+
   return (
-    <footer className="w-full bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-12 text-slate-600 dark:text-slate-400 text-xs">
+    <footer className="w-full bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-12 text-slate-600 dark:text-slate-400 text-xs transition-colors">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center md:text-left">
@@ -39,6 +43,27 @@ export default function WebsiteFooter({ website }) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Tenant Website Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition-colors cursor-pointer shadow-xs"
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
+              aria-label="Toggle colour mode"
+            >
+              {isDark ? (
+                <>
+                  <BiSun className="text-amber-400 text-sm" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <BiMoon className="text-indigo-600 text-sm" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+
             <Link
               href={`/website/${subdomain}/dashboard`}
               className="flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors font-medium"

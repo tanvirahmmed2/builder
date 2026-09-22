@@ -1,9 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { BiGlobe, BiLinkExternal } from 'react-icons/bi';
+import { BiGlobe, BiLinkExternal, BiSun, BiMoon } from 'react-icons/bi';
+import { useWebsite } from '@/components/website/context/WebsiteContext';
 
 export default function WebsiteDashboardNav({ website }) {
+  const { theme = 'light', toggleTheme } = useWebsite();
+  const isDark = theme === 'dark';
+
   const settings = website?.settings || {};
   const siteTitle = settings.site_title || website?.name || 'My Website';
   const subdomain = website?.subdomain || 'site';
@@ -11,7 +15,7 @@ export default function WebsiteDashboardNav({ website }) {
   const primaryColor = settings.primary_color || '#6366f1';
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-30 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6 transition-colors">
       <div className="flex items-center gap-3">
         <Link href={`/website/${subdomain}/dashboard`} className="flex items-center gap-3">
           <div
@@ -37,6 +41,17 @@ export default function WebsiteDashboardNav({ website }) {
       </div>
 
       <div className="flex items-center gap-2.5">
+        {/* Dark/Light Mode Toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
+          aria-label="Toggle theme mode"
+        >
+          {isDark ? <BiSun className="text-amber-400 text-base" /> : <BiMoon className="text-indigo-600 text-base" />}
+        </button>
+
         <a
           href={`/website/${subdomain}`}
           target="_blank"

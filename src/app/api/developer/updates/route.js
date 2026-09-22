@@ -11,16 +11,37 @@ function formatSlug(text) {
   });
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const slug = searchParams.get('slug');
+
+    if (id) {
+      const res = await queryDb('SELECT * FROM updates WHERE id = $1 LIMIT 1', [Number(id)]);
+      if (res.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Update not found.' }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, record: res.rows[0] });
+    }
+
+    if (slug) {
+      const res = await queryDb('SELECT * FROM updates WHERE slug = $1 LIMIT 1', [slug]);
+      if (res.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Update not found.' }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, record: res.rows[0] });
+    }
+
     const res = await queryDb('SELECT * FROM updates ORDER BY created_at DESC').catch(() => ({ rows: [] }));
     return NextResponse.json({ success: true, table: 'updates', records: res.rows });
   } catch (error) {
+    console.error('Error fetching updates:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// CREATE UPDATE
+// CREATE UPDATE (Admin & Manager only)
 export async function POST(request) {
   try {
     const authCheck = await isManagerOrAdmin(request);
@@ -43,7 +64,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Description is required.' }, { status: 400 });
     }
     if (!slug) {
-      slug = formatSlug(title);
+      slug = formatSlug(title) || `update-${Date.now()}`;
     }
 
     // Check slug uniqueness
@@ -57,13 +78,17 @@ export async function POST(request) {
       [title, description, slug]
     );
 
-    return NextResponse.json({ success: true, record: res.rows[0], message: 'Update published successfully.' }, { status: 201 });
+    return NextResponse.json(
+      { success: true, record: res.rows[0], message: 'Update published successfully.' },
+      { status: 201 }
+    );
   } catch (error) {
+    console.error('Error creating update:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// UPDATE RECORD
+// UPDATE RECORD (Admin & Manager only)
 export async function PUT(request) {
   try {
     const authCheck = await isManagerOrAdmin(request);
@@ -75,7 +100,7 @@ export async function PUT(request) {
     }
 
     const body = await request.json();
-    const id = body.id;
+    const id = body.id || body.updateId;
     const title = body.title?.trim();
     const description = body.description?.trim();
     let slug = body.slug?.trim() || formatSlug(title);
@@ -90,18 +115,18 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, error: 'Description is required.' }, { status: 400 });
     }
     if (!slug) {
-      slug = formatSlug(title);
+      slug = formatSlug(title) || `update-${Date.now()}`;
     }
 
     // Check slug uniqueness excluding current record
-    const existingSlug = await queryDb('SELECT id FROM updates WHERE slug = $1 AND id != $2 LIMIT 1', [slug, id]);
+    const existingSlug = await queryDb('SELECT id FROM updates WHERE slug = $1 AND id != $2 LIMIT 1', [slug, Number(id)]);
     if (existingSlug.rows.length > 0) {
       slug = `${slug}-${Date.now().toString().slice(-4)}`;
     }
 
     const res = await queryDb(
-      `UPDATE updates SET title = $1, description = $2, slug = $3 WHERE id = $4 RETURNING *`,
-      [title, description, slug, id]
+      `UPDATE updates SET title = $1, description = $2, slug = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`,
+      [title, description, slug, Number(id)]
     );
 
     if (res.rows.length === 0) {
@@ -110,11 +135,12 @@ export async function PUT(request) {
 
     return NextResponse.json({ success: true, record: res.rows[0], message: 'Update saved successfully.' });
   } catch (error) {
+    console.error('Error updating update:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// DELETE RECORD
+// DELETE RECORD (Admin & Manager only)
 export async function DELETE(request) {
   try {
     const authCheck = await isManagerOrAdmin(request);
@@ -129,15 +155,20 @@ export async function DELETE(request) {
     let id = searchParams.get('id');
     if (!id) {
       const body = await request.json().catch(() => ({}));
-      id = body.id;
+      id = body.id || body.updateId;
     }
     if (!id) {
       return NextResponse.json({ success: false, error: 'Update ID is required.' }, { status: 400 });
     }
 
-    await queryDb('DELETE FROM updates WHERE id = $1', [id]);
+    const res = await queryDb('DELETE FROM updates WHERE id = $1 RETURNING id', [Number(id)]);
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Update not found or already deleted.' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true, message: 'Update deleted successfully.' });
   } catch (error) {
+    console.error('Error deleting update:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

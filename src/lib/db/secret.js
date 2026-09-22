@@ -27,3 +27,22 @@ export const SITE_ADDRESS='Mymensingh, Bangladesh'
 
 export const COMPANY_NAME='Disibin'
 export const COMPANY_URL='https://disibin.com'
+
+export const PAYOONER_CLIENT_ID = process.env.PAYOONER_CLIENT_ID;
+export const PAYOONER_CLIENT_SECRET = process.env.PAYOONER_CLIENT_SECRET;
+export const PAYOONER_PROGRAM_ID = process.env.PAYOONER_PROGRAM_ID;
+export const PAYOONER_ENV = process.env.PAYOONER_ENV;
+export const PAYOONER_API_BASE_URL = process.env.PAYOONER_API_BASE_URL;
+
+export const META_APP_ID = process.env.META_APP_ID;
+export const META_APP_SECRET = process.env.META_APP_SECRET;
+export const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN;
+export const META_PAGE_ID = process.env.META_PAGE_ID;
+export const META_INSTAGRAM_ACCOUNT_ID = process.env.META_INSTAGRAM_ACCOUNT_ID;
+export const META_WHATSAPP_TOKEN = process.env.META_WHATSAPP_TOKEN;
+export const META_WHATSAPP_PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
+export const META_WHATSAPP_BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
+export const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
+export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION || 'v21.0';
+
+

@@ -11,26 +11,29 @@ import Sidebar from '@/components/developer/Sidebar';
 export const ROLE_PERMISSIONS = {
   admin: [
     'overview', 'developers', 'team', 'creators', 'users', 'websites',
-    'blogs', 'themes', 'packages', 'features', 'payments', 'subscriptions',
-    'live-chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
-    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates'
+    'blogs', 'themes', 'packages', 'features', 'modules', 'payments', 'subscriptions', 'payroll', 'my-salaries',
+    'live-chats', 'chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
+    'facebook-messages', 'instagram-messages', 'whatsapp-messages',
+    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
-    'payments', 'subscriptions', 'live-chats', 'contacts', 'support',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates'
+    'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'my-salaries',
+    'facebook-messages', 'instagram-messages', 'whatsapp-messages',
+    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',
-    'apps', 'spams', 'reports', 'blogs', 'support', 'profile', 'settings'
+    'apps', 'spams', 'reports', 'blogs', 'support', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
   ],
   marketer: [
-    'overview', 'blogs', 'themes', 'leads', 'subscribers',
-    'packages', 'reviews', 'profile', 'settings'
+    'overview', 'blogs', 'themes', 'leads',
+    'packages', 'reviews', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
   ],
   support: [
-    'overview', 'live-chats', 'contacts', 'support', 'reports',
-    'reviews', 'users', 'creators', 'profile', 'settings'
+    'overview', 'live-chats', 'chats', 'contacts', 'support', 'reports',
+    'facebook-messages', 'instagram-messages', 'whatsapp-messages',
+    'reviews', 'users', 'creators', 'subscribers', 'profile', 'settings', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
   ]
 };
 
@@ -107,7 +110,7 @@ export default function DeveloperLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex transition-colors">
       {/* Sidebar: persistent on desktop, drawer on mobile */}
       <Sidebar
         isOpen={sidebarOpen}

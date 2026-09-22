@@ -104,47 +104,47 @@ export default function ContactPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold  mb-1">Your Name</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Liam Johnson"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className='input-style' />
+                  className="input-style bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500" />
               </div>
               <div>
-                <label className="block text-xs font-semibold  mb-1">Work Email</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Work Email</label>
                 <input
                   type="email"
                   required
                   placeholder="e.g. liam@agency.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className='input-style' />
+                  className="input-style bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold  mb-1">Subject</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Subject</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Enterprise Reverse Proxy Custom Domain Inquiry"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className='input-style' />
+                className="input-style bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500" />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold  mb-1">Your Message</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Your Message</label>
               <textarea
                 rows={5}
                 required
                 placeholder="Describe your technical requirements, collaboration needs, or feedback..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className='input-style' />
+                className="input-style bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500" />
             </div>
 
             <button

@@ -24,6 +24,7 @@ export async function GET(request, context) {
       skillsRes,
       testimonialsRes,
       offersRes,
+      allowedModsRes,
     ] = await Promise.all([
       queryDb('SELECT * FROM website_services WHERE website_id = $1 AND is_active = TRUE ORDER BY sort_order ASC, id ASC', [websiteId]).catch(() => ({ rows: [] })),
       queryDb('SELECT * FROM website_products WHERE website_id = $1 AND status = $2 ORDER BY is_featured DESC, id DESC', [websiteId, 'ACTIVE']).catch(() => ({ rows: [] })),
@@ -33,7 +34,28 @@ export async function GET(request, context) {
       queryDb('SELECT * FROM website_skills WHERE website_id = $1 ORDER BY sort_order ASC, proficiency DESC', [websiteId]).catch(() => ({ rows: [] })),
       queryDb('SELECT * FROM website_testimonials WHERE website_id = $1 ORDER BY sort_order ASC, id DESC', [websiteId]).catch(() => ({ rows: [] })),
       queryDb('SELECT * FROM website_offers WHERE website_id = $1 AND is_active = TRUE ORDER BY id DESC', [websiteId]).catch(() => ({ rows: [] })),
+      queryDb(
+        `SELECT DISTINCT am.module_title
+         FROM websites w
+         LEFT JOIN subscription s ON s.creator_id = w.creator_id AND s.status = 'ACTIVE'
+         JOIN allowed_modules am ON am.package_id = s.package_id
+         WHERE w.id = $1
+         ORDER BY am.module_title ASC`,
+        [websiteId]
+      ).catch(() => ({ rows: [] })),
     ]);
+
+    let allowedModules = (allowedModsRes.rows || []).map((r) => r.module_title);
+    if (allowedModules.length === 0) {
+      const defaultModRes = await queryDb(
+        `SELECT DISTINCT am.module_title
+         FROM allowed_modules am
+         JOIN packages p ON p.id = am.package_id
+         WHERE p.is_active = TRUE
+         ORDER BY am.module_title ASC`
+      ).catch(() => ({ rows: [] }));
+      allowedModules = defaultModRes.rows.map((r) => r.module_title);
+    }
 
     return NextResponse.json({
       success: true,
@@ -47,6 +69,7 @@ export async function GET(request, context) {
         is_published: website.is_published,
         settings: website.settings,
         modules: website.modules,
+        allowed_modules: allowedModules,
       },
       services: servicesRes.rows,
       products: productsRes.rows,

@@ -1,6 +1,57 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { isAdmin } from '@/lib/middleware/developer';
+
+// Dynamically query database tables to discover website modules
+async function fetchDatabaseModules() {
+  try {
+    const res = await queryDb(
+      `SELECT table_name 
+       FROM information_schema.tables 
+       WHERE table_schema = 'public' 
+         AND table_type = 'BASE TABLE'
+         AND table_name LIKE 'website_%'
+         AND table_name NOT LIKE '%_images'
+         AND table_name NOT LIKE '%_messages'
+         AND table_name NOT LIKE '%_permissions'
+         AND table_name NOT LIKE '%_roles'
+         AND table_name NOT LIKE '%_payments'
+         AND table_name != 'website_modules'
+       ORDER BY table_name ASC`
+    );
+
+    const titleMap = {
+      website_products: 'Products',
+      website_purchase: 'Orders & Payments',
+      website_appointments: 'Appointments',
+      website_blogs: 'Blog & Articles',
+      website_contact: 'Contact Inquiries',
+      website_services: 'Services',
+      website_experiences: 'Experiences',
+      website_gallery: 'Portfolio Gallery',
+      website_offers: 'Offers & Discounts',
+      website_support: 'Support Tickets',
+      website_roles: 'Roles & Permissions',
+      website_users: 'Team & Users',
+      website_settings: 'Settings & Domain',
+      website_skills: 'Skills & Endorsements',
+      website_testimonials: 'Testimonials & Reviews',
+      website_categories: 'Content Categories',
+    };
+
+    return (res.rows || []).map(
+      (r) =>
+        titleMap[r.table_name] ||
+        r.table_name
+          .replace('website_', '')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (c) => c.toUpperCase())
+    );
+  } catch (err) {
+    console.warn('Error discovering database modules:', err.message);
+    return [];
+  }
+}
 
 function generateSlug(text) {
   return (text || '')
@@ -15,10 +66,19 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const availableModules = await fetchDatabaseModules();
 
     if (id) {
       const res = await queryDb(
-        `SELECT p.*, a.title AS app_title, a.slug AS app_slug
+        `SELECT p.*, a.title AS app_title, a.slug AS app_slug,
+                COALESCE(
+                  (
+                    SELECT json_agg(am.module_title ORDER BY am.id ASC)
+                    FROM allowed_modules am
+                    WHERE am.package_id = p.id
+                  ),
+                  '[]'::json
+                ) AS allowed_modules
          FROM packages p
          LEFT JOIN apps a ON p.app_id = a.id
          WHERE p.id = $1
@@ -28,17 +88,34 @@ export async function GET(request) {
       if (res.rows.length === 0) {
         return NextResponse.json({ success: false, error: 'Package not found' }, { status: 404 });
       }
-      return NextResponse.json({ success: true, record: res.rows[0] });
+      return NextResponse.json({
+        success: true,
+        record: res.rows[0],
+        available_modules: availableModules,
+      });
     }
 
     const res = await queryDb(
-      `SELECT p.*, a.title AS app_title, a.slug AS app_slug
+      `SELECT p.*, a.title AS app_title, a.slug AS app_slug,
+              COALESCE(
+                (
+                  SELECT json_agg(am.module_title ORDER BY am.id ASC)
+                  FROM allowed_modules am
+                  WHERE am.package_id = p.id
+                ),
+                '[]'::json
+              ) AS allowed_modules
        FROM packages p
        LEFT JOIN apps a ON p.app_id = a.id
        ORDER BY p.id ASC`
     ).catch(() => ({ rows: [] }));
 
-    return NextResponse.json({ success: true, table: 'packages', records: res.rows });
+    return NextResponse.json({
+      success: true,
+      table: 'packages',
+      records: res.rows,
+      available_modules: availableModules,
+    });
   } catch (error) {
     console.error('Error fetching packages:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -47,10 +124,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin role can create packages
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can manage packages.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can create packages.' },
         { status: auth.status || 403 }
       );
     }
@@ -91,10 +169,37 @@ export async function POST(request) {
       [name, slug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId]
     );
 
+    const newPackage = res.rows[0];
+
+    // Handle allowed_modules selection dynamically
+    const dbModules = await fetchDatabaseModules();
+    const modulesToSave = Array.isArray(data.allowed_modules)
+      ? data.allowed_modules
+      : (Array.isArray(data.modules) ? data.modules : dbModules);
+
+    if (modulesToSave && modulesToSave.length > 0) {
+      for (const modTitle of modulesToSave) {
+        const cleanTitle = String(modTitle || '').trim();
+        if (cleanTitle) {
+          await queryDb(
+            `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [newPackage.id, cleanTitle]
+          ).catch((e) => console.warn('Error inserting allowed_module:', e.message));
+        }
+      }
+    }
+
+    const modRes = await queryDb(
+      `SELECT module_title FROM allowed_modules WHERE package_id = $1 ORDER BY id ASC`,
+      [newPackage.id]
+    ).catch(() => ({ rows: [] }));
+
+    newPackage.allowed_modules = modRes.rows.map((r) => r.module_title);
+
     return NextResponse.json({
       success: true,
       message: 'Package created successfully',
-      record: res.rows[0],
+      record: newPackage,
     }, { status: 201 });
   } catch (error) {
     console.error('Error processing package POST request:', error);
@@ -104,10 +209,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin role can update packages
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can update packages.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can update packages.' },
         { status: auth.status || 403 }
       );
     }
@@ -168,10 +274,38 @@ export async function PUT(request) {
       [name, slug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId, Number(id)]
     );
 
+    const updatedPackage = res.rows[0];
+
+    // Synchronize allowed_modules if provided
+    const modulesToSave = Array.isArray(data.allowed_modules)
+      ? data.allowed_modules
+      : (Array.isArray(data.modules) ? data.modules : null);
+
+    if (modulesToSave !== null) {
+      // Replace existing allowed modules with new selection
+      await queryDb('DELETE FROM allowed_modules WHERE package_id = $1', [Number(id)]);
+      for (const modTitle of modulesToSave) {
+        const cleanTitle = String(modTitle || '').trim();
+        if (cleanTitle) {
+          await queryDb(
+            `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [Number(id), cleanTitle]
+          ).catch((e) => console.warn('Error syncing allowed_module:', e.message));
+        }
+      }
+    }
+
+    const modRes = await queryDb(
+      `SELECT module_title FROM allowed_modules WHERE package_id = $1 ORDER BY id ASC`,
+      [Number(id)]
+    ).catch(() => ({ rows: [] }));
+
+    updatedPackage.allowed_modules = modRes.rows.map((r) => r.module_title);
+
     return NextResponse.json({
       success: true,
       message: 'Package updated successfully',
-      record: res.rows[0],
+      record: updatedPackage,
     });
   } catch (error) {
     console.error('Error updating package PUT:', error);
@@ -181,10 +315,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin role can delete packages
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can delete packages.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can delete packages.' },
         { status: auth.status || 403 }
       );
     }
@@ -213,10 +348,11 @@ export async function DELETE(request) {
 
 export async function PATCH(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin role can toggle package status
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can update packages.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can update packages.' },
         { status: auth.status || 403 }
       );
     }

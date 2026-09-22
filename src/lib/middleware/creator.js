@@ -1,10 +1,13 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { cookies } from 'next/headers.js';
 import { queryDb as query, pool } from '../db/pg.js';
-import { JWT_SECRET, CREATOR_TOKEN } from '../db/secret.js';
+import { JWT_SECRET, CREATOR_TOKEN, SITE_NAME } from '../db/secret.js';
+import { sendEmail } from '../db/mailer.js';
 
 export const CREATOR_COOKIE_NAME = CREATOR_TOKEN;
+
 
 // ============================================================================
 // PASSWORD & TOKEN UTILITIES
@@ -201,10 +204,72 @@ export async function authenticateCreator(email, password, reqDetails = {}) {
     throw err;
   }
 
+  // Two-Factor Authentication (2FA) verification
+  if (creator.two_factor_enabled === true) {
+    const twoFactorCode = reqDetails.twoFactorCode;
+    if (!twoFactorCode) {
+      const code = String(crypto.randomInt(100000, 999999));
+      await query(
+        `UPDATE creators 
+         SET two_factor_code = $1, two_factor_expires_at = CURRENT_TIMESTAMP + INTERVAL '10 minutes'
+         WHERE id = $2`,
+        [code, creator.id]
+      );
+
+      try {
+        await sendEmail({
+          to: cleanEmail,
+          subject: `Your Login Security Code - ${SITE_NAME}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <h2 style="color: #0f172a; margin-top: 0;">Two-Factor Verification</h2>
+              <p style="font-size: 14px; color: #475569;">Hello ${creator.name}, use the code below to complete your sign in:</p>
+              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #0f172a;">${code}</span>
+              </div>
+              <p style="font-size: 12px; color: #64748b;">This code will expire in 10 minutes. If you did not initiate this login, please change your password immediately.</p>
+            </div>
+          `,
+          text: `Your ${SITE_NAME} login code is ${code}. It expires in 10 minutes.`,
+        });
+      } catch (mailErr) {
+        console.warn('Notice sending 2FA code via Brevo:', mailErr.message);
+      }
+
+      const err = new Error('Two-factor authentication code sent to your email.');
+      err.twoFactorRequired = true;
+      err.email = cleanEmail;
+      throw err;
+    }
+
+    // Verify provided 2FA code
+    const isCodeValid =
+      creator.two_factor_code &&
+      String(creator.two_factor_code).trim() === String(twoFactorCode).trim();
+    const isNotExpired =
+      creator.two_factor_expires_at &&
+      new Date(creator.two_factor_expires_at) >= new Date();
+
+    if (!isCodeValid || !isNotExpired) {
+      const err = new Error('Invalid or expired security code. Please check or request a new code.');
+      err.twoFactorRequired = true;
+      err.twoFactorInvalid = true;
+      err.email = cleanEmail;
+      throw err;
+    }
+
+    // Clear 2FA code after successful verification
+    await query(
+      'UPDATE creators SET two_factor_code = NULL, two_factor_expires_at = NULL WHERE id = $1',
+      [creator.id]
+    );
+  }
+
   const jwtToken = generateToken(
     { id: creator.id, email: cleanEmail, role: 'creator', type: 'creator' },
     '7d'
   );
+
 
   // Update last login details on creators table
   try {

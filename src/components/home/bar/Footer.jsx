@@ -1,48 +1,99 @@
-import { COMPANY_NAME, COMPANY_URL, SITE_ADDRESS, SITE_CONTACT, SITE_MAIL, SITE_NAME } from '@/lib/db/secret'
-import Link from 'next/link'
-import React from 'react'
+'use client';
+
+import { useContext } from 'react';
+import Link from 'next/link';
+import { BiSun, BiMoon } from 'react-icons/bi';
+import { COMPANY_NAME, COMPANY_URL, SITE_ADDRESS, SITE_CONTACT, SITE_MAIL, SITE_NAME } from '@/lib/db/secret';
+import { Context } from '@/components/helper/Context';
+import SubscribeForm from '@/components/home/bar/SubscribeForm';
 
 const Footer = () => {
+  const { theme = 'light', toggleTheme } = useContext(Context) || {};
+  const isDark = theme === 'dark';
+
   return (
-    <div className='w-full bg-primary p-4 md:p-8 py-20 flex flex-col items-center justify-center gap-8 text-light'>
-      <div className='w-full grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <div className='w-full flex flex-col'>
-          <p className='text-3xl md:text-6xl font-semibold'>{SITE_NAME}</p>
-          <p>Build your portfolio on web</p>
-          <p>The way you need</p>
-          <p>The colour your fans love</p>
+    <footer className='w-full bg-primary dark:bg-slate-900 p-6 sm:p-10 lg:p-16 flex flex-col items-center justify-center gap-12 text-light transition-colors border-t border-primary/20 dark:border-slate-800'>
+      <div className='w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12'>
+        {/* Brand & Tagline */}
+        <div className='w-full flex flex-col space-y-3'>
+          <Link href="/" className='text-3xl md:text-5xl font-extrabold tracking-tight text-white'>
+            {SITE_NAME}
+          </Link>
+          <p className="text-xs sm:text-sm text-white/90 font-medium">Build your identity on the modern web</p>
+          <p className="text-xs text-white/75 leading-relaxed">
+            The all-in-one portfolio website builder designed for creators, developers, designers, and web professionals.
+          </p>
         </div>
-        <div>
-          <p className='text-xl font-semibold opacity-75'>Links</p>
-          <div className='w-full flex flex-col'>
-            <Link href={'/creator/login'}>Login</Link>
-            <Link href={'/reviews'}>Reviews & Testimonials</Link>
-            <Link href={'/updates'}>Updates & Changelog</Link>
-            <Link href={'/faqs'}>FAQs & Help</Link>
-            <Link href={'https://youtube.com'}>How to build</Link>
-            <Link href={'/contact'}>Contact</Link>
-            <Link href={'/report'}>Report</Link>
-          </div>
-        </div>
-        <div>
-          <p className='text-xl font-semibold opacity-75'>Address</p>
-          <div className='w-full flex flex-col'>
-            <p>{SITE_MAIL}</p>
-            <p>{SITE_CONTACT}</p>
-            <p>{SITE_ADDRESS}</p>
+
+        {/* Quick Links */}
+        <div className="space-y-3">
+          <p className='text-base font-bold uppercase tracking-wider text-white/90'>Platform</p>
+          <div className='flex flex-col space-y-2 text-xs text-white/80'>
+            <Link href={'/creator/login'} className="hover:text-white transition-colors">Creator Studio Login</Link>
+            <Link href={'/packages'} className="hover:text-white transition-colors">Pricing &amp; Plans</Link>
+            <Link href={'/updates'} className="hover:text-white transition-colors">Changelog &amp; Releases</Link>
+            <Link href={'/blogs'} className="hover:text-white transition-colors">Articles &amp; Guides</Link>
+            <Link href={'/faqs'} className="hover:text-white transition-colors">Frequently Asked Questions</Link>
+            <Link href={'/reviews'} className="hover:text-white transition-colors">Reviews &amp; Testimonials</Link>
+            <Link href={'/tutorials'} className="hover:text-white transition-colors">Video Tutorials</Link>
           </div>
         </div>
 
+        {/* Contact & Support */}
+        <div className="space-y-3">
+          <p className='text-base font-bold uppercase tracking-wider text-white/90'>Support</p>
+          <div className='flex flex-col space-y-2 text-xs text-white/80'>
+            <p className="flex items-center gap-1.5 font-mono">{SITE_MAIL}</p>
+            <p className="flex items-center gap-1.5">{SITE_CONTACT}</p>
+            <p className="leading-relaxed">{SITE_ADDRESS}</p>
+            <div className="pt-2">
+              <Link
+                href="/contact"
+                className="inline-flex items-center text-xs font-bold text-white hover:underline"
+              >
+                Contact Support &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Newsletter Subscription Component */}
+        <div className="w-full">
+          <SubscribeForm source="HOME_FOOTER" />
+        </div>
       </div>
-      <div className='w-full flex flex-col md:flex-row items-center justify-between gap-4 text-light font-sans'>
+
+      <div className='w-full flex flex-col md:flex-row items-center justify-between gap-4 text-light font-sans pt-4 border-t border-white/15'>
         <p>2026 {SITE_NAME} | Build Your Identity on Web</p>
+
+        {/* Color Mode Switcher */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs opacity-80">Theme Mode:</span>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/25 bg-black/20 hover:bg-black/35 text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-xs"
+            title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
+            aria-label="Toggle colour mode"
+          >
+            {isDark ? (
+              <>
+                <BiSun className="text-amber-300 text-sm" />
+                <span>Light Mode</span>
+              </>
+            ) : (
+              <>
+                <BiMoon className="text-slate-200 text-sm" />
+                <span>Dark Mode</span>
+              </>
+            )}
+          </button>
+        </div>
+
         <p>A Product of <Link href={`${COMPANY_URL}`}>{COMPANY_NAME}</Link></p>
-
       </div>
+    </footer>
+  );
+};
 
-
-    </div>
-  )
-}
-
-export default Footer
+export default Footer;

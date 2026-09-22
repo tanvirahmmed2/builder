@@ -9,6 +9,49 @@ export const ContextProvider = ({ children }) => {
   const [apps, setApps] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setThemeState] = useState('light'); // default 'light'
+
+  // Initialize theme on client mount
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('portfoliobuilder_theme');
+      if (savedTheme === 'dark') {
+        setThemeState('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        setThemeState('light');
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (_) {}
+  }, []);
+
+  const setTheme = useCallback((newTheme) => {
+    const val = newTheme === 'dark' ? 'dark' : 'light';
+    setThemeState(val);
+    try {
+      localStorage.setItem('portfoliobuilder_theme', val);
+      if (val === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (_) {}
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem('portfoliobuilder_theme', next);
+        if (next === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (_) {}
+      return next;
+    });
+  }, []);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -60,6 +103,10 @@ export const ContextProvider = ({ children }) => {
   }, [fetchUser, fetchApps, fetchReviews]);
 
   const contextValues = {
+    theme,
+    setTheme,
+    toggleTheme,
+    isDark: theme === 'dark',
     reviews,
     setReviews,
     apps,

@@ -1,68 +1,129 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
+import { authenticateStaff } from '@/lib/middleware/developer';
 
-export async function GET() {
+const ALLOWED_VIEW_ROLES = ['admin', 'manager', 'support'];
+
+// GET ALL SUBSCRIBERS (Admin, Manager, Support only)
+export async function GET(request) {
   try {
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
+    }
+
+    const role = (auth.staff.role || '').toLowerCase();
+    if (!ALLOWED_VIEW_ROLES.includes(role)) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied: Only Admin, Manager, and Support roles can view subscribers.' },
+        { status: 403 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      const res = await queryDb('SELECT * FROM subscribers WHERE id = $1 LIMIT 1', [Number(id)]);
+      if (res.rows.length === 0) {
+        return NextResponse.json({ success: false, error: 'Subscriber not found.' }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, record: res.rows[0] });
+    }
+
     const res = await queryDb('SELECT * FROM subscribers ORDER BY id DESC').catch(() => ({ rows: [] }));
     return NextResponse.json({ success: true, table: 'subscribers', records: res.rows });
+  } catch (error) {
+    console.error('Error fetching subscribers:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// POST: MANUAL CREATION DISABLED
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Manual subscriber creation in the developer panel is disabled. Subscribers are registered via the public website footer.',
+    },
+    { status: 403 }
+  );
+}
+
+// PUT: UPDATE STATUS (Admin & Manager only)
+export async function PUT(request) {
+  try {
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
+    }
+
+    const role = (auth.staff.role || '').toLowerCase();
+    if (role !== 'admin' && role !== 'manager') {
+      return NextResponse.json(
+        { success: false, error: 'Access denied: Only Admin and Manager roles can update subscriber status.' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const id = body.id || body.data?.id;
+    const status = body.status || body.data?.status;
+
+    if (!id || !status) {
+      return NextResponse.json({ success: false, error: 'Subscriber ID and status are required.' }, { status: 400 });
+    }
+
+    const res = await queryDb(
+      'UPDATE subscribers SET status = $1 WHERE id = $2 RETURNING *',
+      [status, Number(id)]
+    );
+
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Subscriber not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, record: res.rows[0], message: 'Subscriber status updated.' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// CREATE SUBSCRIBER
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const placeholders = keys.map((_, i) => '$' + (i + 1));
-    const res = await queryDb(
-      `INSERT INTO subscribers (${keys.map((k) => `"${k}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, record: res.rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
-  }
-}
-
-// UPDATE SUBSCRIBER
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const id = body.id || body.data?.id;
-    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
-    const data = body.data || body;
-    const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
-    if (keys.length === 0) return NextResponse.json({ success: true });
-    const values = keys.map((k) => (typeof data[k] === 'object' && data[k] !== null ? JSON.stringify(data[k]) : data[k]));
-    const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`);
-    values.push(id);
-    const res = await queryDb(
-      `UPDATE subscribers SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-    return NextResponse.json({ success: true, record: res.rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
-  }
-}
-
-// DELETE SUBSCRIBER
+// DELETE SUBSCRIBER (Admin & Manager only)
 export async function DELETE(request) {
   try {
+    const auth = await authenticateStaff(request);
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
+    }
+
+    const role = (auth.staff.role || '').toLowerCase();
+    if (role !== 'admin' && role !== 'manager') {
+      return NextResponse.json(
+        { success: false, error: 'Access denied: Only Admin and Manager roles can delete subscribers.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
     if (!id) {
       const body = await request.json().catch(() => ({}));
       id = body.id;
     }
-    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
-    await queryDb('DELETE FROM subscribers WHERE id = $1', [id]);
-    return NextResponse.json({ success: true });
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Subscriber ID is required.' }, { status: 400 });
+    }
+
+    const res = await queryDb('DELETE FROM subscribers WHERE id = $1 RETURNING id', [Number(id)]);
+    if (res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Subscriber not found or already deleted.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Subscriber removed successfully.' });
   } catch (error) {
+    console.error('Error deleting subscriber:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

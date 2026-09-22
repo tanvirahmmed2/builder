@@ -7,6 +7,8 @@ import {
   authenticateCreator,
   getCreatorSession,
   clearCreatorSessionCookie,
+  setCreatorSessionCookie,
+  generateToken,
   hashPassword,
 } from '@/lib/middleware/creator';
 
@@ -174,7 +176,7 @@ export async function POST(request) {
     const body = await request.json();
     const { action } = body;
 
-    // 1. Creator Registration (unverified, no package required, sends verification link)
+    // 1. Creator Registration (unverified, captures prospect lead, sends 6-digit verification code)
     if (action === 'register') {
       const d = body.creatorData || body;
       if (!d.name || !d.email || !d.password) {
@@ -188,7 +190,8 @@ export async function POST(request) {
       }
 
       const hashedPassword = await hashPassword(d.password);
-      const verificationToken = crypto.randomBytes(32).toString('hex');
+      // Generate 6-digit numeric verification code
+      const verificationCode = crypto.randomInt(100000, 999999).toString();
 
       const res = await queryDb(
         `INSERT INTO creators (name, email, password, phone, bio, avatar_url, is_active, is_verified, verification_code, verification_expires_at)
@@ -201,13 +204,30 @@ export async function POST(request) {
           d.phone ? d.phone.trim() : null,
           d.bio ? d.bio.trim() : 'New Platform Creator',
           d.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-          verificationToken,
+          verificationCode,
         ]
       );
 
       const newCreator = res.rows[0];
 
-      // Build verification URL
+      // Save required creator prospect data in leads table
+      try {
+        await queryDb(
+          `INSERT INTO leads (name, email, phone, company, source, status, notes)
+           VALUES ($1, $2, $3, $4, 'CREATOR_REGISTRATION', 'NEW', $5)`,
+          [
+            d.name.trim(),
+            cleanEmail,
+            d.phone ? d.phone.trim() : null,
+            d.company ? d.company.trim() : 'Creator Studio',
+            `Creator registered. Creator ID: ${newCreator.id}`,
+          ]
+        );
+      } catch (leadErr) {
+        console.warn('Notice inserting lead for new creator:', leadErr.message);
+      }
+
+      // Build verification URL for 1-click verification
       const origin =
         request.headers.get('origin') ||
         (request.headers.get('host')
@@ -216,34 +236,33 @@ export async function POST(request) {
         process.env.NEXT_PUBLIC_APP_URL ||
         'http://localhost:3000';
 
-      const verifyUrl = `${origin}/creator/verify?token=${verificationToken}&email=${encodeURIComponent(cleanEmail)}`;
+      const verifyUrl = `${origin}/creator/verify?token=${verificationCode}&email=${encodeURIComponent(cleanEmail)}`;
 
       // Send Verification Email via Brevo
       try {
         await sendEmail({
           to: cleanEmail,
-          subject: `Verify Your Creator Account - ${SITE_NAME}`,
+          subject: `Your Verification Code: ${verificationCode} - ${SITE_NAME}`,
           html: `
             <div style="font-family: sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; color: #1e293b;">
               <h2 style="color: #0f172a; margin-top: 0; font-size: 22px;">Welcome to ${SITE_NAME}, ${newCreator.name}!</h2>
               <p style="font-size: 14px; line-height: 1.6; color: #475569;">
-                Thank you for joining our creator platform. Please click the button below to verify your email address and activate your creator account:
+                Thank you for joining our creator platform. Use the 6-digit verification code below to activate your creator account:
               </p>
-              <div style="text-align: center; margin: 28px 0;">
+              <div style="background: #f8fafc; border: 2px dashed #6366f1; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #4f46e5;">${verificationCode}</span>
+              </div>
+              <div style="text-align: center; margin: 24px 0;">
                 <a href="${verifyUrl}" style="background: #0f172a; color: #ffffff; padding: 12px 28px; text-decoration: none; font-size: 14px; font-weight: bold; border-radius: 10px; display: inline-block;">
-                  Verify My Account →
+                  Or Click Here to Verify Instantly →
                 </a>
               </div>
               <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
-                Or copy and paste this verification URL into your browser:<br/>
-                <a href="${verifyUrl}" style="color: #6366f1; word-break: break-all;">${verifyUrl}</a>
-              </p>
-              <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
-                This link will expire in 24 hours. If you did not sign up for this account, please ignore this email.
+                This code and link will expire in 24 hours. If you did not create an account, please ignore this email.
               </p>
             </div>
           `,
-          text: `Hello ${newCreator.name},\n\nPlease verify your ${SITE_NAME} creator account by visiting the link below:\n${verifyUrl}\n\nThis link expires in 24 hours.`,
+          text: `Hello ${newCreator.name},\n\nYour ${SITE_NAME} creator verification code is: ${verificationCode}\n\nOr verify directly at:\n${verifyUrl}\n\nExpires in 24 hours.`,
         });
       } catch (mailErr) {
         console.warn('Notice sending creator verification email via Brevo:', mailErr.message);
@@ -251,17 +270,19 @@ export async function POST(request) {
 
       return NextResponse.json({
         success: true,
-        message: 'Account registered successfully! A verification link has been sent to your email. Please verify before logging in.',
+        message: 'Account registered successfully! A 6-digit verification code has been sent to your email.',
         creator: newCreator,
       });
     }
 
-    // 2. Creator Account Email Verification
+    // 2. Creator Account Email Verification (accepts 6-digit code or URL token)
     if (action === 'verify') {
-      const { token, email } = body;
-      if (!token || !email) {
+      const { token, code, email } = body;
+      const candidateCode = String(code || token || '').trim();
+
+      if (!candidateCode || !email) {
         return NextResponse.json(
-          { success: false, error: 'Verification token and email are required.' },
+          { success: false, error: 'Verification code and email are required.' },
           { status: 400 }
         );
       }
@@ -289,9 +310,9 @@ export async function POST(request) {
         });
       }
 
-      if (!creator.verification_code || creator.verification_code !== String(token).trim()) {
+      if (!creator.verification_code || creator.verification_code.trim() !== candidateCode) {
         return NextResponse.json(
-          { success: false, error: 'Invalid or incorrect verification link. Please check your link or request a new one.' },
+          { success: false, error: 'Invalid verification code. Please double check the 6-digit code in your email.' },
           { status: 400 }
         );
       }
@@ -300,13 +321,14 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
-            error: 'This verification link has expired. Please request a new verification link.',
+            error: 'This verification code has expired. Please request a new code.',
             expired: true,
           },
           { status: 400 }
         );
       }
 
+      // Mark creator as verified
       await queryDb(
         `UPDATE creators 
          SET is_verified = TRUE, verification_code = NULL, verification_expires_at = NULL 
@@ -314,13 +336,41 @@ export async function POST(request) {
         [creator.id]
       );
 
-      return NextResponse.json({
+      // Update corresponding lead status to QUALIFIED
+      try {
+        await queryDb(
+          `UPDATE leads 
+           SET status = 'QUALIFIED', notes = COALESCE(notes, '') || ' | Email verified' 
+           WHERE LOWER(email) = $1`,
+          [cleanEmail]
+        );
+      } catch (leadErr) {
+        console.warn('Notice updating lead to QUALIFIED on verification:', leadErr.message);
+      }
+
+      // Generate session token and set HTTP-only cookie for immediate login
+      const sessionToken = generateToken(
+        { id: creator.id, email: cleanEmail, role: 'creator', type: 'creator' },
+        '7d'
+      );
+
+      const resp = NextResponse.json({
         success: true,
-        message: 'Your creator account has been successfully verified! You can now log in.',
+        message: 'Your creator account has been successfully verified! You are now logged in.',
+        creator: {
+          id: creator.id,
+          name: creator.name,
+          email: creator.email,
+          isVerified: true,
+        },
+        token: sessionToken,
       });
+
+      await setCreatorSessionCookie(resp, sessionToken);
+      return resp;
     }
 
-    // 3. Resend Verification Link
+    // 3. Resend Verification Link / Code
     if (action === 'resend_verification') {
       const { email } = body;
       if (!email) {
@@ -350,12 +400,13 @@ export async function POST(request) {
         });
       }
 
-      const newToken = crypto.randomBytes(32).toString('hex');
+      // Generate fresh 6-digit code
+      const newCode = crypto.randomInt(100000, 999999).toString();
       await queryDb(
         `UPDATE creators 
          SET verification_code = $1, verification_expires_at = CURRENT_TIMESTAMP + INTERVAL '24 hours' 
          WHERE id = $2`,
-        [newToken, creator.id]
+        [newCode, creator.id]
       );
 
       const origin =
@@ -366,33 +417,32 @@ export async function POST(request) {
         process.env.NEXT_PUBLIC_APP_URL ||
         'http://localhost:3000';
 
-      const verifyUrl = `${origin}/creator/verify?token=${newToken}&email=${encodeURIComponent(cleanEmail)}`;
+      const verifyUrl = `${origin}/creator/verify?token=${newCode}&email=${encodeURIComponent(cleanEmail)}`;
 
       try {
         await sendEmail({
           to: cleanEmail,
-          subject: `New Verification Link - ${SITE_NAME}`,
+          subject: `Your Verification Code: ${newCode} - ${SITE_NAME}`,
           html: `
             <div style="font-family: sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; color: #1e293b;">
               <h2 style="color: #0f172a; margin-top: 0; font-size: 22px;">Verify Your Creator Account</h2>
               <p style="font-size: 14px; line-height: 1.6; color: #475569;">
-                Hello ${creator.name}, you requested a new verification link for your creator account on ${SITE_NAME}. Click the button below to complete activation:
+                Hello ${creator.name}, you requested a new verification code for your ${SITE_NAME} creator account:
               </p>
-              <div style="text-align: center; margin: 28px 0;">
+              <div style="background: #f8fafc; border: 2px dashed #6366f1; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #4f46e5;">${newCode}</span>
+              </div>
+              <div style="text-align: center; margin: 24px 0;">
                 <a href="${verifyUrl}" style="background: #0f172a; color: #ffffff; padding: 12px 28px; text-decoration: none; font-size: 14px; font-weight: bold; border-radius: 10px; display: inline-block;">
-                  Verify My Account →
+                  Or Click Here to Verify Instantly →
                 </a>
               </div>
               <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
-                Or copy and paste this verification URL into your browser:<br/>
-                <a href="${verifyUrl}" style="color: #6366f1; word-break: break-all;">${verifyUrl}</a>
-              </p>
-              <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
-                This link will expire in 24 hours.
+                This code will expire in 24 hours.
               </p>
             </div>
           `,
-          text: `Hello ${creator.name},\n\nPlease verify your account by visiting:\n${verifyUrl}\n\nExpires in 24 hours.`,
+          text: `Hello ${creator.name},\n\nYour new verification code is: ${newCode}\n\nOr verify at:\n${verifyUrl}\n\nExpires in 24 hours.`,
         });
       } catch (mailErr) {
         console.warn('Notice resending creator verification email via Brevo:', mailErr.message);
@@ -400,18 +450,18 @@ export async function POST(request) {
 
       return NextResponse.json({
         success: true,
-        message: 'A new verification link has been sent to your email.',
+        message: 'A new 6-digit verification code has been sent to your email.',
       });
     }
 
-    // 4. Creator Login (only active & verified accounts can login; saves cookie)
+    // 4. Creator Login (supports 2FA OTP, checks active/verified, sets cookie)
     if (action === 'login') {
-      const { email, password } = body;
+      const { email, password, twoFactorCode } = body;
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
       const userAgent = request.headers.get('user-agent') || 'Unknown';
 
       try {
-        const result = await authenticateCreator(email, password, { ip, userAgent });
+        const result = await authenticateCreator(email, password, { ip, userAgent, twoFactorCode });
         return NextResponse.json({
           success: true,
           creator: result.creator,
@@ -423,6 +473,8 @@ export async function POST(request) {
           {
             success: false,
             error: authErr.message || 'Authentication failed.',
+            twoFactorRequired: Boolean(authErr.twoFactorRequired),
+            twoFactorInvalid: Boolean(authErr.twoFactorInvalid),
             unverified: Boolean(authErr.unverified),
             deactivated: Boolean(authErr.deactivated),
             email: authErr.email || undefined,
@@ -447,20 +499,119 @@ export async function POST(request) {
       return NextResponse.json({ success: true, creator: current });
     }
 
-    // 7. Creator Account Recovery
+    // 7. Creator Account Recovery (sends 6-digit reset code via Brevo)
     if (action === 'recover') {
-      const token = 'rec_' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      const { email } = body;
+      if (!email) {
+        return NextResponse.json({ success: false, error: 'Email address is required.' }, { status: 400 });
+      }
+
+      const cleanEmail = String(email).trim().toLowerCase();
+      const recoveryCode = crypto.randomInt(100000, 999999).toString();
+
       const res = await queryDb(
         `UPDATE creators 
          SET recovery_token = $1, recovery_token_expires_at = CURRENT_TIMESTAMP + INTERVAL '1 hour'
          WHERE LOWER(email) = LOWER($2)
-         RETURNING id, email`,
-        [token, body.email]
+         RETURNING id, name, email`,
+        [recoveryCode, cleanEmail]
       );
+
       if (res.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Creator not found.' }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'No creator account found with this email address.' }, { status: 404 });
       }
-      return NextResponse.json({ success: true, token, message: 'Recovery instructions generated.' });
+
+      const creator = res.rows[0];
+
+      // Send 6-digit Recovery Code via Brevo
+      try {
+        await sendEmail({
+          to: cleanEmail,
+          subject: `Your Password Reset Code: ${recoveryCode} - ${SITE_NAME}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff;">
+              <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Password Reset Code</h2>
+              <p style="font-size: 14px; color: #475569; line-height: 1.5;">
+                Hello ${creator.name}, you requested to reset your password on ${SITE_NAME}. Use the 6-digit code below to set your new password:
+              </p>
+              <div style="background: #f8fafc; border: 2px dashed #e11d48; border-radius: 12px; padding: 18px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #e11d48;">${recoveryCode}</span>
+              </div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
+                This code will expire in 1 hour. If you did not request a password reset, please ignore this email or update your credentials.
+              </p>
+            </div>
+          `,
+          text: `Hello ${creator.name},\n\nYour ${SITE_NAME} password reset code is: ${recoveryCode}\n\nIt expires in 1 hour.`,
+        });
+      } catch (mailErr) {
+        console.warn('Notice sending creator password reset email via Brevo:', mailErr.message);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'A 6-digit password reset code has been sent to your email.',
+      });
+    }
+
+    // 8. Creator Password Reset (validates 6-digit code and updates password hash)
+    if (action === 'reset_password') {
+      const { email, code, token, newPassword } = body;
+      const recoveryCode = String(code || token || '').trim();
+
+      if (!email || !recoveryCode || !newPassword) {
+        return NextResponse.json(
+          { success: false, error: 'Email, recovery code, and new password are required.' },
+          { status: 400 }
+        );
+      }
+
+      if (String(newPassword).length < 6) {
+        return NextResponse.json(
+          { success: false, error: 'Password must be at least 6 characters long.' },
+          { status: 400 }
+        );
+      }
+
+      const cleanEmail = String(email).trim().toLowerCase();
+      const res = await queryDb(
+        `SELECT id, name, email, recovery_token, recovery_token_expires_at 
+         FROM creators WHERE LOWER(email) = $1 LIMIT 1`,
+        [cleanEmail]
+      );
+
+      const creator = res.rows[0];
+      if (!creator) {
+        return NextResponse.json({ success: false, error: 'Creator account not found.' }, { status: 404 });
+      }
+
+      if (!creator.recovery_token || creator.recovery_token.trim() !== recoveryCode) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid reset code. Please check the code received in your email.' },
+          { status: 400 }
+        );
+      }
+
+      if (creator.recovery_token_expires_at && new Date(creator.recovery_token_expires_at) < new Date()) {
+        return NextResponse.json(
+          { success: false, error: 'This reset code has expired. Please request a new one.' },
+          { status: 400 }
+        );
+      }
+
+      // Hash new password and clear recovery token
+      const hashedPassword = await hashPassword(newPassword);
+      await queryDb(
+        `UPDATE creators 
+         SET password = $1, recovery_token = NULL, recovery_token_expires_at = NULL 
+         WHERE id = $2`,
+        [hashedPassword, creator.id]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Your password has been successfully reset. You can now log in with your new password.',
+      });
     }
 
     // 4. Purchase Package Subscription & Process Payment

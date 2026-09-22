@@ -229,6 +229,16 @@ CREATE TABLE IF NOT EXISTS packages_feature (
 
 CREATE INDEX IF NOT EXISTS idx_packages_feature_pkg ON packages_feature (package_id);
 
+CREATE TABLE IF NOT EXISTS allowed_modules (
+    id SERIAL PRIMARY KEY,
+    package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+    module_title VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_package_module UNIQUE (package_id, module_title)
+);
+
+CREATE INDEX IF NOT EXISTS idx_allowed_modules_pkg ON allowed_modules (package_id);
+
 -- ============================================================================
 -- 7. LIVE_CHATS & LIVE_CHAT_MESSAGES
 -- ============================================================================
@@ -602,6 +612,201 @@ CREATE TABLE IF NOT EXISTS reviews (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_creator_subscription_review UNIQUE (subscription_id)
 );
+    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_app ON subscription (app_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
+
+DROP TRIGGER IF EXISTS trg_subscription_updated_at ON subscription;
+CREATE TRIGGER trg_subscription_updated_at
+BEFORE UPDATE ON subscription
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 13. WEBSITES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS websites (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    subdomain CITEXT UNIQUE NOT NULL,
+    custom_domain CITEXT UNIQUE,
+    theme_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    storage_used_mb INTEGER NOT NULL DEFAULT 0,
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_websites_subdomain ON websites (subdomain);
+CREATE INDEX IF NOT EXISTS idx_websites_creator ON websites (creator_id);
+
+DROP TRIGGER IF EXISTS trg_websites_updated_at ON websites;
+CREATE TRIGGER trg_websites_updated_at
+BEFORE UPDATE ON websites
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 13. REPORTS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY,
+    reporter_name VARCHAR(255) NOT NULL,
+    reporter_email CITEXT NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
+    admin_response TEXT,
+    resolved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, priority);
+
+DROP TRIGGER IF EXISTS trg_reports_updated_at ON reports;
+CREATE TRIGGER trg_reports_updated_at
+BEFORE UPDATE ON reports
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 14. LEADS & SUBSCRIBERS
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS leads (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email CITEXT NOT NULL,
+    phone VARCHAR(50),
+    company VARCHAR(255),
+    source VARCHAR(100) DEFAULT 'WEBSITE',
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status, created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_leads_updated_at ON leads;
+CREATE TRIGGER trg_leads_updated_at
+BEFORE UPDATE ON leads
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS subscribers (
+    id SERIAL PRIMARY KEY,
+    email CITEXT UNIQUE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUBSCRIBED',
+    source VARCHAR(100) DEFAULT 'FOOTER',
+    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
+
+-- ============================================================================
+-- 15. THEMES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS themes (
+    id SERIAL PRIMARY KEY,
+    app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    category VARCHAR(50) NOT NULL DEFAULT 'Modern',
+    preview_image TEXT,
+    theme_config JSONB NOT NULL DEFAULT '{
+        "primaryColor": "#6366f1",
+        "backgroundColor": "#090d16",
+        "textColor": "#f8fafc",
+        "fontFamily": "Inter"
+    }'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_themes_app ON themes (app_id);
+
+DROP TRIGGER IF EXISTS trg_themes_updated_at ON themes;
+CREATE TRIGGER trg_themes_updated_at
+BEFORE UPDATE ON themes
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 16. FAQS (Frequently Asked Questions)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS faqs (
+    id SERIAL PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
+CREATE TRIGGER trg_faqs_updated_at
+BEFORE UPDATE ON faqs
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 17. UPDATES (Product Changelog & Announcements)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS updates (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
+CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
+CREATE TRIGGER trg_updates_updated_at
+BEFORE UPDATE ON updates
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 18. REVIEWS (One review per subscription by a creator)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    subscription_id INTEGER NOT NULL REFERENCES subscription(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    title VARCHAR(255),
+    comment TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    approved_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    approved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_creator_subscription_review UNIQUE (subscription_id)
+);
 
 CREATE INDEX IF NOT EXISTS idx_reviews_creator ON reviews (creator_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_subscription ON reviews (subscription_id);
@@ -612,3 +817,337 @@ CREATE TRIGGER trg_reviews_updated_at
 BEFORE UPDATE ON reviews
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 19. PAYROLLS, DEVELOPER_PAYROLLS & PAYROLL_PAYMENTS (Admin Only)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS payrolls (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    pay_period_start DATE NOT NULL,
+    pay_period_end DATE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED')),
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    notes TEXT,
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payrolls_status ON payrolls (status);
+CREATE INDEX IF NOT EXISTS idx_payrolls_period ON payrolls (pay_period_start, pay_period_end);
+
+DROP TRIGGER IF EXISTS trg_payrolls_updated_at ON payrolls;
+CREATE TRIGGER trg_payrolls_updated_at
+BEFORE UPDATE ON payrolls
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS developer_payrolls (
+    id SERIAL PRIMARY KEY,
+    payroll_id INTEGER NOT NULL REFERENCES payrolls(id) ON DELETE CASCADE,
+    developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    base_salary NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    bonus NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    deductions NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    net_salary NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'UNPAID' CHECK (payment_status IN ('UNPAID', 'PROCESSING', 'PAID', 'FAILED')),
+    payment_method VARCHAR(50) DEFAULT 'BANK_TRANSFER' CHECK (payment_method IN ('BANK_TRANSFER', 'STRIPE', 'PAYPAL', 'CASH', 'CRYPTO', 'CHECK')),
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_developer_payroll UNIQUE (payroll_id, developer_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_developer_payrolls_payroll ON developer_payrolls (payroll_id);
+CREATE INDEX IF NOT EXISTS idx_developer_payrolls_developer ON developer_payrolls (developer_id);
+CREATE INDEX IF NOT EXISTS idx_developer_payrolls_status ON developer_payrolls (payment_status);
+
+DROP TRIGGER IF EXISTS trg_developer_payrolls_updated_at ON developer_payrolls;
+CREATE TRIGGER trg_developer_payrolls_updated_at
+BEFORE UPDATE ON developer_payrolls
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS payroll_payments (
+    id SERIAL PRIMARY KEY,
+    developer_payroll_id INTEGER NOT NULL REFERENCES developer_payrolls(id) ON DELETE CASCADE,
+    payroll_id INTEGER NOT NULL REFERENCES payrolls(id) ON DELETE CASCADE,
+    developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL,
+    payment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payment_method VARCHAR(50) NOT NULL,
+    transaction_reference VARCHAR(255),
+    status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED' CHECK (status IN ('COMPLETED', 'PENDING', 'FAILED', 'REFUNDED')),
+    processed_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payroll_payments_developer_payroll ON payroll_payments (developer_payroll_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_payments_developer ON payroll_payments (developer_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_payments_date ON payroll_payments (payment_date DESC);
+
+-- ============================================================================
+-- 20. INTERNAL CHAT SYSTEM (All Developers)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS internal_chats (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    type VARCHAR(50) NOT NULL DEFAULT 'DIRECT' CHECK (type IN ('DIRECT', 'GROUP')),
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_internal_chats_type ON internal_chats (type);
+CREATE INDEX IF NOT EXISTS idx_internal_chats_updated_at ON internal_chats (updated_at DESC);
+
+DROP TRIGGER IF EXISTS trg_internal_chats_updated_at ON internal_chats;
+CREATE TRIGGER trg_internal_chats_updated_at
+BEFORE UPDATE ON internal_chats
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS chat_participants (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER NOT NULL REFERENCES internal_chats(id) ON DELETE CASCADE,
+    developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_read_at TIMESTAMPTZ,
+    CONSTRAINT uq_chat_participant UNIQUE (chat_id, developer_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_participants_chat ON chat_participants (chat_id);
+CREATE INDEX IF NOT EXISTS idx_chat_participants_developer ON chat_participants (developer_id);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER NOT NULL REFERENCES internal_chats(id) ON DELETE CASCADE,
+    sender_developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    message TEXT,
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_created ON chat_messages (chat_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages (sender_developer_id);
+
+CREATE TABLE IF NOT EXISTS chat_images (
+    id SERIAL PRIMARY KEY,
+    message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    file_name VARCHAR(255),
+    file_size INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_images_message ON chat_images (message_id);
+
+-- ============================================================================
+-- 21. TASKS & TASK COMMENTS (Admin & Manager CRUD, All Developers View & Comment)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'TODO' CHECK (status IN ('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'BLOCKED')),
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
+    assigned_to_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    due_date TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks (priority);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks (assigned_to_developer_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks (created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_tasks_updated_at ON tasks;
+CREATE TRIGGER trg_tasks_updated_at
+BEFORE UPDATE ON tasks
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS task_comments (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_comments_task ON task_comments (task_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_task_comments_developer ON task_comments (developer_id);
+
+DROP TRIGGER IF EXISTS trg_task_comments_updated_at ON task_comments;
+CREATE TRIGGER trg_task_comments_updated_at
+BEFORE UPDATE ON task_comments
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 22. NOTICES (Admin & Manager CRUD, All Developers View)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS notices (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    priority VARCHAR(50) NOT NULL DEFAULT 'NORMAL' CHECK (priority IN ('LOW', 'NORMAL', 'HIGH', 'URGENT')),
+    category VARCHAR(100) NOT NULL DEFAULT 'GENERAL' CHECK (category IN ('GENERAL', 'ANNOUNCEMENT', 'MAINTENANCE', 'SECURITY', 'POLICY')),
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    target_role VARCHAR(50) NOT NULL DEFAULT 'ALL',
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_notices_pinned_created ON notices (is_pinned DESC, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notices_target_role ON notices (target_role);
+
+DROP TRIGGER IF EXISTS trg_notices_updated_at ON notices;
+CREATE TRIGGER trg_notices_updated_at
+BEFORE UPDATE ON notices
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 23. TUTORIALS (Admin & Manager CRUD, Public Home Page View)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tutorials (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    youtube_link VARCHAR(500) NOT NULL,
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tutorials_created_at ON tutorials (created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_tutorials_updated_at ON tutorials;
+CREATE TRIGGER trg_tutorials_updated_at
+BEFORE UPDATE ON tutorials
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 24. FAQS (Admin & Manager CRUD, Public View)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS faqs (
+    id SERIAL PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_faqs_created_at ON faqs (created_at ASC);
+
+DROP TRIGGER IF EXISTS trg_faqs_updated_at ON faqs;
+CREATE TRIGGER trg_faqs_updated_at
+BEFORE UPDATE ON faqs
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 25. UPDATES (Product Releases & Changelog - Admin & Manager CRUD, Public View)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS updates (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_updates_slug ON updates (slug);
+CREATE INDEX IF NOT EXISTS idx_updates_created_at ON updates (created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_updates_updated_at ON updates;
+CREATE TRIGGER trg_updates_updated_at
+BEFORE UPDATE ON updates
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 26. SUBSCRIBERS (Newsletter & Platform Audience Subscriptions)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS subscribers (
+    id SERIAL PRIMARY KEY,
+    email CITEXT NOT NULL UNIQUE,
+    status VARCHAR(50) NOT NULL DEFAULT 'SUBSCRIBED' CHECK (status IN ('SUBSCRIBED', 'UNSUBSCRIBED', 'PENDING')),
+    source VARCHAR(100) DEFAULT 'FOOTER',
+    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers (email);
+CREATE INDEX IF NOT EXISTS idx_subscribers_status ON subscribers (status);
+
+-- ============================================================================
+-- 27. META MESSAGING (Facebook Messages, Instagram Messages, WhatsApp Messages)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS meta_conversations (
+    id SERIAL PRIMARY KEY,
+    platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook', 'instagram', 'whatsapp')),
+    external_conversation_id VARCHAR(255) NOT NULL,
+    recipient_id VARCHAR(255) NOT NULL,
+    recipient_name VARCHAR(255) NOT NULL DEFAULT 'Customer',
+    recipient_phone VARCHAR(50),
+    recipient_avatar TEXT,
+    last_message TEXT,
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'RESOLVED', 'SPAM')),
+    unread_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_meta_conversations_platform_ext UNIQUE (platform, external_conversation_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_meta_conversations_platform ON meta_conversations (platform, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_meta_conversations_recipient ON meta_conversations (platform, recipient_id);
+
+DROP TRIGGER IF EXISTS trg_meta_conversations_updated_at ON meta_conversations;
+CREATE TRIGGER trg_meta_conversations_updated_at
+BEFORE UPDATE ON meta_conversations
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS meta_messages (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES meta_conversations(id) ON DELETE CASCADE,
+    platform VARCHAR(50) NOT NULL CHECK (platform IN ('facebook', 'instagram', 'whatsapp')),
+    sender_type VARCHAR(50) NOT NULL CHECK (sender_type IN ('CUSTOMER', 'STAFF', 'SYSTEM')),
+    sender_id VARCHAR(255),
+    sender_name VARCHAR(255) NOT NULL,
+    message_text TEXT NOT NULL,
+    media_url TEXT,
+    media_type VARCHAR(50) DEFAULT 'text',
+    external_message_id VARCHAR(255),
+    delivery_status VARCHAR(50) NOT NULL DEFAULT 'SENT' CHECK (delivery_status IN ('SENT', 'DELIVERED', 'READ', 'FAILED')),
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_meta_messages_conv ON meta_messages (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_meta_messages_ext ON meta_messages (platform, external_message_id);
+
+
+
+

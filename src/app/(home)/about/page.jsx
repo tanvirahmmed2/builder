@@ -41,7 +41,7 @@ export default function AboutPage() {
         <h1 className="text-4xl sm:text-5xl font-semibold text-primary tracking-tight leading-tight">
           Empowering Creators with High-Performance Multi-Website Portfolios
         </h1>
-        <p className="text-base text-dark">
+        <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
           PortfolioCraft is engineered from the ground up for software architects, digital designers, and creative directors who demand high aesthetic standards, relational data integrity, and collaborative management.
         </p>
       </div>
@@ -52,14 +52,14 @@ export default function AboutPage() {
           return (
             <div
               key={idx}
-              className="w-full bg-light shadow rounded-lg p-4"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-6 transition-colors"
             >
               <div className="space-y-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-secondary`}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-secondary bg-secondary/10">
                   <Icon />
                 </div>
-                <h3 className="font-bold text-primary text-base">{pillar.title}</h3>
-                <p className="text-xs text-primary-dark leading-relaxed">{pillar.desc}</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">{pillar.title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{pillar.desc}</p>
               </div>
               <div className="pt-2 text-[11px] text-secondary font-semibold flex items-center gap-1">
                 <CheckCircleIcon className="w-3.5 h-3.5" />

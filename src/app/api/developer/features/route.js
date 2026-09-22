@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { isAdmin } from '@/lib/middleware/developer';
 
 function generateFeatureKey(text) {
   return (text || '')
@@ -64,11 +64,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Only admin and manager can create, update, or delete features
-    const auth = await isManagerOrAdmin(request);
+    // Only admin can create features
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can manage features.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can manage features.' },
         { status: auth.status || 403 }
       );
     }
@@ -115,10 +115,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin can update features
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can update features.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can update features.' },
         { status: auth.status || 403 }
       );
     }
@@ -179,10 +180,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    // Only admin can delete features
+    const auth = await isAdmin(request);
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin and Manager roles can delete features.' },
+        { success: false, error: auth.message || 'Forbidden: Only Admin role can delete features.' },
         { status: auth.status || 403 }
       );
     }

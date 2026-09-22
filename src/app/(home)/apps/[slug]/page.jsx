@@ -154,7 +154,7 @@ export default function SingleAppPage({ params }) {
                           : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img.url} alt={img.title || app.title} className="w-full h-full object-cover" />
+                      <img src={img.image || img.url} alt={img.title || app.title} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>

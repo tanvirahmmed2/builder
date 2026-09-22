@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BiCube, BiCheck, BiX, BiDollar, BiEdit, BiPlus, BiLayer } from 'react-icons/bi';
+import { BiCube, BiCheck, BiX, BiDollar, BiEdit, BiPlus, BiLayer, BiCheckSquare, BiSquare } from 'react-icons/bi';
 
 export default function PackageForm({
   initialData = null,
@@ -23,6 +23,12 @@ export default function PackageForm({
     app_id: initialData?.app_id || '',
   });
 
+  const [availableModules, setAvailableModules] = useState([]);
+  const [selectedModules, setSelectedModules] = useState(
+    initialData?.allowed_modules || initialData?.modules || []
+  );
+  const [customModuleInput, setCustomModuleInput] = useState('');
+
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,18 +47,43 @@ export default function PackageForm({
         is_active: initialData.is_active !== undefined ? initialData.is_active : true,
         app_id: initialData.app_id || '',
       });
+      setSelectedModules(initialData.allowed_modules || initialData.modules || []);
       setIsCustomSlug(true);
     }
   }, [initialData]);
 
   useEffect(() => {
-    // Load existing apps for optional association
+    // Load apps
     fetch('/api/developer/apps')
       .then((res) => res.json())
       .then((data) => {
         if (data.records) setApps(data.records);
       })
       .catch(() => {});
+
+    // Dynamically query database modules from API
+    fetch('/api/developer/modules?filter=website')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.available_modules) && data.available_modules.length > 0) {
+          setAvailableModules(data.available_modules);
+          if (!initialData) {
+            setSelectedModules(data.available_modules);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback: discover from packages endpoint
+        fetch('/api/developer/packages')
+          .then((r) => r.json())
+          .then((pkgData) => {
+            if (Array.isArray(pkgData.available_modules) && pkgData.available_modules.length > 0) {
+              setAvailableModules(pkgData.available_modules);
+              if (!initialData) setSelectedModules(pkgData.available_modules);
+            }
+          })
+          .catch(() => {});
+      });
   }, []);
 
   const handleNameChange = (val) => {
@@ -63,6 +94,38 @@ export default function PackageForm({
       }
       return next;
     });
+  };
+
+  const toggleModule = (modTitle) => {
+    setSelectedModules((prev) => {
+      if (prev.includes(modTitle)) {
+        return prev.filter((m) => m !== modTitle);
+      } else {
+        return [...prev, modTitle];
+      }
+    });
+  };
+
+  const handleSelectAllModules = () => {
+    setSelectedModules([...availableModules]);
+  };
+
+  const handleDeselectAllModules = () => {
+    setSelectedModules([]);
+  };
+
+  const handleAddCustomModule = (e) => {
+    e?.preventDefault?.();
+    const trimmed = customModuleInput.trim();
+    if (!trimmed) return;
+
+    if (!availableModules.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
+      setAvailableModules((prev) => [...prev, trimmed]);
+    }
+    if (!selectedModules.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
+      setSelectedModules((prev) => [...prev, trimmed]);
+    }
+    setCustomModuleInput('');
   };
 
   const handleSubmit = async (e) => {
@@ -81,7 +144,9 @@ export default function PackageForm({
       price_in_cents: Math.max(0, parseInt(formData.price_in_cents, 10) || 0),
       max_portfolios: Math.max(1, parseInt(formData.max_portfolios, 10) || 1),
       app_id: formData.app_id ? parseInt(formData.app_id, 10) : null,
+      allowed_modules: selectedModules,
     };
+
     try {
       const payload = isEditing ? { id: initialData.id, ...payloadData } : payloadData;
 
@@ -105,6 +170,7 @@ export default function PackageForm({
             is_active: true,
             app_id: '',
           });
+          setSelectedModules(availableModules);
           setIsCustomSlug(false);
         }
         if (onSuccess) onSuccess(data.record || data.package);
@@ -133,8 +199,8 @@ export default function PackageForm({
             </h3>
             <p className="text-xs text-slate-500">
               {isEditing
-                ? `Updating subscription package #${initialData.id}. Changes apply immediately.`
-                : 'Configure new subscription tiers, pricing intervals, and website portfolio limits.'}
+                ? `Updating subscription package #${initialData.id} and allowed website modules.`
+                : 'Configure new subscription tiers, pricing intervals, quotas, and select allowed website modules.'}
             </p>
           </div>
         </div>
@@ -299,6 +365,92 @@ export default function PackageForm({
                 </div>
               </label>
             </div>
+          </div>
+        </div>
+
+        {/* ALLOWED TENANT WEBSITE MODULES */}
+        <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+            <div>
+              <div className="flex items-center gap-2">
+                <BiLayer className="text-secondary text-lg" />
+                <h4 className="text-sm font-bold text-slate-900">Allowed Website Modules</h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+                  {selectedModules.length} of {availableModules.length} enabled
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Select which tenant website features and sidebar sections are unlocked for creators on this package.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSelectAllModules}
+                className="px-2.5 py-1 text-[11px] font-bold text-secondary hover:bg-secondary/10 rounded-lg transition-colors cursor-pointer"
+              >
+                Select All
+              </button>
+              <span className="text-slate-300 text-xs">|</span>
+              <button
+                type="button"
+                onClick={handleDeselectAllModules}
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          {/* Module Pills Selection Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            {availableModules.map((mod) => {
+              const isSelected = selectedModules.includes(mod);
+              return (
+                <button
+                  key={mod}
+                  type="button"
+                  onClick={() => toggleModule(mod)}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all text-left cursor-pointer ${
+                    isSelected
+                      ? 'bg-white border-secondary text-secondary shadow-xs font-bold'
+                      : 'bg-white/50 border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                  }`}
+                >
+                  <span className={`text-base shrink-0 ${isSelected ? 'text-secondary' : 'text-slate-400'}`}>
+                    {isSelected ? <BiCheckSquare /> : <BiSquare />}
+                  </span>
+                  <span className="truncate">{mod}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Add Custom Module Section */}
+          <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Add custom module title (e.g. AI Content Writer, Custom Analytics)..."
+              value={customModuleInput}
+              onChange={(e) => setCustomModuleInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCustomModule();
+                }
+              }}
+              className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all"
+            />
+            <button
+              type="button"
+              onClick={handleAddCustomModule}
+              disabled={!customModuleInput.trim()}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white hover:bg-black text-xs font-bold shadow-xs disabled:opacity-40 transition-all cursor-pointer shrink-0"
+            >
+              <BiPlus className="text-base" />
+              <span>Add Module</span>
+            </button>
           </div>
         </div>
 
