@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 export async function GET(request) {
   try {
+    const auth = await hasModulePermission(request, 'faqs');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -23,13 +28,13 @@ export async function GET(request) {
   }
 }
 
-// CREATE FAQ (Admin & Manager only)
+// CREATE FAQ
 export async function POST(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'faqs');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can create FAQs.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission faqs required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -57,13 +62,13 @@ export async function POST(request) {
   }
 }
 
-// UPDATE FAQ (Admin & Manager only)
+// UPDATE FAQ
 export async function PUT(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'faqs');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can update FAQs.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission faqs required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -96,13 +101,13 @@ export async function PUT(request) {
   }
 }
 
-// DELETE FAQ (Admin & Manager only)
+// DELETE FAQ
 export async function DELETE(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'faqs');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can delete FAQs.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission faqs required.' },
         { status: authCheck.status || 403 }
       );
     }

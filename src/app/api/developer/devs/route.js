@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { hashPassword, isAdmin } from '@/lib/middleware/developer';
+import { hashPassword, hasModulePermission } from '@/lib/middleware/developer';
 import { sendEmail } from '@/lib/db/mailer';
 import { SITE_NAME } from '@/lib/db/secret';
 
@@ -20,7 +20,10 @@ async function handleCreateAdmin(d) {
     throw new Error('A developer with this email address already exists.');
   }
 
-  const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE slug = $1 LIMIT 1', [roleSlug]);
+  const inputRoleId = data.role_id || data.roleId;
+  const roleRes = inputRoleId
+    ? await queryDb('SELECT id, slug, name FROM roles WHERE id = $1 LIMIT 1', [Number(inputRoleId)])
+    : await queryDb('SELECT id, slug, name FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [roleSlug]);
   const roleId = roleRes.rows[0]?.id || 1;
 
   const hashedPassword = await hashPassword(password);
@@ -72,13 +75,16 @@ async function handleCreateAdmin(d) {
 
 export async function GET() {
   try {
-    const res = await queryDb(`
-      SELECT d.id, d.name, d.email, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name, d.is_active, d.is_verified, d.last_login_at, d.created_at
-      FROM developers d
-      LEFT JOIN roles r ON d.role_id = r.id
-      ORDER BY d.id DESC
-    `);
-    return NextResponse.json({ success: true, table: 'developers', records: res.rows });
+    const [devsRes, rolesRes] = await Promise.all([
+      queryDb(`
+        SELECT d.id, d.name, d.email, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name, d.is_active, d.is_verified, d.last_login_at, d.created_at
+        FROM developers d
+        LEFT JOIN roles r ON d.role_id = r.id
+        ORDER BY d.id DESC
+      `),
+      queryDb(`SELECT id, name, slug, description, is_system FROM roles ORDER BY id ASC`),
+    ]);
+    return NextResponse.json({ success: true, table: 'developers', records: devsRes.rows, roles: rolesRes.rows });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -119,8 +125,6 @@ async function checkLastActiveAdminGuard(targetId, willDeactivateOrDelete = true
   return null;
 }
 
-const ALLOWED_ROLES = new Set(['admin', 'manager', 'support', 'developer', 'marketer']);
-
 export async function POST(request) {
   try {
     const devCountRes = await queryDb('SELECT COUNT(*)::int AS count FROM developers');
@@ -128,10 +132,10 @@ export async function POST(request) {
 
     // Only bypass auth if there are ZERO developers in the system (initial bootstrap)
     if (devCount > 0) {
-      const authCheck = await isAdmin(request);
+      const authCheck = await hasModulePermission(request, 'developers');
       if (!authCheck.success) {
         return NextResponse.json(
-          { success: false, error: authCheck.message || 'Forbidden: Only admin roles can create developer accounts.' },
+          { success: false, error: authCheck.message },
           { status: authCheck.status || 403 }
         );
       }
@@ -159,10 +163,10 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { success: false, error: authCheck.message },
         { status: authCheck.status || 403 }
       );
     }
@@ -179,12 +183,14 @@ export async function PUT(request) {
       const rawRole = body.role || body.newRole;
       const cleanRole = (rawRole || '').toLowerCase().trim();
 
-      if (!ALLOWED_ROLES.has(cleanRole)) {
+      const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [cleanRole]);
+      if (roleRes.rows.length === 0) {
         return NextResponse.json(
-          { success: false, error: `Invalid role "${rawRole}". Allowed roles: admin, manager, support, developer, marketer.` },
+          { success: false, error: `Invalid role "${rawRole}". Role not found in database.` },
           { status: 400 }
         );
       }
+      const roleRow = roleRes.rows[0];
 
       if (cleanRole !== 'admin') {
         const guard = await checkLastActiveAdminGuard(targetId, true);
@@ -192,12 +198,6 @@ export async function PUT(request) {
           return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
         }
       }
-
-      const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE slug = $1 LIMIT 1', [cleanRole]);
-      if (roleRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: `Role "${cleanRole}" not found in database.` }, { status: 400 });
-      }
-      const roleRow = roleRes.rows[0];
 
       const res = await queryDb(
         `UPDATE developers SET role_id = $1 WHERE id = $2 
@@ -264,13 +264,11 @@ export async function PUT(request) {
 
     if (data.role) {
       const cleanRole = data.role.toLowerCase().trim();
-      if (!ALLOWED_ROLES.has(cleanRole)) {
-        return NextResponse.json({ success: false, error: `Invalid role "${data.role}".` }, { status: 400 });
+      const roleRes = await queryDb('SELECT id FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [cleanRole]);
+      if (roleRes.rows.length === 0) {
+        return NextResponse.json({ success: false, error: `Invalid role "${data.role}". Role not found in database.` }, { status: 400 });
       }
-      const roleRes = await queryDb('SELECT id FROM roles WHERE slug = $1 LIMIT 1', [cleanRole]);
-      if (roleRes.rows.length > 0) {
-        data.role_id = roleRes.rows[0].id;
-      }
+      data.role_id = roleRes.rows[0].id;
       delete data.role;
     }
 
@@ -314,10 +312,10 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can delete admin accounts.' },
+        { success: false, error: authCheck.message },
         { status: authCheck.status || 403 }
       );
     }

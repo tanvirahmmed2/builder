@@ -37,9 +37,8 @@ export default function DeveloperUpdatesPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const role = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canManage = Boolean(user?.isAdmin || role === 'admin' || role === 'manager' || permissions.includes('updates'));
+  const canManage = permissions.includes('updates');
 
   const fetchUpdates = async () => {
     try {
@@ -62,7 +61,7 @@ export default function DeveloperUpdatesPage() {
 
   const openCreateModal = () => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can post product updates.');
+      alert('Access denied: updates permission required.');
       return;
     }
     setEditingUpdate(null);
@@ -74,7 +73,7 @@ export default function DeveloperUpdatesPage() {
 
   const openEditModal = (item) => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can edit product updates.');
+      alert('Access denied: updates permission required.');
       return;
     }
     setEditingUpdate(item);
@@ -106,7 +105,7 @@ export default function DeveloperUpdatesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canManage) {
-      setFeedback({ type: 'error', message: 'Access denied: Only Admin and Manager roles can publish or edit product updates.' });
+      setFeedback({ type: 'error', message: 'Access denied: updates permission required to publish or edit updates.' });
       return;
     }
 
@@ -152,7 +151,7 @@ export default function DeveloperUpdatesPage() {
 
   const handleDelete = async (id) => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can delete product updates.');
+      alert('Access denied: updates permission required.');
       return;
     }
 

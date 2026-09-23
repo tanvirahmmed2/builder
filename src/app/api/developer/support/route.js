@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
-// GET ALL SUPPORT TICKETS (Staff access)
+// GET ALL SUPPORT TICKETS
 export async function GET(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -94,9 +94,9 @@ export async function GET(request) {
 // UPDATE SUPPORT TICKET STATUS / ASSIGNMENT / PRIORITY
 export async function PUT(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const body = await request.json();
@@ -136,14 +136,14 @@ export async function PUT(request) {
   }
 }
 
-// DELETE SUPPORT TICKET (Admin and Manager only)
+// DELETE SUPPORT TICKET
 export async function DELETE(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: 'Access denied: Only administrators and managers can delete support tickets.' },
-        { status: 403 }
+        { success: false, error: auth.message || 'Access denied: Permission support required to delete support tickets.' },
+        { status: auth.status || 403 }
       );
     }
 

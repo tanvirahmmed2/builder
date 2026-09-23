@@ -25,10 +25,9 @@ export default function ContactDetailPage({ params }) {
   const contactId = routeParams?.id || resolvedParams?.id;
 
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canReply = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('contacts'));
-  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
+  const canReply = permissions.includes('contacts');
+  const canDelete = permissions.includes('contacts');
 
   const [contact, setContact] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -259,11 +258,10 @@ export default function ContactDetailPage({ params }) {
         <div className="flex items-center gap-2 text-slate-700 font-medium">
           <BiCheckShield className="text-indigo-600 text-lg shrink-0" />
           <span>
-            Signed in as <strong className="capitalize text-slate-900">{userRole || 'staff'}</strong>.
             {canReply ? (
-              <span className="text-emerald-700 ml-1">You can compose and send email replies via the mailer.</span>
+              <span className="text-emerald-700">You can compose and send email replies via the mailer.</span>
             ) : (
-              <span className="text-amber-700 ml-1">Sending email replies requires Support, Manager, or Admin role.</span>
+              <span className="text-amber-700">Sending email replies requires the <strong className="font-mono">contacts</strong> permission.</span>
             )}
           </span>
         </div>

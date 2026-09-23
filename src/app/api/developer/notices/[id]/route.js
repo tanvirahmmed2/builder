@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
-// PUT: Update notice or toggle pin (Manager or Admin ONLY)
+// PUT: Update notice or toggle pin
 // ============================================================================
 export async function PUT(request, { params }) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'notices');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can edit notices.' },
+        { success: false, error: auth.message || 'Forbidden: Permission notices required to edit notices.' },
         { status: auth.status || 403 }
       );
     }
@@ -64,14 +64,14 @@ export async function PUT(request, { params }) {
 }
 
 // ============================================================================
-// DELETE: Delete notice (Manager or Admin ONLY)
+// DELETE: Delete notice
 // ============================================================================
 export async function DELETE(request, { params }) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'notices');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can delete notices.' },
+        { success: false, error: auth.message || 'Forbidden: Permission notices required to delete notices.' },
         { status: auth.status || 403 }
       );
     }

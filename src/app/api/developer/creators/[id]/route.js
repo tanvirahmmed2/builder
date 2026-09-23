@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 export async function GET(request, { params }) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Access denied: Staff role required' },
+        { success: false, error: auth.message || 'Access denied' },
         { status: auth.status || 403 }
       );
     }
@@ -123,7 +123,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
       return NextResponse.json(
         { success: false, error: auth.message || 'Access denied' },

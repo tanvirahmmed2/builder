@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
@@ -7,9 +7,9 @@ import { queryDb } from '@/lib/db/pg';
 // ============================================================================
 export async function GET(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'tasks');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -74,8 +74,8 @@ export async function GET(request) {
       ORDER BY d.name ASC
     `);
 
-    const userRole = (auth.staff.role || '').toLowerCase();
-    const canManage = userRole === 'admin' || userRole === 'manager';
+    const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
+    const canManage = perms.includes('tasks');
 
     return NextResponse.json({
       success: true,
@@ -90,14 +90,14 @@ export async function GET(request) {
 }
 
 // ============================================================================
-// POST: Create a new task (Manager or Admin ONLY)
+// POST: Create a new task
 // ============================================================================
 export async function POST(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'tasks');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can create tasks.' },
+        { success: false, error: auth.message || 'Forbidden: Permission tasks required to create tasks.' },
         { status: auth.status || 403 }
       );
     }

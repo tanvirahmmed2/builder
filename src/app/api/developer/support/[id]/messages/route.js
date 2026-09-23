@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { sendEmail } from '@/lib/db/mailer';
 import { SITE_NAME } from '@/lib/db/secret';
 
 // SEND MESSAGE FROM DEVELOPER / STAFF TO CREATOR
 export async function POST(request, context) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Support, Manager, or Admin role required.' },
+        { success: false, error: auth.message || 'Permission support required to send messages.' },
         { status: auth.status || 403 }
       );
     }

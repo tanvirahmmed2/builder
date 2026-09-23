@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 // GET: Fetch all reviews for developer moderation oversight
 export async function GET(request) {
   try {
-    const auth = await isStaff(request);
+    const auth = await hasModulePermission(request, 'reviews');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Staff authentication required' },
-        { status: 401 }
+        { success: false, error: auth.message || 'Permission reviews required' },
+        { status: auth.status || 401 }
       );
     }
 
@@ -57,17 +57,17 @@ export async function GET(request) {
   }
 }
 
-// PUT: Moderate review status (Admin & Manager only can approve or reject)
+// PUT: Moderate review status
 export async function PUT(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'reviews');
     if (!auth.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Access denied: Only Admins and Managers have permission to approve or reject reviews.',
+          error: auth.message || 'Access denied: Permission reviews required to approve or reject reviews.',
         },
-        { status: 403 }
+        { status: auth.status || 403 }
       );
     }
 
@@ -124,17 +124,17 @@ export async function PUT(request) {
   }
 }
 
-// DELETE: Remove review (Admin & Manager only)
+// DELETE: Remove review
 export async function DELETE(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'reviews');
     if (!auth.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Access denied: Only Admins and Managers can delete reviews.',
+          error: auth.message || 'Access denied: Permission reviews required to delete reviews.',
         },
-        { status: 403 }
+        { status: auth.status || 403 }
       );
     }
 

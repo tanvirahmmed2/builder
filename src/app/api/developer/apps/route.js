@@ -1,5 +1,5 @@
 import { query } from '@/lib/db/pg';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import cloudinary, { uploadToCloudinary, deleteFromCloudinary } from '@/lib/db/cloudinary';
 
 function slugify(text) {
@@ -14,9 +14,9 @@ function slugify(text) {
 
 export async function GET(req) {
   try {
-    const auth = await authenticateStaff(req);
+    const auth = await hasModulePermission(req, 'apps');
     if (!auth.success) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: auth.message }, { status: auth.status || 403 });
     }
 
     const url = new URL(req.url);
@@ -119,9 +119,9 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const auth = await isManagerOrAdmin(req);
+    const auth = await hasModulePermission(req, 'apps');
     if (!auth.success) {
-      return Response.json({ error: auth.message }, { status: 403 });
+      return Response.json({ error: auth.message }, { status: auth.status || 403 });
     }
 
     let title = '';
@@ -249,9 +249,9 @@ export async function POST(req) {
 
 export async function PUT(req) {
   try {
-    const auth = await isManagerOrAdmin(req);
+    const auth = await hasModulePermission(req, 'apps');
     if (!auth.success) {
-      return Response.json({ error: auth.message }, { status: 403 });
+      return Response.json({ error: auth.message }, { status: auth.status || 403 });
     }
 
     let id = null;
@@ -402,9 +402,9 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   try {
-    const auth = await isManagerOrAdmin(req);
+    const auth = await hasModulePermission(req, 'apps');
     if (!auth.success) {
-      return Response.json({ error: auth.message }, { status: 403 });
+      return Response.json({ error: auth.message }, { status: auth.status || 403 });
     }
 
     const url = new URL(req.url);

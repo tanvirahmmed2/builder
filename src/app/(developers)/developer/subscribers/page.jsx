@@ -21,11 +21,9 @@ export default function AdminSubscribersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
-  const role = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const ALLOWED_VIEW_ROLES = ['admin', 'manager', 'support'];
-  const canView = Boolean(user?.isAdmin || ALLOWED_VIEW_ROLES.includes(role) || permissions.includes('subscribers'));
-  const canDelete = Boolean(user?.isAdmin || role === 'admin' || role === 'manager');
+  const canView = permissions.includes('subscribers');
+  const canDelete = permissions.includes('subscribers');
 
   const fetchSubs = async () => {
     try {
@@ -52,7 +50,7 @@ export default function AdminSubscribersPage() {
 
   const handleDelete = async (id) => {
     if (!canDelete) {
-      alert('Access denied: Only Admin and Manager roles can remove subscribers.');
+      alert('Access denied: subscribers permission required.');
       return;
     }
     if (!confirm('Are you sure you want to delete this subscriber record?')) return;
@@ -82,9 +80,7 @@ export default function AdminSubscribersPage() {
         </div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Access Restricted</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Only <span className="font-semibold text-slate-700 dark:text-slate-200">Admin</span>,{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">Manager</span>, and{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">Support</span> roles are authorized to view newsletter subscribers.
+          Access requires the <span className="font-semibold text-slate-700 dark:text-slate-200 font-mono">subscribers</span> permission.
         </p>
       </div>
     );

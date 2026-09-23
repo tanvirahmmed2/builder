@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { getAuthenticatedUser, isAdmin, hashPassword } from '@/lib/middleware/developer';
-
-const ALLOWED_ROLES = new Set(['admin', 'manager', 'support', 'developer', 'marketer']);
+import { getAuthenticatedUser, hasModulePermission, hashPassword } from '@/lib/middleware/developer';
 
 async function checkLastActiveAdminGuard(targetId, willDeactivateOrDelete = true) {
   if (!willDeactivateOrDelete) return null;
@@ -43,25 +41,35 @@ async function checkLastActiveAdminGuard(targetId, willDeactivateOrDelete = true
 
 export async function GET(request) {
   try {
-    const auth = await getAuthenticatedUser(request);
-    const res = await queryDb(`
-      SELECT d.id, d.name, d.email, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name,
-             d.is_active, d.is_verified, d.last_login_at, d.created_at
-      FROM developers d
-      LEFT JOIN roles r ON d.role_id = r.id
-      ORDER BY d.id DESC
-    `);
+    const [devsRes, rolesRes] = await Promise.all([
+      queryDb(`
+        SELECT d.id, d.name, d.email, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name,
+               d.is_active, d.is_verified, d.last_login_at, d.created_at
+        FROM developers d
+        LEFT JOIN roles r ON d.role_id = r.id
+        ORDER BY d.id DESC
+      `),
+      queryDb(`
+        SELECT id, name, slug, description, is_system
+        FROM roles
+        ORDER BY id ASC
+      `),
+    ]);
+
     return NextResponse.json({
       success: true,
       table: 'developers',
-      records: res.rows,
+      records: devsRes.rows,
+      roles: rolesRes.rows,
       currentUser: auth
         ? {
             id: auth.id,
             name: auth.name,
             email: auth.email,
             role: auth.role,
-            isAdmin: (auth.role || '').toLowerCase() === 'admin',
+            roleName: auth.role_name,
+            permissions: auth.permissions || [],
+            isAdmin: Boolean(auth.permissions?.includes('developers')),
           }
         : null,
     });
@@ -72,11 +80,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Only admin roles can update admin accounts or change roles
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { success: false, error: authCheck.message || 'Forbidden: developers permission required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -94,15 +101,17 @@ export async function POST(request) {
       const rawRole = body.role || body.newRole;
       const cleanRole = (rawRole || '').toLowerCase().trim();
 
-      if (!ALLOWED_ROLES.has(cleanRole)) {
+      const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [cleanRole]);
+      if (roleRes.rows.length === 0) {
         return NextResponse.json(
           {
             success: false,
-            error: `Invalid role "${rawRole}". Allowed roles: admin, manager, support, developer, marketer.`,
+            error: `Invalid role "${rawRole}". Role not found in database.`,
           },
           { status: 400 }
         );
       }
+      const roleRow = roleRes.rows[0];
 
       // If moving away from 'admin', ensure at least one other active admin remains
       if (cleanRole !== 'admin') {
@@ -111,12 +120,6 @@ export async function POST(request) {
           return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
         }
       }
-
-      const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE slug = $1 LIMIT 1', [cleanRole]);
-      if (roleRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: `Role "${cleanRole}" not found in database.` }, { status: 400 });
-      }
-      const roleRow = roleRes.rows[0];
 
       const res = await queryDb(
         `UPDATE developers SET role_id = $1 WHERE id = $2 
@@ -186,10 +189,10 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { success: false, error: authCheck.message || 'Forbidden: developers permission required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -203,28 +206,31 @@ export async function PUT(request) {
     const data = { ...(body.data || body) };
 
     // Validate role if changing
-    if (data.role) {
-      const cleanRole = data.role.toLowerCase().trim();
-      if (!ALLOWED_ROLES.has(cleanRole)) {
+    if (data.role || data.role_id || data.roleId) {
+      const inputRoleId = data.role_id || data.roleId;
+      const roleRes = inputRoleId
+        ? await queryDb('SELECT id, slug, name FROM roles WHERE id = $1 LIMIT 1', [Number(inputRoleId)])
+        : await queryDb('SELECT id, slug, name FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [data.role.toLowerCase().trim()]);
+
+      if (roleRes.rows.length === 0) {
         return NextResponse.json(
           {
             success: false,
-            error: `Invalid role "${data.role}". Allowed roles: admin, manager, support, developer, marketer.`,
+            error: `Invalid role. Role not found in database.`,
           },
           { status: 400 }
         );
       }
-      if (cleanRole !== 'admin') {
+      const roleRow = roleRes.rows[0];
+      if (roleRow.slug !== 'admin') {
         const guard = await checkLastActiveAdminGuard(targetId, true);
         if (guard) {
           return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
         }
       }
-      const roleRes = await queryDb('SELECT id FROM roles WHERE slug = $1 LIMIT 1', [cleanRole]);
-      if (roleRes.rows.length > 0) {
-        data.role_id = roleRes.rows[0].id;
-      }
+      data.role_id = roleRow.id;
       delete data.role;
+      delete data.roleId;
     }
 
     if (data.is_active === false || data.isActive === false) {
@@ -279,16 +285,16 @@ export async function PUT(request) {
 
 export async function PATCH(request) {
   try {
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can update admin accounts.' },
+        { success: false, error: authCheck.message || 'Forbidden: developers permission required.' },
         { status: authCheck.status || 403 }
       );
     }
 
     const body = await request.json();
-    const { id, is_active, role } = body;
+    const { id, is_active, role, role_id, roleId } = body;
     const targetId = id || body.adminId;
 
     if (!targetId) {
@@ -296,25 +302,26 @@ export async function PATCH(request) {
     }
 
     // Role update via PATCH
-    if (role !== undefined) {
-      const cleanRole = (role || '').toLowerCase().trim();
-      if (!ALLOWED_ROLES.has(cleanRole)) {
+    if (role !== undefined || role_id !== undefined || roleId !== undefined) {
+      const inputId = role_id || roleId;
+      const roleRes = inputId
+        ? await queryDb('SELECT id, slug, name FROM roles WHERE id = $1 LIMIT 1', [Number(inputId)])
+        : await queryDb('SELECT id, slug, name FROM roles WHERE LOWER(slug) = LOWER($1) LIMIT 1', [(role || '').toLowerCase().trim()]);
+
+      if (roleRes.rows.length === 0) {
         return NextResponse.json(
-          { success: false, error: `Invalid role "${role}". Allowed roles: admin, manager, support, developer, marketer.` },
+          { success: false, error: `Invalid role. Role not found in database.` },
           { status: 400 }
         );
       }
-      if (cleanRole !== 'admin') {
+      const roleRow = roleRes.rows[0];
+
+      if (roleRow.slug !== 'admin') {
         const guard = await checkLastActiveAdminGuard(targetId, true);
         if (guard) {
           return NextResponse.json({ success: false, error: guard.error }, { status: guard.status });
         }
       }
-      const roleRes = await queryDb('SELECT id, slug, name FROM roles WHERE slug = $1 LIMIT 1', [cleanRole]);
-      if (roleRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: `Role "${cleanRole}" not found in database.` }, { status: 400 });
-      }
-      const roleRow = roleRes.rows[0];
 
       const res = await queryDb(
         `UPDATE developers SET role_id = $1 WHERE id = $2 
@@ -324,7 +331,7 @@ export async function PATCH(request) {
       return NextResponse.json({
         success: true,
         record: { ...res.rows[0], role: roleRow.slug, role_name: roleRow.name },
-        message: `Role updated to ${cleanRole}.`,
+        message: `Role updated to ${roleRow.name}.`,
       });
     }
 
@@ -372,10 +379,10 @@ export async function PATCH(request) {
 
 export async function DELETE(request) {
   try {
-    const authCheck = await isAdmin(request);
+    const authCheck = await hasModulePermission(request, 'developers');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Forbidden: Only admin roles can delete admin accounts.' },
+        { success: false, error: authCheck.message || 'Forbidden: developers permission required.' },
         { status: authCheck.status || 403 }
       );
     }

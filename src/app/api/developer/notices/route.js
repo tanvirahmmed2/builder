@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
@@ -7,9 +7,9 @@ import { queryDb } from '@/lib/db/pg';
 // ============================================================================
 export async function GET(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'notices');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const noticesRes = await queryDb(`
@@ -24,8 +24,8 @@ export async function GET(request) {
       ORDER BY n.is_pinned DESC, n.created_at DESC
     `);
 
-    const userRole = (auth.staff.role || '').toLowerCase();
-    const canManage = userRole === 'admin' || userRole === 'manager';
+    const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
+    const canManage = perms.includes('notices');
 
     return NextResponse.json({
       success: true,
@@ -39,14 +39,14 @@ export async function GET(request) {
 }
 
 // ============================================================================
-// POST: Create notice (Manager or Admin ONLY)
+// POST: Create notice
 // ============================================================================
 export async function POST(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'notices');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can create notices.' },
+        { success: false, error: auth.message || 'Forbidden: Permission notices required to create notices.' },
         { status: auth.status || 403 }
       );
     }

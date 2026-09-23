@@ -36,9 +36,8 @@ export default function CreatorDetailsPage({ params }) {
   const creatorId = routeParams?.id || (params ? (typeof params.then === 'function' ? use(params)?.id : params.id) : null);
 
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const isAuthorized = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('creators'));
+  const isAuthorized = permissions.includes('creators');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -143,9 +142,7 @@ export default function CreatorDetailsPage({ params }) {
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">Access Restricted</h2>
           <p className="text-sm text-slate-600 mb-6">
-            Only staff accounts with <span className="font-semibold text-slate-800">Admin</span>,{' '}
-            <span className="font-semibold text-slate-800">Manager</span>, or{' '}
-            <span className="font-semibold text-slate-800">Support</span> roles can inspect creator details.
+            Inspecting creator details requires the <span className="font-semibold text-slate-800 font-mono">creators</span> permission.
           </p>
           <Link
             href="/developer"

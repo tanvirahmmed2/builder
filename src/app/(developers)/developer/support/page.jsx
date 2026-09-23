@@ -20,8 +20,8 @@ import { Context } from '@/components/helper/Context';
 export default function AdminSupportPage() {
   const router = useRouter();
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
-  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canDelete = permissions.includes('support');
 
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 });
@@ -59,7 +59,7 @@ export default function AdminSupportPage() {
   const handleDelete = async (id, e) => {
     if (e) e.stopPropagation();
     if (!canDelete) {
-      notify('Permission denied: Only Admin and Manager roles can delete tickets.', 'error');
+      notify('Permission denied: support permission required to delete tickets.', 'error');
       return;
     }
     if (!confirm('Are you sure you want to delete this support ticket and all its messages?')) return;

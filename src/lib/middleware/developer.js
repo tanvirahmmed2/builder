@@ -57,7 +57,7 @@ export const authenticateStaff = async (req) => {
       try {
         const cookieStore = await cookies();
         token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
-      } catch (_) {}
+      } catch (_) { }
     }
 
     if (!token) {
@@ -97,7 +97,7 @@ export const authenticateStaff = async (req) => {
     const sessionId = dev.session_id;
 
     // Update last active time (fire and forget)
-    query('UPDATE session SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [sessionId]).catch(() => {});
+    query('UPDATE session SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [sessionId]).catch(() => { });
 
     if (dev.is_active === false) {
       return { success: false, message: 'Developer account is deactivated' };
@@ -159,90 +159,38 @@ export const isAdmin = async (req) => {
   return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
 };
 
-export const isManager = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (auth.staff.role !== 'manager' && auth.staff.role !== 'admin') {
-    return { success: false, status: 403, message: 'Access denied: Admin or Manager role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
-
-export const isManagerOrAdmin = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (auth.staff.role !== 'manager' && auth.staff.role !== 'admin') {
-    return { success: false, status: 403, message: 'Access denied: Admin or Manager role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
-
-export const isSupport = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (auth.staff.role !== 'support' && auth.staff.role !== 'manager' && auth.staff.role !== 'admin') {
-    return { success: false, status: 403, message: 'Access denied: Support role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
-
-export const isDeveloper = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (
-    auth.staff.role !== 'developer' &&
-    auth.staff.role !== 'manager' &&
-    auth.staff.role !== 'admin'
-  ) {
-    return { success: false, status: 403, message: 'Access denied: Developer role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
-
-export const isMarketer = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (
-    auth.staff.role !== 'marketer' &&
-    auth.staff.role !== 'manager' &&
-    auth.staff.role !== 'admin'
-  ) {
-    return { success: false, status: 403, message: 'Access denied: Marketer role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
-
-export const isManagementRole = async (req) => {
-  const auth = await authenticateStaff(req);
-  if (!auth.success) return auth;
-  if (auth.staff.role !== 'manager' && auth.staff.role !== 'admin') {
-    return { success: false, status: 403, message: 'Access denied: Management role required' };
-  }
-  return { success: true, staff: auth.staff, developer: auth.staff, user: auth.staff, payload: auth.staff };
-};
 
 /**
  * Checks if the authenticated staff member has the specified module/permission slug.
+ * Supports string slug (e.g. 'contacts') or array of slugs (e.g. ['facebook-messages', 'chats']).
  * Full admin role automatically bypasses and grants access.
  */
 export const hasModulePermission = async (req, permissionSlug) => {
   const auth = await authenticateStaff(req);
   if (!auth.success) return auth;
-  if (auth.staff.role === 'admin') return auth;
   const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
-  if (!perms.includes(permissionSlug)) {
+  if (permissionSlug) {
+    const slugs = Array.isArray(permissionSlug) ? permissionSlug : [permissionSlug];
+    const hasPerm = slugs.some((s) => perms.includes(s));
+    if (!hasPerm) {
+      return {
+        success: false,
+        status: 403,
+        message: `Access denied: Permission '${slugs.join(' or ')}' required`,
+      };
+    }
+  } else if (perms.length === 0) {
     return {
       success: false,
       status: 403,
-      message: `Access denied: Permission '${permissionSlug}' required`,
+      message: 'Access denied: Insufficient permissions',
     };
   }
   return auth;
 };
 
-// ============================================================================
-// LOGIN / SESSION MANAGEMENT
-// ============================================================================
+export const requirePermission = hasModulePermission;
+
 
 export async function authenticateAdmin(email, password, reqDetails = {}) {
   if (!email || !password) {
@@ -302,7 +250,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, 'FAILED', 'Admin account not found', $2, $3)`,
         [cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) {}
+    } catch (_) { }
     throw new Error('Invalid email or password.');
   }
 
@@ -318,7 +266,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
       if (uRes && uRes.rows && uRes.rows[0]?.password) {
         isValid = await comparePassword(password, uRes.rows[0].password);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!isValid) {
@@ -328,7 +276,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Invalid password credentials', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) {}
+    } catch (_) { }
     throw new Error('Invalid email or password.');
   }
 
@@ -337,7 +285,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
     if (admin.is_active === false || admin.is_verified === false) {
       admin.is_active = true;
       admin.is_verified = true;
-      query(`UPDATE developers SET is_active = TRUE, is_verified = TRUE WHERE id = $1`, [admin.id]).catch(() => {});
+      query(`UPDATE developers SET is_active = TRUE, is_verified = TRUE WHERE id = $1`, [admin.id]).catch(() => { });
     }
   }
 
@@ -348,7 +296,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Account deactivated', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) {}
+    } catch (_) { }
     const err = new Error('This admin account has been deactivated.');
     err.deactivated = true;
     throw err;
@@ -361,7 +309,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
          VALUES ($1, $2, 'FAILED', 'Account not verified', $3, $4)`,
         [admin.id, cleanEmail, reqDetails.ip || null, reqDetails.userAgent || null]
       );
-    } catch (_) {}
+    } catch (_) { }
     const err = new Error('This admin account is not verified. Please verify your email with the verification code.');
     err.unverified = true;
     err.email = cleanEmail;
@@ -401,21 +349,18 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
         maxAge: 60 * 60 * 24 * 7,
       });
     }
-  } catch (_) {}
+  } catch (_) { }
 
   let permissions = [];
   try {
-    if (admin.role === 'admin') {
-      const allP = await query('SELECT slug FROM permissions');
-      permissions = allP.rows.map((p) => p.slug);
-    } else if (admin.role_id) {
+    if (admin.role_id) {
       const pRes = await query(
         `SELECT p.slug FROM role_permissions rp JOIN permissions p ON rp.permission_id = p.id WHERE rp.role_id = $1`,
         [admin.role_id]
       );
       permissions = pRes.rows.map((r) => r.slug);
     }
-  } catch (_) {}
+  } catch (_) { }
 
   return {
     success: true,
@@ -426,8 +371,7 @@ export async function authenticateAdmin(email, password, reqDetails = {}) {
       role: admin.role,
       roleName: admin.role_name || admin.role,
       permissions: permissions,
-      isAdmin: admin.role === 'admin',
-      isManager: admin.role === 'manager' || admin.role === 'admin',
+      isAdmin: permissions.includes('developers'),
       isActive: admin.is_active !== false,
       isVerified: admin.is_verified === true,
       twoFactorEnabled: admin.two_factor_enabled || false,
@@ -451,7 +395,7 @@ export async function getAdminSession(req) {
         const cookieStore = await cookies();
         const cookie = cookieStore ? cookieStore.get(ADMIN_COOKIE_NAME) : null;
         token = cookie ? cookie.value : null;
-      } catch (_) {}
+      } catch (_) { }
     }
 
     if (token) {
@@ -504,14 +448,14 @@ export async function clearAdminSessionCookie(response) {
       if (cookieStore) {
         cookieStore.delete(ADMIN_COOKIE_NAME);
       }
-    } catch (_) {}
+    } catch (_) { }
 
     if (token) {
       try {
         await query('UPDATE session SET is_revoked = TRUE WHERE token = $1', [token]);
-      } catch (_) {}
+      } catch (_) { }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   if (response && response.cookies) {
     response.cookies.delete(ADMIN_COOKIE_NAME);
@@ -521,9 +465,10 @@ export async function clearAdminSessionCookie(response) {
 
 export function hasPermission(staff, permissionSlug) {
   if (!staff) return false;
-  const role = (staff.role || '').toLowerCase();
-  if (role === 'admin') return true;
   const perms = Array.isArray(staff.permissions) ? staff.permissions : [];
+  if (Array.isArray(permissionSlug)) {
+    return permissionSlug.some((s) => perms.includes(s));
+  }
   return perms.includes(permissionSlug);
 }
 

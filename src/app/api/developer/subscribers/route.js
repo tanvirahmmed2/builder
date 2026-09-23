@@ -1,23 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { authenticateStaff } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
-const ALLOWED_VIEW_ROLES = ['admin', 'manager', 'support'];
-
-// GET ALL SUBSCRIBERS (Admin, Manager, Support only)
+// GET ALL SUBSCRIBERS
 export async function GET(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'subscribers');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
-    }
-
-    const role = (auth.staff.role || '').toLowerCase();
-    if (!ALLOWED_VIEW_ROLES.includes(role)) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied: Only Admin, Manager, and Support roles can view subscribers.' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status || 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -50,20 +40,12 @@ export async function POST() {
   );
 }
 
-// PUT: UPDATE STATUS (Admin & Manager only)
+// PUT: UPDATE STATUS
 export async function PUT(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'subscribers');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
-    }
-
-    const role = (auth.staff.role || '').toLowerCase();
-    if (role !== 'admin' && role !== 'manager') {
-      return NextResponse.json(
-        { success: false, error: 'Access denied: Only Admin and Manager roles can update subscriber status.' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status || 403 });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -89,20 +71,12 @@ export async function PUT(request) {
   }
 }
 
-// DELETE SUBSCRIBER (Admin & Manager only)
+// DELETE SUBSCRIBER
 export async function DELETE(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'subscribers');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message }, { status: 401 });
-    }
-
-    const role = (auth.staff.role || '').toLowerCase();
-    if (role !== 'admin' && role !== 'manager') {
-      return NextResponse.json(
-        { success: false, error: 'Access denied: Only Admin and Manager roles can delete subscribers.' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status || 403 });
     }
 
     const { searchParams } = new URL(request.url);

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { isAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
-// GET: List all payrolls and summary statistics (ADMIN ONLY)
+// GET: List all payrolls and summary statistics
 // ============================================================================
 export async function GET(request) {
   try {
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'payroll');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only admin can view payrolls.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -79,10 +79,10 @@ export async function GET(request) {
 // ============================================================================
 export async function POST(request) {
   try {
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'payroll');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only admin can create payrolls.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }

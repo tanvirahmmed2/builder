@@ -19,7 +19,8 @@ import { Context } from '@/components/helper/Context';
 
 export default function DeveloperPayrollPage() {
   const { user } = useContext(Context);
-  const isAdmin = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAdmin = Boolean(permissions.includes('payroll'));
 
   const [payrolls, setPayrolls] = useState([]);
   const [stats, setStats] = useState({

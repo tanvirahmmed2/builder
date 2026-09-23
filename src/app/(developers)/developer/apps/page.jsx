@@ -36,9 +36,8 @@ export default function DeveloperAppsPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [actionError, setActionError] = useState('');
 
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canManage = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole) || permissions.includes('apps'));
+  const canManage = permissions.includes('apps');
 
   const fetchApps = async () => {
     try {
@@ -199,7 +198,7 @@ export default function DeveloperAppsPage() {
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
               <BiShieldQuarter className="text-sm text-slate-400" />
-              <span>Read Only ({userRole || 'developer'})</span>
+              <span>Read Only</span>
             </div>
           )}
         </div>

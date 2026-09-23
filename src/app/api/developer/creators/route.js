@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 export async function GET(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Access denied: Staff role required' }, { status: auth.status || 403 });
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status || 403 });
     }
 
     const res = await queryDb(`
@@ -36,7 +36,7 @@ export async function GET(request) {
 // CREATE CREATOR
 export async function POST(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message || 'Access denied' }, { status: auth.status || 403 });
     }
@@ -59,7 +59,7 @@ export async function POST(request) {
 // UPDATE CREATOR
 export async function PUT(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message || 'Access denied' }, { status: auth.status || 403 });
     }
@@ -92,7 +92,7 @@ export async function PUT(request) {
 // DELETE CREATOR
 export async function DELETE(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'creators');
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message || 'Access denied' }, { status: auth.status || 403 });
     }

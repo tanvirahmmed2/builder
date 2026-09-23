@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 // Helper to convert table_name (e.g. 'website_products') to clean title (e.g. 'Products')
 function formatTableToModuleTitle(tableName) {
@@ -49,11 +49,10 @@ function formatTableToModuleTitle(tableName) {
 
 export async function GET(request) {
   try {
-    // Strictly Admin only
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'modules');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can view database modules.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }

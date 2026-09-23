@@ -21,7 +21,8 @@ import FeatureForm from '@/components/developer/forms/FeatureForm';
 
 export default function AdminFeaturesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAdminUser = Boolean(permissions.includes('features'));
 
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +54,7 @@ export default function AdminFeaturesPage() {
 
   const handleEditClick = (feat) => {
     if (!isAdminUser) {
-      showNotification('Access Denied: Only Admin role can edit platform features.', 'error');
+      showNotification('Access Denied: features permission required to edit features.', 'error');
       return;
     }
     setEditingFeature(feat);
@@ -63,7 +64,7 @@ export default function AdminFeaturesPage() {
 
   const handleCreateClick = () => {
     if (!isAdminUser) {
-      showNotification('Access Denied: Only Admin role can create platform features.', 'error');
+      showNotification('Access Denied: features permission required to create features.', 'error');
       return;
     }
     setEditingFeature(null);
@@ -78,7 +79,7 @@ export default function AdminFeaturesPage() {
 
   const handleDelete = async (id, name) => {
     if (!isAdminUser) {
-      showNotification('Access Denied: Only Admin role can delete features.', 'error');
+      showNotification('Access Denied: features permission required to delete features.', 'error');
       return;
     }
     if (!confirm(`Are you sure you want to delete feature "${name || `#${id}`}"? This cannot be undone.`)) {
@@ -100,7 +101,7 @@ export default function AdminFeaturesPage() {
         }
         showNotification(`Feature "${name}" was deleted successfully.`);
       } else {
-        showNotification(data.error || 'Failed to delete feature. Admin role required.', 'error');
+        showNotification(data.error || 'Failed to delete feature. features permission required.', 'error');
       }
     } catch (e) {
       console.error('Error deleting feature:', e);

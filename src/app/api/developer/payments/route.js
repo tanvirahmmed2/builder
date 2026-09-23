@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const auth = await hasModulePermission(request, 'payments');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
     const res = await queryDb('SELECT * FROM payment ORDER BY id DESC').catch(() => ({ rows: [] }));
     return NextResponse.json({ success: true, table: 'payment', records: res.rows });
   } catch (error) {
@@ -13,6 +18,10 @@ export async function GET() {
 // CREATE PAYMENT
 export async function POST(request) {
   try {
+    const auth = await hasModulePermission(request, 'payments');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
     const body = await request.json();
     const data = body.data || body;
     const keys = Object.keys(data).filter((k) => k !== 'id' && k !== 'action');
@@ -31,6 +40,10 @@ export async function POST(request) {
 // UPDATE PAYMENT
 export async function PUT(request) {
   try {
+    const auth = await hasModulePermission(request, 'payments');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
     const body = await request.json();
     const id = body.id || body.data?.id;
     if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
@@ -53,6 +66,10 @@ export async function PUT(request) {
 // DELETE PAYMENT
 export async function DELETE(request) {
   try {
+    const auth = await hasModulePermission(request, 'payments');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
     if (!id) {

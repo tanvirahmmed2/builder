@@ -18,10 +18,9 @@ import { Context } from '@/components/helper/Context';
 export default function AdminContactsPage() {
   const router = useRouter();
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canReply = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('contacts'));
-  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
+  const canReply = permissions.includes('contacts');
+  const canDelete = permissions.includes('contacts');
 
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,11 +155,10 @@ export default function AdminContactsPage() {
         <div className="flex items-center gap-2 text-slate-700 font-medium">
           <BiCheckShield className="text-indigo-600 text-lg shrink-0" />
           <span>
-            Signed in as <strong className="capitalize text-slate-900">{userRole || 'staff'}</strong>.
             {canReply ? (
-              <span className="text-emerald-700 ml-1">You have authorization to reply to contact inquiries.</span>
+              <span className="text-emerald-700">You have authorization to reply to contact inquiries.</span>
             ) : (
-              <span className="text-amber-700 ml-1">Reply permissions require Support, Manager, or Admin role.</span>
+              <span className="text-amber-700">Replying to inquiries requires the <strong className="font-mono">contacts</strong> permission.</span>
             )}
           </span>
         </div>

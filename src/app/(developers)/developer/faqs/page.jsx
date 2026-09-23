@@ -31,9 +31,8 @@ export default function DeveloperFaqsPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const role = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canManage = Boolean(user?.isAdmin || role === 'admin' || role === 'manager' || permissions.includes('faqs'));
+  const canManage = permissions.includes('faqs');
 
   const fetchFaqs = async () => {
     try {
@@ -56,7 +55,7 @@ export default function DeveloperFaqsPage() {
 
   const openCreateModal = () => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can create FAQs.');
+      alert('Access denied: faqs permission required.');
       return;
     }
     setEditingFaq(null);
@@ -67,7 +66,7 @@ export default function DeveloperFaqsPage() {
 
   const openEditModal = (faq) => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can edit FAQs.');
+      alert('Access denied: faqs permission required.');
       return;
     }
     setEditingFaq(faq);
@@ -85,7 +84,7 @@ export default function DeveloperFaqsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canManage) {
-      setFeedback({ type: 'error', message: 'Access denied: Only Admin and Manager roles can create or edit FAQs.' });
+      setFeedback({ type: 'error', message: 'Access denied: faqs permission required to create or edit FAQs.' });
       return;
     }
 
@@ -127,7 +126,7 @@ export default function DeveloperFaqsPage() {
 
   const handleDelete = async (id) => {
     if (!canManage) {
-      alert('Access denied: Only Admin and Manager roles can delete FAQs.');
+      alert('Access denied: faqs permission required.');
       return;
     }
 

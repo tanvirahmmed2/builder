@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { isDeveloper } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { SITE_NAME } from '@/lib/db/secret';
 
 export const metadata = {
@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function WebsitesLayout({ children }) {
-  const auth = await isDeveloper();
+  const auth = await hasModulePermission(undefined, 'websites');
   if (!auth || !auth.success) {
     redirect('/developer');
   }

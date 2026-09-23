@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
-// PUT: Update tutorial (Admin & Manager ONLY)
+// PUT: Update tutorial
 // ============================================================================
 export async function PUT(request, { params }) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'tutorials');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can edit tutorials.' },
+        { success: false, error: auth.message || 'Forbidden: Permission tutorials required to edit tutorials.' },
         { status: auth.status || 403 }
       );
     }
@@ -48,14 +48,14 @@ export async function PUT(request, { params }) {
 }
 
 // ============================================================================
-// DELETE: Delete tutorial (Admin & Manager ONLY)
+// DELETE: Delete tutorial
 // ============================================================================
 export async function DELETE(request, { params }) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'tutorials');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can delete tutorials.' },
+        { success: false, error: auth.message || 'Forbidden: Permission tutorials required to delete tutorials.' },
         { status: auth.status || 403 }
       );
     }

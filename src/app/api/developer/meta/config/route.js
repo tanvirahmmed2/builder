@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { getMetaConfigStatus } from '@/lib/meta/graph';
+
+const META_PERMISSIONS = ['facebook-messages', 'instagram-messages', 'whatsapp-messages', 'chats', 'settings'];
 
 /**
  * GET /api/developer/meta/config
@@ -8,7 +10,7 @@ import { getMetaConfigStatus } from '@/lib/meta/graph';
  */
 export async function GET(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }

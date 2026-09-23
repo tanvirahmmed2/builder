@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 // Dynamically query database tables to discover website modules
 async function fetchDatabaseModules() {
@@ -124,11 +124,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Only admin role can create packages
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'packages');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can create packages.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -209,11 +208,10 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    // Only admin role can update packages
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'packages');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can update packages.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -315,11 +313,10 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    // Only admin role can delete packages
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'packages');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can delete packages.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -348,11 +345,10 @@ export async function DELETE(request) {
 
 export async function PATCH(request) {
   try {
-    // Only admin role can toggle package status
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'packages');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can update packages.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }

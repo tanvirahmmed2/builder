@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 // GET SINGLE CONTACT DETAILS
 export async function GET(request, context) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'contacts');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const params = await context?.params;
@@ -54,17 +54,17 @@ export async function GET(request, context) {
   }
 }
 
-// DELETE SINGLE CONTACT (Admin and Manager only)
+// DELETE SINGLE CONTACT
 export async function DELETE(request, context) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'contacts');
     if (!auth.success) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Access denied: Only administrators and managers have permission to delete contact inquiries.' 
+          error: auth.message || 'Access denied: Permission contacts required to delete contact inquiries.' 
         }, 
-        { status: 403 }
+        { status: auth.status || 403 }
       );
     }
 

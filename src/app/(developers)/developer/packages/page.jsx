@@ -21,7 +21,8 @@ import PackageForm from '@/components/developer/forms/PackageForm';
 
 export default function AdminPackagesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAdminUser = Boolean(permissions.includes('packages'));
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function AdminPackagesPage() {
 
   const handleEditClick = (pkg) => {
     if (!isAdminUser) {
-      showFeedback('Access Denied: Only Admin role can edit packages.');
+      showFeedback('Access Denied: packages permission required to edit packages.');
       return;
     }
     setEditingPackage(pkg);
@@ -65,7 +66,7 @@ export default function AdminPackagesPage() {
 
   const handleCreateClick = () => {
     if (!isAdminUser) {
-      showFeedback('Access Denied: Only Admin role can create packages.');
+      showFeedback('Access Denied: packages permission required to create packages.');
       return;
     }
     setEditingPackage(null);
@@ -74,7 +75,7 @@ export default function AdminPackagesPage() {
 
   const handleToggleStatus = async (pkg) => {
     if (!isAdminUser) {
-      showFeedback('Access Denied: Only Admin role can toggle package status.');
+      showFeedback('Access Denied: packages permission required to toggle package status.');
       return;
     }
     setTogglingId(pkg.id);
@@ -102,7 +103,7 @@ export default function AdminPackagesPage() {
 
   const handleDelete = async (id, name) => {
     if (!isAdminUser) {
-      showFeedback('Access Denied: Only Admin role can delete packages.');
+      showFeedback('Access Denied: packages permission required to delete packages.');
       return;
     }
     if (!confirm(`Are you sure you want to delete package "${name || `#${id}`}"? This action cannot be undone.`)) {
@@ -485,7 +486,7 @@ export default function AdminPackagesPage() {
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                               : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                           }`}
-                          title={isAdminUser ? 'Click to toggle status' : 'Admin role required to toggle status'}
+                          title={isAdminUser ? 'Click to toggle status' : 'packages permission required to toggle status'}
                         >
                           {isRowActive ? (
                             <BiCheckCircle className="text-xs text-emerald-600" />

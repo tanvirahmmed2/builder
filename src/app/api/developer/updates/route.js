@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import slugify from 'slugify';
 
 function formatSlug(text) {
@@ -13,6 +13,11 @@ function formatSlug(text) {
 
 export async function GET(request) {
   try {
+    const auth = await hasModulePermission(request, 'updates');
+    if (!auth.success) {
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const slug = searchParams.get('slug');
@@ -41,13 +46,13 @@ export async function GET(request) {
   }
 }
 
-// CREATE UPDATE (Admin & Manager only)
+// CREATE UPDATE
 export async function POST(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'updates');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can create product updates.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission updates required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -88,13 +93,13 @@ export async function POST(request) {
   }
 }
 
-// UPDATE RECORD (Admin & Manager only)
+// UPDATE RECORD
 export async function PUT(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'updates');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can update product updates.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission updates required.' },
         { status: authCheck.status || 403 }
       );
     }
@@ -140,13 +145,13 @@ export async function PUT(request) {
   }
 }
 
-// DELETE RECORD (Admin & Manager only)
+// DELETE RECORD
 export async function DELETE(request) {
   try {
-    const authCheck = await isManagerOrAdmin(request);
+    const authCheck = await hasModulePermission(request, 'updates');
     if (!authCheck.success) {
       return NextResponse.json(
-        { success: false, error: authCheck.message || 'Access denied: Only Admin and Manager roles can delete product updates.' },
+        { success: false, error: authCheck.message || 'Access denied: Permission updates required.' },
         { status: authCheck.status || 403 }
       );
     }

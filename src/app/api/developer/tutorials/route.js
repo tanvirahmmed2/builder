@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
@@ -7,9 +7,9 @@ import { queryDb } from '@/lib/db/pg';
 // ============================================================================
 export async function GET(request) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'tutorials');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const res = await queryDb(`
@@ -24,8 +24,8 @@ export async function GET(request) {
       ORDER BY t.created_at DESC
     `);
 
-    const userRole = (auth.staff.role || '').toLowerCase();
-    const canManage = userRole === 'admin' || userRole === 'manager';
+    const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
+    const canManage = perms.includes('tutorials');
 
     return NextResponse.json({
       success: true,
@@ -39,14 +39,14 @@ export async function GET(request) {
 }
 
 // ============================================================================
-// POST: Create tutorial (Admin & Manager ONLY)
+// POST: Create tutorial
 // ============================================================================
 export async function POST(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'tutorials');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can create tutorials.' },
+        { success: false, error: auth.message || 'Forbidden: Permission tutorials required to create tutorials.' },
         { status: auth.status || 403 }
       );
     }

@@ -34,9 +34,8 @@ export default function AdminBlogsPage() {
   const [togglingId, setTogglingId] = useState(null);
   const [actionError, setActionError] = useState('');
 
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canManage = Boolean(user?.isAdmin || ['admin', 'manager', 'marketer'].includes(userRole) || permissions.includes('blogs') || !userRole);
+  const canManage = permissions.includes('blogs');
 
   const fetchBlogs = async () => {
     try {

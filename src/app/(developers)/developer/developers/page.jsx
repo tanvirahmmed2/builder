@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import AdminForm from '@/components/developer/forms/AdminForm';
 import { BiEdit, BiTrash, BiLockAlt, BiShieldQuarter, BiX, BiCheck, BiUserCheck, BiSearch, BiPlus, BiMinus, BiRefresh } from 'react-icons/bi';
 
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Super Admin' },
-  { value: 'developer', label: 'Developer' },
-  { value: 'marketer', label: 'Marketer' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'support', label: 'Support' },
-];
-
-const ROLE_BADGE_STYLES = {
+const BASE_ROLE_BADGES = {
   developer: 'bg-cyan-50 text-cyan-700 border-cyan-200',
   marketer: 'bg-orange-50 text-orange-700 border-orange-200',
   admin: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -21,16 +14,36 @@ const ROLE_BADGE_STYLES = {
   support: 'bg-teal-50 text-teal-700 border-teal-200',
 };
 
-const ROLE_LABELS = {
-  developer: 'Developer',
-  marketer: 'Marketer',
-  admin: 'Super Admin',
-  manager: 'Manager',
-  support: 'Support',
-};
+const PALETTE = [
+  'bg-blue-50 text-blue-700 border-blue-200',
+  'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'bg-violet-50 text-violet-700 border-violet-200',
+  'bg-amber-50 text-amber-700 border-amber-200',
+  'bg-rose-50 text-rose-700 border-rose-200',
+  'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+];
+
+function getRoleBadgeStyle(slug = '') {
+  const s = slug.toLowerCase();
+  if (BASE_ROLE_BADGES[s]) return BASE_ROLE_BADGES[s];
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash + s.charCodeAt(i)) % PALETTE.length;
+  }
+  return PALETTE[hash] || 'bg-slate-100 text-slate-700 border-slate-200';
+}
+
+const DEFAULT_ROLE_OPTIONS = [
+  { value: 'admin', label: 'Super Admin' },
+  { value: 'developer', label: 'Developer' },
+  { value: 'marketer', label: 'Marketer' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'support', label: 'Support' },
+];
 
 export default function AdminAdminsPage() {
   const [admins, setAdmins] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resendingEmail, setResendingEmail] = useState(null);
@@ -39,12 +52,30 @@ export default function AdminAdminsPage() {
   const [actionNotice, setActionNotice] = useState({ text: '', type: 'info' });
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const router = useRouter();
 
   // Modal / Form state for Editing an Admin Account
   const [editingAdmin, setEditingAdmin] = useState(null);
-  const [editFormData, setEditFormData] = useState({ name: '', role: 'support', is_active: true, password: '' });
+  const [editFormData, setEditFormData] = useState({ name: '', role: 'developer', is_active: true, password: '' });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
+
+  const roleOptions = roles.length > 0
+    ? roles.map((r) => ({ value: r.slug, label: r.name, id: r.id, is_system: r.is_system }))
+    : DEFAULT_ROLE_OPTIONS;
+
+  const roleLabelsMap = roles.reduce((acc, r) => {
+    acc[r.slug] = r.name;
+    return acc;
+  }, {
+    admin: 'Super Admin',
+    developer: 'Developer',
+    marketer: 'Marketer',
+    manager: 'Manager',
+    support: 'Support',
+  });
+
+  const getRoleLabel = (slug = '') => roleLabelsMap[slug.toLowerCase()] || slug;
 
   const fetchCurrentUser = async () => {
     try {
@@ -63,6 +94,9 @@ export default function AdminAdminsPage() {
       const data = await res.json();
       if (data.success) {
         setAdmins(data.records || []);
+        if (data.roles) {
+          setRoles(data.roles);
+        }
         if (data.currentUser) {
           setCurrentUser(data.currentUser);
         }
@@ -83,6 +117,9 @@ export default function AdminAdminsPage() {
       if (ignore) return;
       if (adminData && adminData.success) {
         setAdmins(adminData.records || []);
+        if (adminData.roles) {
+          setRoles(adminData.roles);
+        }
         if (adminData.currentUser) {
           setCurrentUser(adminData.currentUser);
         }
@@ -98,8 +135,8 @@ export default function AdminAdminsPage() {
     };
   }, []);
 
-  const router = useRouter();
-  const isUserAdmin = Boolean(currentUser?.isAdmin || (currentUser?.role || '').toLowerCase() === 'admin');
+  const permissions = Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+  const isUserAdmin = Boolean(permissions.includes('developers'));
 
   useEffect(() => {
     if (currentUser && !isUserAdmin) {
@@ -111,7 +148,7 @@ export default function AdminAdminsPage() {
   const handleToggleStatus = async (admin) => {
     if (!isUserAdmin) {
       setActionNotice({
-        text: 'Access Denied: Only users with the Super Admin role can update admin account status.',
+        text: 'Access Denied: developers permission required to update developer account status.',
         type: 'error',
       });
       setTimeout(() => setActionNotice({ text: '', type: 'info' }), 6000);
@@ -151,7 +188,7 @@ export default function AdminAdminsPage() {
   const handleChangeRole = async (admin, newRole) => {
     if (!isUserAdmin) {
       setActionNotice({
-        text: 'Access Denied: Only users with the Super Admin role can change admin roles.',
+        text: 'Access Denied: developers permission required to change roles.',
         type: 'error',
       });
       setTimeout(() => setActionNotice({ text: '', type: 'info' }), 6000);
@@ -161,8 +198,11 @@ export default function AdminAdminsPage() {
     const currentRole = (admin.role || '').toLowerCase();
     if (currentRole === newRole.toLowerCase()) return;
 
+    const currentLabel = getRoleLabel(currentRole);
+    const newLabel = getRoleLabel(newRole);
+
     const confirmChange = window.confirm(
-      `Change role for ${admin.name} from "${ROLE_LABELS[currentRole] || currentRole}" to "${ROLE_LABELS[newRole] || newRole}"?`
+      `Change role for ${admin.name} from "${currentLabel}" to "${newLabel}"?`
     );
     if (!confirmChange) return;
 
@@ -177,7 +217,7 @@ export default function AdminAdminsPage() {
       const data = await res.json();
       if (data.success) {
         setActionNotice({
-          text: data.message || `Role updated to ${ROLE_LABELS[newRole] || newRole} for ${admin.name}.`,
+          text: data.message || `Role updated to ${newLabel} for ${admin.name}.`,
           type: 'success',
         });
         fetchAdmins();
@@ -199,7 +239,7 @@ export default function AdminAdminsPage() {
   const handleOpenEdit = (admin) => {
     if (!isUserAdmin) {
       setActionNotice({
-        text: 'Access Denied: Only users with the Super Admin role can edit admin accounts.',
+        text: 'Access Denied: developers permission required to edit developer accounts.',
         type: 'error',
       });
       setTimeout(() => setActionNotice({ text: '', type: 'info' }), 6000);
@@ -208,7 +248,7 @@ export default function AdminAdminsPage() {
     setEditingAdmin(admin);
     setEditFormData({
       name: admin.name || '',
-      role: (admin.role || 'support').toLowerCase(),
+      role: (admin.role || 'developer').toLowerCase(),
       is_active: admin.is_active !== false && admin.isActive !== false,
       password: '',
     });
@@ -220,7 +260,7 @@ export default function AdminAdminsPage() {
     e.preventDefault();
     if (!editingAdmin) return;
     if (!isUserAdmin) {
-      setEditError('Only Super Admin accounts can update admin accounts.');
+      setEditError('developers permission required to update developer accounts.');
       return;
     }
 
@@ -249,16 +289,16 @@ export default function AdminAdminsPage() {
       const data = await res.json();
       if (data.success) {
         setActionNotice({
-          text: `Admin account for ${editingAdmin.name} updated successfully.`,
+          text: `Developer account for ${editingAdmin.name} updated successfully.`,
           type: 'success',
         });
         setEditingAdmin(null);
         fetchAdmins();
       } else {
-        setEditError(data.error || 'Failed to update admin account.');
+        setEditError(data.error || 'Failed to update developer account.');
       }
     } catch (err) {
-      setEditError(err.message || 'Network error updating admin.');
+      setEditError(err.message || 'Network error updating developer.');
     } finally {
       setEditLoading(false);
       setTimeout(() => setActionNotice({ text: '', type: 'info' }), 6000);
@@ -269,7 +309,7 @@ export default function AdminAdminsPage() {
   const handleDeleteAdmin = async (adminId) => {
     if (!isUserAdmin) {
       setActionNotice({
-        text: 'Access Denied: Only users with the Super Admin role can delete admin accounts.',
+        text: 'Access Denied: developers permission required to delete developer accounts.',
         type: 'error',
       });
       setTimeout(() => setActionNotice({ text: '', type: 'info' }), 6000);
@@ -354,9 +394,9 @@ export default function AdminAdminsPage() {
           <BiLockAlt />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Super Admin Access Only</h2>
+          <h2 className="text-lg font-bold text-slate-800">Permission Required</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Only accounts with the <strong>Super Admin</strong> (&quot;admin&quot;) role are permitted to enter and manage administrator accounts.
+            Managing administrator and developer accounts requires the <strong className="font-mono">developers</strong> permission.
           </p>
         </div>
         <div className="pt-2">
@@ -400,8 +440,8 @@ export default function AdminAdminsPage() {
               </div>
               <p className="text-[11px] opacity-85 mt-0.5">
                 {isUserAdmin
-                  ? 'Full administrative control: You can update accounts, change roles, toggle statuses, and add admins.'
-                  : 'Read-only access: Only users with the Super Admin ("admin") role can update accounts, change roles, or toggle statuses.'}
+                  ? 'Full administrative control: You can update accounts, change roles, toggle statuses, and add developers.'
+                  : 'Read-only access: developers permission is required to update accounts, change roles, or toggle statuses.'}
               </p>
             </div>
           </div>
@@ -417,7 +457,7 @@ export default function AdminAdminsPage() {
               <span
                 className={`w-1.5 h-1.5 rounded-full ${isUserAdmin ? 'bg-purple-600 animate-pulse' : 'bg-amber-500'}`}
               />
-              {isUserAdmin ? 'Role Update Enabled' : 'Updates Restricted to Admin Role'}
+              {isUserAdmin ? 'Role Update Enabled' : 'Developers Permission Required'}
             </span>
           </div>
         </div>
@@ -505,7 +545,7 @@ export default function AdminAdminsPage() {
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-secondary focus:bg-white"
                   >
-                    {ROLE_OPTIONS.map((opt) => (
+                    {roleOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
@@ -573,7 +613,17 @@ export default function AdminAdminsPage() {
           <p className="text-xs text-slate-500">Manage internal operators, developers, and platform staff.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isUserAdmin && (
+            <Link
+              href="/developer/roles"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all shadow-xs"
+              title="Manage platform roles and permission mappings"
+            >
+              <BiShieldQuarter className="text-base" />
+              <span>Roles &amp; Permissions</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => fetchAdmins(true)}
@@ -602,6 +652,7 @@ export default function AdminAdminsPage() {
       {showAddForm && isUserAdmin && (
         <AdminForm
           apiEndpoint="/api/developer/devs"
+          roles={roles}
           onSuccess={() => {
             setShowAddForm(false);
             fetchAdmins();
@@ -676,13 +727,13 @@ export default function AdminAdminsPage() {
                               title={
                                 isLastActiveAdmin
                                   ? 'Protected: Demoting this Super Admin requires another active Super Admin'
-                                  : 'Click to change admin role'
+                                  : 'Click to change developer role'
                               }
                               className={`text-[10px] font-bold border rounded-full px-2.5 py-1 appearance-none pr-6 cursor-pointer focus:outline-none focus:ring-1 focus:ring-secondary transition-colors ${
-                                ROLE_BADGE_STYLES[role] || 'bg-slate-100 text-slate-700 border-slate-200'
+                                getRoleBadgeStyle(role)
                               } ${updatingRoleId === admin.id ? 'opacity-50' : ''}`}
                             >
-                              {ROLE_OPTIONS.map((opt) => (
+                              {roleOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="bg-white text-slate-800 font-normal">
                                   {opt.label}
                                 </option>
@@ -695,11 +746,11 @@ export default function AdminAdminsPage() {
                         ) : (
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              ROLE_BADGE_STYLES[role] || 'bg-slate-100 text-slate-700 border-slate-200'
+                              getRoleBadgeStyle(role)
                             }`}
-                            title="Only Super Admin role can change roles"
+                            title="Only developers permission can change roles"
                           >
-                            {ROLE_LABELS[role] || role}
+                            {getRoleLabel(role)}
                           </span>
                         )}
                       </td>
@@ -712,7 +763,7 @@ export default function AdminAdminsPage() {
                           onClick={() => handleToggleStatus(admin)}
                           title={
                             !isUserAdmin
-                              ? 'Protected: Only users with the Super Admin role can update status'
+                              ? 'Protected: developers permission required to update status'
                               : isLastActiveAdmin
                               ? 'Protected: At least one Super Admin account must remain active'
                               : `Click to ${isActive ? 'deactivate' : 'activate'} this account`

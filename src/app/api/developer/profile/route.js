@@ -66,10 +66,7 @@ export async function GET(request) {
       success: true,
       developer: {
         ...developer,
-        isAdmin: (developer.role || '').toLowerCase() === 'admin',
-        isManager:
-          (developer.role || '').toLowerCase() === 'manager' ||
-          (developer.role || '').toLowerCase() === 'admin',
+        isAdmin: (developer.permissions || []).includes('developers'),
       },
       activeSessions,
       recentLogins: loginRes.rows,
@@ -207,17 +204,17 @@ export async function PUT(request) {
       message: 'Developer profile updated successfully.',
       developer: {
         ...updatedDev,
-        isAdmin: (updatedDev.role || '').toLowerCase() === 'admin',
-        isManager:
-          (updatedDev.role || '').toLowerCase() === 'manager' ||
-          (updatedDev.role || '').toLowerCase() === 'admin',
+        permissions: authUser.permissions || [],
+        isAdmin: (authUser.permissions || []).includes('developers'),
       },
       user: {
         id: updatedDev.id,
         name: updatedDev.name,
         email: updatedDev.email,
         role: updatedDev.role,
-        isAdmin: (updatedDev.role || '').toLowerCase() === 'admin',
+        roleName: updatedDev.role_name || updatedDev.role,
+        permissions: authUser.permissions || [],
+        isAdmin: (authUser.permissions || []).includes('developers'),
         isActive: updatedDev.is_active !== false,
         isVerified: updatedDev.is_verified === true,
       },

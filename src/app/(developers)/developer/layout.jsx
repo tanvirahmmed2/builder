@@ -14,7 +14,7 @@ import Sidebar from '@/components/developer/Sidebar';
  */
 export const ROLE_PERMISSIONS = {
   admin: [
-    'overview', 'developers', 'team', 'creators', 'users', 'websites',
+    'overview', 'developers', 'roles', 'team', 'creators', 'users', 'websites',
     'blogs', 'themes', 'packages', 'features', 'modules', 'payments', 'subscriptions', 'payroll', 'my-salaries',
     'live-chats', 'chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
@@ -74,23 +74,18 @@ export default function DeveloperLayout({ children }) {
   const segments = pathname.split('/').filter(Boolean);
   const moduleName = segments[1] || 'overview';
   const role = (user?.role || 'developer').toLowerCase();
-  const isAdmin = user?.isAdmin || role === 'admin';
 
-  // Dynamic RBAC check:
-  // Admins have full unrestricted access.
-  // Root /developer (overview), /developer/profile, /developer/settings are accessible to all authenticated staff.
-  // All other module routes check whether moduleName is granted in dynamic user.permissions array.
   const userPerms = Array.isArray(user?.permissions) ? user.permissions : null;
   const fallbackModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
   const allowedModules = userPerms && userPerms.length > 0 ? userPerms : fallbackModules;
 
   const isAllowed =
-    isAdmin ||
     !segments[1] ||
     moduleName === 'overview' ||
     moduleName === 'profile' ||
     moduleName === 'settings' ||
-    allowedModules.includes(moduleName);
+    allowedModules.includes(moduleName) ||
+    (moduleName === 'roles' && (allowedModules.includes('developers') || allowedModules.includes('roles')));
 
   if (!isAllowed) {
     return (

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
@@ -7,9 +7,9 @@ import { queryDb } from '@/lib/db/pg';
 // ============================================================================
 export async function GET(request, { params }) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'tasks');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const { id } = await params;
@@ -67,8 +67,8 @@ export async function PUT(request, { params }) {
 
     const { id } = await params;
     const body = await request.json();
-    const userRole = (auth.staff.role || '').toLowerCase();
-    const isElevated = userRole === 'admin' || userRole === 'manager';
+    const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
+    const isElevated = perms.includes('tasks');
 
     // Verify task exists
     const currentRes = await queryDb('SELECT * FROM tasks WHERE id = $1', [id]);
@@ -137,14 +137,14 @@ export async function PUT(request, { params }) {
 }
 
 // ============================================================================
-// DELETE: Delete task (Manager or Admin ONLY)
+// DELETE: Delete task
 // ============================================================================
 export async function DELETE(request, { params }) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'tasks');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only managers and admins can delete tasks.' },
+        { success: false, error: auth.message || 'Forbidden: Permission tasks required to delete tasks.' },
         { status: auth.status || 403 }
       );
     }

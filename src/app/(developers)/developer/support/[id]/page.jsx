@@ -26,10 +26,9 @@ export default function SingleSupportTicketPage() {
   const ticketId = params?.id;
 
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
-  const canReply = Boolean(user?.isAdmin || ['admin', 'manager', 'support', 'developer'].includes(userRole) || permissions.includes('support'));
+  const canDelete = permissions.includes('support');
+  const canReply = permissions.includes('support');
 
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -201,7 +200,7 @@ export default function SingleSupportTicketPage() {
   // Delete ticket
   const handleDeleteTicket = async () => {
     if (!canDelete) {
-      notify('Permission denied: Only Admin and Manager roles can delete tickets.', 'error');
+      notify('Permission denied: support permission required to delete tickets.', 'error');
       return;
     }
     if (!confirm('Are you sure you want to delete this support ticket? This action cannot be undone.')) return;

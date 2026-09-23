@@ -16,6 +16,7 @@ import {
   BiHeadphone,
   BiCreditCard,
   BiCheckShield,
+  BiShieldQuarter,
   BiDesktop,
   BiEnvelope,
   BiPalette,
@@ -47,6 +48,7 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/my-salaries', label: 'My Salaries', icon: BiCreditCard },
       { href: '/developer/settings', label: 'Settings', icon: BiCog },
       { href: '/developer/developers', label: 'Developers Team', icon: BiUserCheck },
+      { href: '/developer/roles', label: 'Roles & Permissions', icon: BiShieldQuarter },
       { href: '/developer/creators', label: 'Creators', icon: BiGroup },
       { href: '/developer/users', label: 'End-Users', icon: BiUser },
       { href: '/developer/websites', label: 'Websites', icon: BiDesktop },
@@ -115,26 +117,20 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
   const pathname = usePathname();
   const router = useRouter();
 
-  const role = (currentUser?.role || 'developer').toLowerCase();
-  const isAdmin = Boolean(currentUser?.isAdmin || role === 'admin');
-
-  // Dynamic RBAC check:
-  // Admins have access to all modules.
-  // Profile, Settings, and Overview are accessible to all authenticated staff.
-  // Other links check dynamic permissions array from the authenticated session.
   const userPerms = Array.isArray(currentUser?.permissions) ? currentUser.permissions : null;
+  const role = (currentUser?.role || 'developer').toLowerCase();
   const fallbackModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
   const allowedModules = userPerms && userPerms.length > 0 ? userPerms : fallbackModules;
 
   const isLinkAllowed = (link) => {
-    if (isAdmin) return true;
     const segments = link.href.split('/').filter(Boolean);
     const moduleName = segments[1] || 'overview';
     return (
       moduleName === 'overview' ||
       moduleName === 'profile' ||
       moduleName === 'settings' ||
-      allowedModules.includes(moduleName)
+      allowedModules.includes(moduleName) ||
+      (moduleName === 'roles' && (allowedModules.includes('developers') || allowedModules.includes('roles')))
     );
   };
 

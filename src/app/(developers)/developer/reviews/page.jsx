@@ -21,9 +21,8 @@ import {
 
 export default function AdminReviewsPage() {
   const { user } = useContext(Context);
-  const userRole = (user?.role || '').toLowerCase();
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canModerate = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole) || permissions.includes('reviews'));
+  const canModerate = permissions.includes('reviews');
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,12 +180,12 @@ export default function AdminReviewsPage() {
         </div>
       )}
 
-      {/* Role Permission Notice if not admin or manager */}
+      {/* Permission Notice */}
       {!canModerate && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2">
           <BiCheckShield className="text-base shrink-0" />
           <span>
-            You are signed in as <strong className="capitalize">{userRole || 'staff'}</strong>. Only <strong>Admin</strong> and <strong>Manager</strong> accounts have authority to approve or reject reviews.
+            You do not have permission to moderate reviews. Management requires the <strong className="font-mono">reviews</strong> permission.
           </span>
         </div>
       )}

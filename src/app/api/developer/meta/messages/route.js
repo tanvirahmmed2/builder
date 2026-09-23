@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db/pg';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { sendPlatformMessage } from '@/lib/meta/graph';
+
+const META_PERMISSIONS = ['facebook-messages', 'instagram-messages', 'whatsapp-messages', 'chats'];
 
 /**
  * GET /api/developer/meta/messages?conversationId=
- * Guarded by isSupport (admin, manager, support)
  */
 export async function GET(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }
@@ -45,11 +46,10 @@ export async function GET(request) {
 
 /**
  * POST /api/developer/meta/messages
- * Guarded by isSupport (admin, manager, support)
  */
 export async function POST(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }

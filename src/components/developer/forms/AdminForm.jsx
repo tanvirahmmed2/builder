@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { BiUserPlus, BiCheck, BiX } from 'react-icons/bi';
 
-export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/developer/devs' }) {
+export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/developer/devs', roles: initialRoles = [] }) {
+  const [roles, setRoles] = useState(initialRoles);
+  const [rolesLoading, setRolesLoading] = useState(initialRoles.length === 0);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,6 +17,41 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/dev
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Fetch dynamic roles if not provided via props
+  useEffect(() => {
+    if (initialRoles && initialRoles.length > 0) {
+      setRoles(initialRoles);
+      setRolesLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setRolesLoading(true);
+    fetch('/api/developer/roles')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && Array.isArray(data.roles) && data.roles.length > 0) {
+          setRoles(data.roles);
+          // If current formData.role not in fetched roles, default to first or 'developer'
+          const hasDev = data.roles.some((r) => r.slug === 'developer');
+          if (!hasDev && data.roles[0]) {
+            setFormData((prev) => ({ ...prev, role: data.roles[0].slug }));
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load roles in AdminForm:', err);
+      })
+      .finally(() => {
+        if (isMounted) setRolesLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialRoles]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -22,19 +59,24 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/dev
     setSuccessMsg('');
 
     try {
+      const selectedRoleObj = roles.find((r) => r.slug === formData.role || String(r.id) === String(formData.role));
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_admin',
-          data: formData,
+          data: {
+            ...formData,
+            role: selectedRoleObj?.slug || formData.role,
+            role_id: selectedRoleObj?.id || undefined,
+          },
         }),
       });
       const data = await res.json();
       if (data.success) {
         setSuccessMsg(`Admin account created for ${formData.email}! A 6-digit verification code was sent via Brevo email.`);
         const createdRecord = data.admin || data.record;
-        setFormData({ name: '', email: '', password: '', role: 'developer', isActive: true });
+        setFormData({ name: '', email: '', password: '', role: roles[0]?.slug || 'developer', isActive: true });
         if (onSuccess) {
           setTimeout(() => {
             onSuccess(createdRecord);
@@ -126,17 +168,30 @@ export default function AdminForm({ onSuccess, onCancel, apiEndpoint = '/api/dev
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Role</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Assigned Role {rolesLoading && <span className="text-[10px] text-slate-400 font-normal">(Loading...)</span>}
+            </label>
             <select
               value={formData.role}
+              disabled={rolesLoading}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
             >
-              <option value="developer">Developer (Engineering & Apps)</option>
-              <option value="marketer">Marketer (Growth & Content)</option>
-              <option value="admin">Super Admin (Full Operations)</option>
-              <option value="manager">Manager (Team & Portfolios)</option>
-              <option value="support">Support Specialist (Inquiries)</option>
+              {roles.length > 0 ? (
+                roles.map((r) => (
+                  <option key={r.id || r.slug} value={r.slug}>
+                    {r.name} {r.is_system ? '★' : ''}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="developer">Developer</option>
+                  <option value="marketer">Marketer</option>
+                  <option value="admin">Super Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="support">Support Specialist</option>
+                </>
+              )}
             </select>
           </div>
 

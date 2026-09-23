@@ -13,7 +13,7 @@ export default function HomeNavbar() {
 
   return (
     <>
-      <nav className="w-full flex flex-row items-center justify-between bg-white dark:bg-slate-900 border-b border-transparent dark:border-slate-800 px-4 shadow-sm lg:px-8 h-14 sticky top-0 z-40 transition-colors">
+      <nav className="w-full flex flex-row items-center justify-between bg-primary dark:bg-slate-900 border-b border-transparent dark:border-slate-800 px-4 shadow-sm lg:px-8 h-14 sticky top-0 z-40 transition-colors">
         <div className="w-auto flex flex-row items-center justify-center gap-2">
           <button
             type="button"

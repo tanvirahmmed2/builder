@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isSupport } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { sendEmail } from '@/lib/db/mailer';
 import { SITE_NAME } from '@/lib/db/secret';
 
 export async function POST(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, 'contacts');
     if (!auth.success) {
       return NextResponse.json(
         { 
           success: false, 
-          error: auth.message || 'Access denied: Support, Manager, or Admin role required to reply.' 
+          error: auth.message || 'Access denied: Permission contacts required to reply.' 
         },
         { status: auth.status || 403 }
       );

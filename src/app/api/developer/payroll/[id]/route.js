@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { isAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
-// GET: Single payroll with all developer salary items and payments (ADMIN ONLY)
+// GET: Single payroll with all developer salary items and payments
 // ============================================================================
 export async function GET(request, { params }) {
   try {
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'payroll');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only admin can view payroll details.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -77,10 +77,10 @@ export async function GET(request, { params }) {
 // ============================================================================
 export async function PUT(request, { params }) {
   try {
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'payroll');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only admin can update payroll.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -155,10 +155,10 @@ export async function PUT(request, { params }) {
 // ============================================================================
 export async function DELETE(request, { params }) {
   try {
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'payroll');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only admin can delete payroll.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }

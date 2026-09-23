@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db/pg';
-import { isSupport, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 const ALLOWED_PLATFORMS = ['facebook', 'instagram', 'whatsapp'];
 const ALLOWED_STATUSES = ['OPEN', 'RESOLVED', 'SPAM'];
 
+const META_PERMISSIONS = ['facebook-messages', 'instagram-messages', 'whatsapp-messages', 'chats'];
+
 /**
  * GET /api/developer/meta/conversations?platform=facebook|instagram|whatsapp&search=&status=
- * Guarded by isSupport (admin, manager, support)
  */
 export async function GET(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }
@@ -65,11 +66,10 @@ export async function GET(request) {
 
 /**
  * PATCH /api/developer/meta/conversations
- * Guarded by isSupport (admin, manager, support)
  */
 export async function PATCH(request) {
   try {
-    const auth = await isSupport(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }
@@ -128,16 +128,12 @@ export async function PATCH(request) {
 
 /**
  * DELETE /api/developer/meta/conversations?id=
- * Strictly restricted to Admin and Manager roles to prevent unauthorized data destruction
  */
 export async function DELETE(request) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, META_PERMISSIONS);
     if (!auth.success) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied: Deleting conversations requires Admin or Manager role' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }
 
     const { searchParams } = new URL(request.url);

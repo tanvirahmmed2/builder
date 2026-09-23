@@ -19,7 +19,8 @@ import {
 
 export default function AdminDatabaseModulesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAdminUser = Boolean(permissions.includes('modules'));
 
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,9 +95,9 @@ export default function AdminDatabaseModulesPage() {
         <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl">
           <BiLockAlt />
         </div>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Admin Access Required</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Permission Required</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-          The Database Modules &amp; Tables Inspector is restricted strictly to administrators. Your current staff role does not have permission to view or manage raw database tables.
+          The Database Modules &amp; Tables Inspector requires the <span className="font-mono font-semibold">modules</span> permission.
         </p>
       </div>
     );

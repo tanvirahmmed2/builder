@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { authenticateStaff, isManagerOrAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 // GET SINGLE SUPPORT TICKET & THREAD (Developer)
 export async function GET(request, context) {
   try {
-    const auth = await authenticateStaff(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
-      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: auth.message || 'Unauthorized' }, { status: auth.status || 401 });
     }
 
     const params = await context?.params;
@@ -138,14 +138,14 @@ export async function PUT(request, context) {
   }
 }
 
-// DELETE TICKET (Admin and Manager only)
+// DELETE TICKET
 export async function DELETE(request, context) {
   try {
-    const auth = await isManagerOrAdmin(request);
+    const auth = await hasModulePermission(request, 'support');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: 'Access denied: Only administrators and managers can delete support tickets.' },
-        { status: 403 }
+        { success: false, error: auth.message || 'Access denied: Permission support required to delete support tickets.' },
+        { status: auth.status || 403 }
       );
     }
 

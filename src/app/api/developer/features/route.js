@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
-import { isAdmin } from '@/lib/middleware/developer';
+import { hasModulePermission } from '@/lib/middleware/developer';
 
 function generateFeatureKey(text) {
   return (text || '')
@@ -64,11 +64,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Only admin can create features
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'features');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can manage features.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -115,11 +114,10 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    // Only admin can update features
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'features');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can update features.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }
@@ -180,11 +178,10 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    // Only admin can delete features
-    const auth = await isAdmin(request);
+    const auth = await hasModulePermission(request, 'features');
     if (!auth.success) {
       return NextResponse.json(
-        { success: false, error: auth.message || 'Forbidden: Only Admin role can delete features.' },
+        { success: false, error: auth.message },
         { status: auth.status || 403 }
       );
     }

@@ -101,8 +101,8 @@ export async function DELETE(request, { params }) {
     }
 
     const comm = commRes.rows[0];
-    const userRole = (auth.staff.role || '').toLowerCase();
-    const isElevated = userRole === 'admin' || userRole === 'manager';
+    const perms = Array.isArray(auth.staff.permissions) ? auth.staff.permissions : [];
+    const isElevated = perms.includes('tasks');
 
     if (comm.developer_id !== auth.staff.id && !isElevated) {
       return NextResponse.json(
