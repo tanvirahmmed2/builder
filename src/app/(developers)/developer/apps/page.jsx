@@ -37,7 +37,8 @@ export default function DeveloperAppsPage() {
   const [actionError, setActionError] = useState('');
 
   const userRole = (user?.role || '').toLowerCase();
-  const canManage = ['admin', 'manager'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canManage = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole) || permissions.includes('apps'));
 
   const fetchApps = async () => {
     try {

@@ -24,12 +24,13 @@ export async function GET(request) {
              p.name AS package_name,
              p.slug AS package_slug,
              d.name AS approved_by_name,
-             d.role AS approved_by_role
+             COALESCE(dr.slug, 'developer') AS approved_by_role
       FROM reviews r
       JOIN creators c ON r.creator_id = c.id
       JOIN subscription s ON r.subscription_id = s.id
       JOIN packages p ON s.package_id = p.id
       LEFT JOIN developers d ON r.approved_by_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
     `;
 
     const params = [];

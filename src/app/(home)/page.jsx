@@ -7,7 +7,7 @@ import React from 'react'
 
 const page = () => {
   return (
-    <div className='w-full flex flex-col p-4 md:p-8'>
+    <div className='w-full flex flex-col'>
       <Hero/>
       <About/>
       <LearnMore/>

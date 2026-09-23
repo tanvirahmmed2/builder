@@ -46,7 +46,8 @@ export async function GET(request) {
         c.name AS creator_name,
         c.avatar_url AS creator_avatar,
         d.name AS assigned_developer_name,
-        d.role AS assigned_developer_role,
+        COALESCE(dr.slug, 'developer') AS assigned_developer_role,
+        COALESCE(dr.name, 'Developer') AS assigned_developer_role_name,
         (SELECT COUNT(*)::int FROM support_messages WHERE support_id = s.id) AS message_count,
         (
           SELECT message FROM support_messages 
@@ -61,6 +62,7 @@ export async function GET(request) {
       FROM support s
       LEFT JOIN creators c ON s.creator_id = c.id
       LEFT JOIN developers d ON s.assigned_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       ${whereSql}
       ORDER BY s.updated_at DESC
     `, queryParams).catch(() => ({ rows: [] }));

@@ -33,9 +33,11 @@ export default function MetaMessenger({
   brandBadge = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
 }) {
   const { user } = useContext(Context);
-  const role = user?.role || 'developer';
-  const canManage = ['admin', 'manager', 'support'].includes(role);
-  const canDelete = ['admin', 'manager'].includes(role);
+  const role = (user?.role || 'developer').toLowerCase();
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const hasPlatformPerm = permissions.includes(`${platform}-messages`) || permissions.includes('chats');
+  const canManage = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(role) || hasPlatformPerm);
+  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(role));
 
   const [conversations, setConversations] = useState([]);
 

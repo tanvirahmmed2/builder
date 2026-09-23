@@ -17,9 +17,10 @@ export async function GET(request) {
         t.*,
         d.name AS creator_name,
         d.email AS creator_email,
-        d.role AS creator_role
+        COALESCE(dr.slug, 'developer') AS creator_role
       FROM tutorials t
       LEFT JOIN developers d ON t.created_by_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       ORDER BY t.created_at DESC
     `);
 

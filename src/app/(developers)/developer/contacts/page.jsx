@@ -19,8 +19,9 @@ export default function AdminContactsPage() {
   const router = useRouter();
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
-  const canReply = ['admin', 'manager', 'support'].includes(userRole);
-  const canDelete = ['admin', 'manager'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canReply = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('contacts'));
+  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
 
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);

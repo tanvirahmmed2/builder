@@ -42,7 +42,8 @@ export async function GET(request, { params }) {
         d.id AS sender_id,
         d.name AS sender_name,
         d.email AS sender_email,
-        d.role AS sender_role,
+        COALESCE(r.slug, 'developer') AS sender_role,
+        COALESCE(r.name, 'Developer') AS sender_role_name,
         COALESCE(
           json_agg(
             json_build_object(
@@ -56,9 +57,10 @@ export async function GET(request, { params }) {
         ) AS images
       FROM chat_messages m
       JOIN developers d ON m.sender_developer_id = d.id
+      LEFT JOIN roles r ON d.role_id = r.id
       LEFT JOIN chat_images ci ON m.id = ci.message_id
       WHERE m.chat_id = $1
-      GROUP BY m.id, m.chat_id, m.message, m.is_system, m.created_at, d.id, d.name, d.email, d.role
+      GROUP BY m.id, m.chat_id, m.message, m.is_system, m.created_at, d.id, d.name, d.email, r.slug, r.name
       ORDER BY m.created_at ASC
       LIMIT 200
     `, [id]);

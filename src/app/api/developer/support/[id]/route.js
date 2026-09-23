@@ -27,10 +27,11 @@ export async function GET(request, context) {
         c.phone AS creator_phone,
         d.name AS assigned_developer_name,
         d.email AS assigned_developer_email,
-        d.role AS assigned_developer_role
+        COALESCE(dr.slug, 'developer') AS assigned_developer_role
       FROM support s
       LEFT JOIN creators c ON s.creator_id = c.id
       LEFT JOIN developers d ON s.assigned_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       WHERE ${isNumeric ? 's.id = $1 OR s.ticket_number = $1' : 's.ticket_number = $1'}
       LIMIT 1
     `, [id]);
@@ -52,9 +53,10 @@ export async function GET(request, context) {
         m.message,
         m.created_at,
         d.name AS developer_name,
-        d.role AS developer_role
+        COALESCE(mr.slug, 'developer') AS developer_role
       FROM support_messages m
       LEFT JOIN developers d ON (m.sender_type IN ('ADMIN', 'DEVELOPER') AND m.sender_id = d.id)
+      LEFT JOIN roles mr ON d.role_id = mr.id
       WHERE m.support_id = $1
       ORDER BY m.created_at ASC
     `, [ticket.id]);
@@ -66,7 +68,11 @@ export async function GET(request, context) {
 
     // Fetch staff developers for assignment dropdown
     const devsRes = await queryDb(`
-      SELECT id, name, email, role FROM developers WHERE is_active = TRUE ORDER BY name ASC
+      SELECT d.id, d.name, d.email, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name 
+      FROM developers d
+      LEFT JOIN roles r ON d.role_id = r.id
+      WHERE d.is_active = TRUE 
+      ORDER BY d.name ASC
     `).catch(() => ({ rows: [] }));
 
     return NextResponse.json({

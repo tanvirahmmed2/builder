@@ -44,7 +44,7 @@ export async function GET(request) {
         b.updated_at,
         d.name AS author_name,
         d.email AS author_email,
-        d.role AS author_role,
+        COALESCE(dr.slug, 'developer') AS author_role,
         a.title AS app_title,
         a.slug AS app_slug,
         COALESCE(
@@ -62,6 +62,7 @@ export async function GET(request) {
         ) AS images
       FROM blogs b
       LEFT JOIN developers d ON b.author_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       LEFT JOIN apps a ON b.app_id = a.id
       LEFT JOIN blogs_image bi ON b.id = bi.blog_id
     `;
@@ -93,7 +94,7 @@ export async function GET(request) {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
 
-    query += ` GROUP BY b.id, d.name, d.email, d.role, a.title, a.slug ORDER BY b.created_at DESC`;
+    query += ` GROUP BY b.id, d.name, d.email, dr.slug, a.title, a.slug ORDER BY b.created_at DESC`;
 
     const res = await queryDb(query, params);
 
@@ -262,7 +263,7 @@ export async function PUT(request) {
       SELECT 
         b.*,
         d.name AS author_name,
-        d.role AS author_role,
+        COALESCE(dr.slug, 'developer') AS author_role,
         a.title AS app_title,
         COALESCE(
           json_agg(
@@ -279,10 +280,11 @@ export async function PUT(request) {
         ) AS images
       FROM blogs b
       LEFT JOIN developers d ON b.author_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       LEFT JOIN apps a ON b.app_id = a.id
       LEFT JOIN blogs_image bi ON b.id = bi.blog_id
       WHERE b.id = $1
-      GROUP BY b.id, d.name, d.role, a.title
+      GROUP BY b.id, d.name, dr.slug, a.title
     `, [id]);
 
     return NextResponse.json({

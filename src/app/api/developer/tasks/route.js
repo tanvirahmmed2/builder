@@ -44,15 +44,16 @@ export async function GET(request) {
         t.*,
         assignee.name AS assignee_name,
         assignee.email AS assignee_email,
-        assignee.role AS assignee_role,
+        COALESCE(ar.slug, 'developer') AS assignee_role,
         creator.name AS creator_name,
         COUNT(tc.id)::int AS comments_count
       FROM tasks t
       LEFT JOIN developers assignee ON t.assigned_to_developer_id = assignee.id
+      LEFT JOIN roles ar ON assignee.role_id = ar.id
       LEFT JOIN developers creator ON t.created_by_developer_id = creator.id
       LEFT JOIN task_comments tc ON t.id = tc.task_id
       ${whereClause}
-      GROUP BY t.id, assignee.name, assignee.email, assignee.role, creator.name
+      GROUP BY t.id, assignee.name, assignee.email, ar.slug, creator.name
       ORDER BY 
         CASE t.priority 
           WHEN 'URGENT' THEN 1 
@@ -65,9 +66,13 @@ export async function GET(request) {
     `, values);
 
     // List of active developers for assignee dropdown
-    const devsRes = await queryDb(
-      'SELECT id, name, email, role FROM developers WHERE is_active = TRUE ORDER BY name ASC'
-    );
+    const devsRes = await queryDb(`
+      SELECT d.id, d.name, d.email, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name 
+      FROM developers d 
+      LEFT JOIN roles r ON d.role_id = r.id 
+      WHERE d.is_active = TRUE 
+      ORDER BY d.name ASC
+    `);
 
     const userRole = (auth.staff.role || '').toLowerCase();
     const canManage = userRole === 'admin' || userRole === 'manager';

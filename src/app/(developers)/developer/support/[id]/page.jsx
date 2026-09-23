@@ -27,8 +27,9 @@ export default function SingleSupportTicketPage() {
 
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
-  const canDelete = ['admin', 'manager'].includes(userRole);
-  const canReply = ['admin', 'manager', 'support', 'developer'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
+  const canReply = Boolean(user?.isAdmin || ['admin', 'manager', 'support', 'developer'].includes(userRole) || permissions.includes('support'));
 
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);

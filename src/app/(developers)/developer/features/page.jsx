@@ -21,7 +21,7 @@ import FeatureForm from '@/components/developer/forms/FeatureForm';
 
 export default function AdminFeaturesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
 
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);

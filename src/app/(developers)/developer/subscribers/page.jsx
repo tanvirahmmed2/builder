@@ -22,9 +22,10 @@ export default function AdminSubscribersPage() {
   const [deletingId, setDeletingId] = useState(null);
 
   const role = (user?.role || '').toLowerCase();
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const ALLOWED_VIEW_ROLES = ['admin', 'manager', 'support'];
-  const canView = ALLOWED_VIEW_ROLES.includes(role);
-  const canDelete = role === 'admin' || role === 'manager';
+  const canView = Boolean(user?.isAdmin || ALLOWED_VIEW_ROLES.includes(role) || permissions.includes('subscribers'));
+  const canDelete = Boolean(user?.isAdmin || role === 'admin' || role === 'manager');
 
   const fetchSubs = async () => {
     try {

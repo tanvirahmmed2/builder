@@ -103,7 +103,7 @@ export default function AdminAdminsPage() {
 
   useEffect(() => {
     if (currentUser && !isUserAdmin) {
-      router.replace('/admin');
+      router.replace('/developer');
     }
   }, [currentUser, isUserAdmin, router]);
 

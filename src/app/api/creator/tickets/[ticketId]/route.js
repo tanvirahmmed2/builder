@@ -20,10 +20,11 @@ export async function GET(request, context) {
         c.email AS creator_email,
         c.avatar_url AS creator_avatar,
         d.name AS assigned_developer_name,
-        d.role AS assigned_developer_role
+        COALESCE(dr.slug, 'developer') AS assigned_developer_role
       FROM support s
       LEFT JOIN creators c ON s.creator_id = c.id
       LEFT JOIN developers d ON s.assigned_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       WHERE ${isNumeric ? 's.id = $1 OR s.ticket_number = $1' : 's.ticket_number = $1'}
       LIMIT 1
     `, [ticketId]);
@@ -45,9 +46,10 @@ export async function GET(request, context) {
         m.message,
         m.created_at,
         d.name AS developer_name,
-        d.role AS developer_role
+        COALESCE(dr.slug, 'developer') AS developer_role
       FROM support_messages m
       LEFT JOIN developers d ON (m.sender_type IN ('ADMIN', 'DEVELOPER') AND m.sender_id = d.id)
+      LEFT JOIN roles dr ON d.role_id = dr.id
       WHERE m.support_id = $1
       ORDER BY m.created_at ASC
     `, [ticket.id]);

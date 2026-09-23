@@ -25,6 +25,8 @@ export async function GET(request) {
         name: user.name,
         email: user.email,
         role: user.role,
+        roleName: user.role_name || user.role,
+        permissions: user.permissions || [],
         isAdmin: role === 'admin',
         isManager: role === 'manager' || role === 'admin',
         isActive: user.is_active !== false,
@@ -51,7 +53,11 @@ export async function PUT(request) {
     const data = body.data || body;
 
     const currentRes = await queryDb(
-      'SELECT id, name, email, password, role, is_active, is_verified, two_factor_enabled FROM developers WHERE id = $1 LIMIT 1',
+      `SELECT d.id, d.name, d.email, d.password, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name,
+              d.is_active, d.is_verified, d.two_factor_enabled
+       FROM developers d
+       LEFT JOIN roles r ON d.role_id = r.id
+       WHERE d.id = $1 LIMIT 1`,
       [authUser.id]
     );
 
@@ -136,11 +142,15 @@ export async function PUT(request) {
       `UPDATE developers
        SET name = $1, email = $2, password = $3, two_factor_enabled = $4, updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
-       RETURNING id, name, email, role, is_active, is_verified, two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at`,
+       RETURNING id, name, email, role_id, is_active, is_verified, two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at`,
       [newName, newEmail, newPasswordHash, newTwoFactor, authUser.id]
     );
 
-    const updated = updateRes.rows[0];
+    const updated = {
+      ...updateRes.rows[0],
+      role: currentDev.role,
+      role_name: currentDev.role_name,
+    };
     const role = (updated.role || '').toLowerCase();
 
     const response = NextResponse.json({

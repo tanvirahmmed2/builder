@@ -34,13 +34,15 @@ export async function GET(request) {
             'id', d.id,
             'name', d.name,
             'email', d.email,
-            'role', d.role
+            'role', COALESCE(r.slug, 'developer'),
+            'role_name', COALESCE(r.name, 'Developer')
           )
         ) AS participants
       FROM internal_chats c
       JOIN chat_participants cp ON c.id = cp.chat_id AND cp.developer_id = $1
       JOIN chat_participants all_cp ON c.id = all_cp.chat_id
       JOIN developers d ON all_cp.developer_id = d.id
+      LEFT JOIN roles r ON d.role_id = r.id
       LEFT JOIN LATERAL (
         SELECT m.id, m.message, m.created_at, m.sender_developer_id
         FROM chat_messages m
@@ -56,10 +58,11 @@ export async function GET(request) {
 
     // 2. Fetch all other active developers to initiate chats
     const devsRes = await queryDb(`
-      SELECT id, name, email, role 
-      FROM developers 
-      WHERE is_active = TRUE AND id != $1
-      ORDER BY name ASC
+      SELECT d.id, d.name, d.email, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name
+      FROM developers d
+      LEFT JOIN roles r ON d.role_id = r.id
+      WHERE d.is_active = TRUE AND d.id != $1
+      ORDER BY d.name ASC
     `, [currentDevId]);
 
     return NextResponse.json({

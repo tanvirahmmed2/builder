@@ -31,9 +31,10 @@ export async function GET(request, context) {
         c.updated_at,
         d.name AS replied_by_name,
         d.email AS replied_by_email,
-        d.role AS replied_by_role
+        COALESCE(dr.slug, 'developer') AS replied_by_role
       FROM contacts c
       LEFT JOIN developers d ON c.replied_by_developer_id = d.id
+      LEFT JOIN roles dr ON d.role_id = dr.id
       WHERE c.id = $1
       LIMIT 1
     `, [id]);

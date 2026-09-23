@@ -115,13 +115,27 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
   const pathname = usePathname();
   const router = useRouter();
 
-  const role = currentUser?.role || 'developer';
-  const allowedModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
+  const role = (currentUser?.role || 'developer').toLowerCase();
+  const isAdmin = Boolean(currentUser?.isAdmin || role === 'admin');
+
+  // Dynamic RBAC check:
+  // Admins have access to all modules.
+  // Profile, Settings, and Overview are accessible to all authenticated staff.
+  // Other links check dynamic permissions array from the authenticated session.
+  const userPerms = Array.isArray(currentUser?.permissions) ? currentUser.permissions : null;
+  const fallbackModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
+  const allowedModules = userPerms && userPerms.length > 0 ? userPerms : fallbackModules;
 
   const isLinkAllowed = (link) => {
+    if (isAdmin) return true;
     const segments = link.href.split('/').filter(Boolean);
-    const moduleName = segments[1];
-    return !moduleName || moduleName === 'profile' || moduleName === 'settings' || allowedModules.includes(moduleName);
+    const moduleName = segments[1] || 'overview';
+    return (
+      moduleName === 'overview' ||
+      moduleName === 'profile' ||
+      moduleName === 'settings' ||
+      allowedModules.includes(moduleName)
+    );
   };
 
   const handleLogout = async () => {

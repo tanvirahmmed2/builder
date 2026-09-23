@@ -38,7 +38,8 @@ export default function DeveloperUpdatesPage() {
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
   const role = (user?.role || '').toLowerCase();
-  const canManage = role === 'admin' || role === 'manager';
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canManage = Boolean(user?.isAdmin || role === 'admin' || role === 'manager' || permissions.includes('updates'));
 
   const fetchUpdates = async () => {
     try {

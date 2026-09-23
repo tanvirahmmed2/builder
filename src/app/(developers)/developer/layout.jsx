@@ -8,6 +8,10 @@ import { Context } from '@/components/helper/Context';
 import Navbar from '@/components/developer/Navbar';
 import Sidebar from '@/components/developer/Sidebar';
 
+/**
+ * @deprecated ROLE_PERMISSIONS is deprecated in favor of dynamic permissions stored in the database
+ * and returned by authenticateStaff / /api/developer/me. Retained solely as a fallback for unmigrated sessions.
+ */
 export const ROLE_PERMISSIONS = {
   admin: [
     'overview', 'developers', 'team', 'creators', 'users', 'websites',
@@ -68,10 +72,25 @@ export default function DeveloperLayout({ children }) {
   }
 
   const segments = pathname.split('/').filter(Boolean);
-  const moduleName = segments[1];
-  const role = user?.role || 'developer';
-  const allowedModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer;
-  const isAllowed = !moduleName || moduleName === 'profile' || allowedModules.includes(moduleName);
+  const moduleName = segments[1] || 'overview';
+  const role = (user?.role || 'developer').toLowerCase();
+  const isAdmin = user?.isAdmin || role === 'admin';
+
+  // Dynamic RBAC check:
+  // Admins have full unrestricted access.
+  // Root /developer (overview), /developer/profile, /developer/settings are accessible to all authenticated staff.
+  // All other module routes check whether moduleName is granted in dynamic user.permissions array.
+  const userPerms = Array.isArray(user?.permissions) ? user.permissions : null;
+  const fallbackModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
+  const allowedModules = userPerms && userPerms.length > 0 ? userPerms : fallbackModules;
+
+  const isAllowed =
+    isAdmin ||
+    !segments[1] ||
+    moduleName === 'overview' ||
+    moduleName === 'profile' ||
+    moduleName === 'settings' ||
+    allowedModules.includes(moduleName);
 
   if (!isAllowed) {
     return (
@@ -93,7 +112,7 @@ export default function DeveloperLayout({ children }) {
               </div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">Access Restricted</h2>
               <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                Your account role (<span className="font-bold text-slate-800 capitalize">{role}</span>) does not have permission to access the <span className="font-semibold text-rose-600 font-mono">/{moduleName}</span> module.
+                Your account ({user.roleName || user.role || 'Staff'}) does not have permission to access the <span className="font-semibold text-rose-600 font-mono">/{moduleName}</span> module.
               </p>
               <Link
                 href="/developer"

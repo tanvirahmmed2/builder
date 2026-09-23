@@ -28,9 +28,10 @@ export default function AdminCreatorsPage() {
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  // Role validation: only admin, manager, support can view
+  // Role validation: only admin, manager, support or users with creators permission
   const userRole = (user?.role || '').toLowerCase();
-  const isAuthorized = ['admin', 'manager', 'support'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAuthorized = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('creators'));
 
   const fetchCreators = async (isRefresh = false) => {
     try {

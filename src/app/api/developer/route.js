@@ -16,10 +16,11 @@ export async function GET(request) {
     }
 
     const devRes = await queryDb(
-      `SELECT id, name, email, role, is_active, is_verified,
-              two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at
-       FROM developers
-       WHERE id = $1
+      `SELECT d.id, d.name, d.email, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name,
+              d.is_active, d.is_verified, d.two_factor_enabled, d.last_login_at, d.last_login_ip, d.created_at, d.updated_at
+       FROM developers d
+       LEFT JOIN roles r ON d.role_id = r.id
+       WHERE d.id = $1
        LIMIT 1`,
       [authUser.id]
     );
@@ -86,7 +87,11 @@ export async function PUT(request) {
 
     // Load current developer record including current password hash
     const currentRes = await queryDb(
-      'SELECT id, name, email, password, role, is_active, is_verified, two_factor_enabled FROM developers WHERE id = $1 LIMIT 1',
+      `SELECT d.id, d.name, d.email, d.password, d.role_id, COALESCE(r.slug, 'developer') AS role, COALESCE(r.name, 'Developer') AS role_name,
+              d.is_active, d.is_verified, d.two_factor_enabled
+       FROM developers d
+       LEFT JOIN roles r ON d.role_id = r.id
+       WHERE d.id = $1 LIMIT 1`,
       [authUser.id]
     );
 
@@ -164,11 +169,15 @@ export async function PUT(request) {
            two_factor_enabled = $4,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
-       RETURNING id, name, email, role, is_active, is_verified, two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at`,
+       RETURNING id, name, email, role_id, is_active, is_verified, two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at`,
       [newName, newEmail, newPasswordHash, newTwoFactor, authUser.id]
     );
 
-    const updatedDev = updateRes.rows[0];
+    const updatedDev = {
+      ...updateRes.rows[0],
+      role: currentDev.role,
+      role_name: currentDev.role_name,
+    };
 
     const response = NextResponse.json({
       success: true,

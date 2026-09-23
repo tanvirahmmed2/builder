@@ -3,7 +3,7 @@ import React from 'react'
 
 const Hero = () => {
   return (
-    <div className='w-full  flex flex-col-reverse md:flex-row items-center justify-center gap-3 py-20'>
+    <div className='w-full  flex flex-col-reverse md:flex-row items-center justify-center gap-3 py-20 bg-primary'>
       <div className='flex flex-col gap-4 w-full'>
         <div className='flex flex-col text-4xl md:text-5xl lg:text-7xl'>
           <p>Build your identity</p>

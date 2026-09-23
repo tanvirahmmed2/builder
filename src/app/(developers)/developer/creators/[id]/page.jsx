@@ -37,7 +37,8 @@ export default function CreatorDetailsPage({ params }) {
 
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
-  const isAuthorized = ['admin', 'manager', 'support'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAuthorized = Boolean(user?.isAdmin || ['admin', 'manager', 'support'].includes(userRole) || permissions.includes('creators'));
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

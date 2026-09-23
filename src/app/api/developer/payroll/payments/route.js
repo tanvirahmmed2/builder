@@ -23,11 +23,13 @@ export async function GET(request) {
         p.pay_period_end,
         d.name AS developer_name,
         d.email AS developer_email,
-        d.role AS developer_role,
+        COALESCE(r.slug, 'developer') AS developer_role,
+        COALESCE(r.name, 'Developer') AS developer_role_name,
         proc.name AS processed_by_name
       FROM payroll_payments pp
       JOIN payrolls p ON pp.payroll_id = p.id
       JOIN developers d ON pp.developer_id = d.id
+      LEFT JOIN roles r ON d.role_id = r.id
       LEFT JOIN developers proc ON pp.processed_by_developer_id = proc.id
       ORDER BY pp.payment_date DESC
       LIMIT 100

@@ -22,7 +22,8 @@ import {
 export default function AdminReviewsPage() {
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
-  const canModerate = ['admin', 'manager'].includes(userRole);
+  const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const canModerate = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole) || permissions.includes('reviews'));
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

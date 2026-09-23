@@ -21,7 +21,7 @@ import PackageForm from '@/components/developer/forms/PackageForm';
 
 export default function AdminPackagesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);

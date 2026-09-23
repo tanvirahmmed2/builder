@@ -19,7 +19,7 @@ import {
 
 export default function AdminDatabaseModulesPage() {
   const { user } = useContext(Context) || {};
-  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const isAdminUser = Boolean(user?.isAdmin || (user?.role || '').toLowerCase() === 'admin');
 
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);

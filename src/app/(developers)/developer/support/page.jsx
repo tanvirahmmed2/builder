@@ -21,7 +21,7 @@ export default function AdminSupportPage() {
   const router = useRouter();
   const { user } = useContext(Context);
   const userRole = (user?.role || '').toLowerCase();
-  const canDelete = ['admin', 'manager'].includes(userRole);
+  const canDelete = Boolean(user?.isAdmin || ['admin', 'manager'].includes(userRole));
 
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 });
