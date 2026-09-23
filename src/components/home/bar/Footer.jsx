@@ -9,11 +9,11 @@ import SubscribeForm from '@/components/home/bar/SubscribeForm';
 import TranslateButton from '@/components/ui/TranslateButton';
 
 const Footer = () => {
-  const { theme = 'light', toggleTheme } = useContext(Context) || {};
+  const { theme = 'light', toggleTheme, setTheme } = useContext(Context) || {};
   const isDark = theme === 'dark';
 
   return (
-    <footer className='w-full bg-primary dark:bg-slate-900 p-6 sm:p-10 lg:p-16 flex flex-col items-center justify-center gap-12 text-light transition-colors border-t border-primary/20 dark:border-slate-800'>
+    <footer className='w-full bg-slate-900 dark:bg-slate-950 p-6 sm:p-10 lg:p-16 flex flex-col items-center justify-center gap-12 text-slate-100 transition-colors border-t border-slate-800 dark:border-slate-900'>
       <div className='w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12'>
         {/* Brand & Tagline */}
         <div className='w-full flex flex-col space-y-3'>
@@ -70,30 +70,41 @@ const Footer = () => {
         {/* Controls: Color Mode & Translation */}
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2">
-            <span className="text-xs opacity-80">Theme:</span>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/25 bg-black/20 hover:bg-black/35 text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-xs"
-              title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
-              aria-label="Toggle colour mode"
-            >
-              {isDark ? (
-                <>
-                  <BiSun className="text-amber-300 text-sm" />
-                  <span>Light</span>
-                </>
-              ) : (
-                <>
-                  <BiMoon className="text-slate-200 text-sm" />
-                  <span>Dark</span>
-                </>
-              )}
-            </button>
+            <span className="text-xs font-semibold text-slate-300">Mode:</span>
+            <div className="inline-flex items-center p-0.5 rounded-full bg-black/40 border border-white/20 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setTheme ? setTheme('light') : toggleTheme()}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  !isDark
+                    ? 'bg-white text-slate-900 shadow-md scale-105'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+                title="Switch to Light Mode"
+                aria-label="Light mode"
+              >
+                <BiSun className={!isDark ? 'text-amber-500 text-sm' : 'text-sm'} />
+                <span>Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme ? setTheme('dark') : toggleTheme()}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  isDark
+                    ? 'bg-purple-600 text-white shadow-md scale-105'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+                title="Switch to Dark Mode"
+                aria-label="Dark mode"
+              >
+                <BiMoon className={isDark ? 'text-amber-300 text-sm' : 'text-sm'} />
+                <span>Dark</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs opacity-80">Translate:</span>
+            <span className="text-xs font-semibold text-slate-300">Translate:</span>
             <TranslateButton align="right" variant="dark" />
           </div>
         </div>

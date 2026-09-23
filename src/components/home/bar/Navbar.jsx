@@ -8,12 +8,12 @@ import { Context } from '@/components/helper/Context';
 import Sidebar from './Sidebar';
 
 export default function HomeNavbar() {
-  const { apps = [] } = useContext(Context);
+  const { apps = [] } = useContext(Context) || {};
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
-      <nav className="w-full flex flex-row items-center justify-between bg-primary dark:bg-slate-900 border-b border-transparent dark:border-slate-800 px-4 shadow-sm lg:px-8 h-14 sticky top-0 z-40 transition-colors">
+      <nav className="w-full flex flex-row items-center justify-between bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 shadow-xs lg:px-8 h-14 sticky top-0 z-40 transition-colors">
         <div className="w-auto flex flex-row items-center justify-center gap-2">
           <button
             type="button"
@@ -36,7 +36,6 @@ export default function HomeNavbar() {
             Themes
           </Link>
 
-          {/* Apps Dropdown */}
           <div className="relative h-14 group flex items-center">
             <Link
               href={'/apps'}
@@ -82,36 +81,7 @@ export default function HomeNavbar() {
           >
             Packages
           </Link>
-          <Link
-            href={'/updates'}
-            className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
-          >
-            Updates
-          </Link>
-          <Link
-            href={'/tutorials'}
-            className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
-          >
-            Tutorials
-          </Link>
-          <Link
-            href={'/blogs'}
-            className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
-          >
-            Blogs
-          </Link>
-          <Link
-            href={'/faqs'}
-            className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
-          >
-            FAQs
-          </Link>
-          <Link
-            href={'/reviews'}
-            className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
-          >
-            Reviews
-          </Link>
+       
           <Link
             href={'/contact'}
             className="font-medium text-slate-700 dark:text-slate-300 hover:text-primary px-3.5 h-14 flex items-center justify-center transition-colors text-sm"
@@ -129,7 +99,7 @@ export default function HomeNavbar() {
         <div>
           <Link
             href={'/creator/login'}
-            className="inline-flex items-center justify-center border border-secondary text-secondary hover:bg-secondary hover:text-light px-4 py-1.5 rounded-full font-semibold transition-colors duration-200 text-sm md:text-base"
+            className="inline-flex items-center justify-center border border-secondary text-secondary hover:bg-secondary hover:text-white px-4 py-1.5 rounded-full font-semibold transition-colors duration-200 text-sm md:text-base shadow-xs"
           >
             Start Now
           </Link>

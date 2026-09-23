@@ -466,7 +466,7 @@ export default function WebsiteRolesManager({ websiteId, slug, primaryColor = '#
                                 className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] cursor-pointer transition-colors ${
                                   isChecked
                                     ? 'bg-white dark:bg-slate-900 border-slate-900 dark:border-slate-400 font-bold text-slate-900 dark:text-white'
-                                    : 'bg-white/50 dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                                    : 'bg-white/50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                 }`}
                               >
                                 <input
@@ -590,7 +590,7 @@ export default function WebsiteRolesManager({ websiteId, slug, primaryColor = '#
                         className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
                           isChecked
                             ? 'bg-slate-100 dark:bg-slate-800 border-slate-900 dark:border-slate-400 font-bold text-slate-900 dark:text-white'
-                            : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                         }`}
                       >
                         <input
