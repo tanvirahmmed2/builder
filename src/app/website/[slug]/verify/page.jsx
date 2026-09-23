@@ -10,7 +10,6 @@ import {
   BiLoaderAlt,
   BiRefresh,
   BiArrowBack,
-  BiShieldCheck,
 } from 'react-icons/bi';
 
 function VerifyForm({ slug }) {

@@ -1,1 +1,1 @@
-export { GET, POST } from '../../webites/[slug]/auth/route';
+export { GET, POST } from '../../../webites/[slug]/auth/route';

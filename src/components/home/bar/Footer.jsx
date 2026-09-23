@@ -6,6 +6,7 @@ import { BiSun, BiMoon } from 'react-icons/bi';
 import { COMPANY_NAME, COMPANY_URL, SITE_ADDRESS, SITE_CONTACT, SITE_MAIL, SITE_NAME } from '@/lib/db/secret';
 import { Context } from '@/components/helper/Context';
 import SubscribeForm from '@/components/home/bar/SubscribeForm';
+import TranslateButton from '@/components/ui/TranslateButton';
 
 const Footer = () => {
   const { theme = 'light', toggleTheme } = useContext(Context) || {};
@@ -66,28 +67,35 @@ const Footer = () => {
       <div className='w-full flex flex-col md:flex-row items-center justify-between gap-4 text-light font-sans pt-4 border-t border-white/15'>
         <p>2026 {SITE_NAME} | Build Your Identity on Web</p>
 
-        {/* Color Mode Switcher */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs opacity-80">Theme Mode:</span>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/25 bg-black/20 hover:bg-black/35 text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-xs"
-            title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
-            aria-label="Toggle colour mode"
-          >
-            {isDark ? (
-              <>
-                <BiSun className="text-amber-300 text-sm" />
-                <span>Light Mode</span>
-              </>
-            ) : (
-              <>
-                <BiMoon className="text-slate-200 text-sm" />
-                <span>Dark Mode</span>
-              </>
-            )}
-          </button>
+        {/* Controls: Color Mode & Translation */}
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-xs opacity-80">Theme:</span>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/25 bg-black/20 hover:bg-black/35 text-white text-xs font-semibold backdrop-blur-md transition-all cursor-pointer shadow-xs"
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
+              aria-label="Toggle colour mode"
+            >
+              {isDark ? (
+                <>
+                  <BiSun className="text-amber-300 text-sm" />
+                  <span>Light</span>
+                </>
+              ) : (
+                <>
+                  <BiMoon className="text-slate-200 text-sm" />
+                  <span>Dark</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs opacity-80">Translate:</span>
+            <TranslateButton align="right" variant="dark" />
+          </div>
         </div>
 
         <p>A Product of <Link href={`${COMPANY_URL}`}>{COMPANY_NAME}</Link></p>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BiShieldQuarter, BiSun, BiMoon } from 'react-icons/bi';
 import { useWebsite } from '@/components/website/context/WebsiteContext';
+import TranslateButton from '@/components/ui/TranslateButton';
 
 export default function WebsiteFooter({ website }) {
   const { theme = 'light', toggleTheme } = useWebsite();
@@ -42,7 +43,9 @@ export default function WebsiteFooter({ website }) {
             <strong className="text-slate-700 dark:text-slate-200 font-semibold">Multi-Website Platform</strong>.
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <TranslateButton align="right" variant="auto" />
+
             {/* Tenant Website Theme Toggle Button */}
             <button
               type="button"
