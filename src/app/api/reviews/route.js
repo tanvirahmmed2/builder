@@ -14,7 +14,7 @@ export async function GET() {
               r.status,
               r.created_at,
               c.name AS creator_name,
-              c.avatar_url AS creator_avatar,
+              NULL::text AS creator_avatar,
               c.bio AS creator_bio,
               p.name AS package_name,
               p.slug AS package_slug

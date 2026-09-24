@@ -13,6 +13,7 @@ import {
   BiDesktop,
   BiBell,
   BiLinkExternal,
+  BiUser,
 } from 'react-icons/bi';
 
 export default function CreatorNavbar({
@@ -37,6 +38,9 @@ export default function CreatorNavbar({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'logout' }),
       });
+    } catch (_) {}
+    try {
+      localStorage.removeItem('hiesci_creator');
     } catch (_) {}
     router.push('/creator/login');
   };
@@ -177,11 +181,9 @@ export default function CreatorNavbar({
             onClick={() => setProfileDropdownOpen((p) => !p)}
             className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-700 font-medium transition-colors cursor-pointer"
           >
-            <img
-              src={creator?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-              alt={creator?.name || 'Creator'}
-              className="w-5 h-5 rounded-full object-cover border border-slate-300"
-            />
+            <div className="w-5 h-5 rounded-full bg-secondary/15 text-secondary flex items-center justify-center font-bold text-[10px] border border-secondary/20">
+              {creator?.name ? creator.name.charAt(0).toUpperCase() : <BiUser className="text-xs" />}
+            </div>
             <span className="font-semibold text-slate-800 hidden md:inline max-w-[110px] truncate">
               {creator?.name || 'Creator'}
             </span>

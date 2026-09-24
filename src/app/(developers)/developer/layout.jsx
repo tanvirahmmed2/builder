@@ -16,19 +16,19 @@ export const ROLE_PERMISSIONS = {
   admin: [
     'overview', 'developers', 'roles', 'team', 'creators', 'users', 'websites',
     'blogs', 'themes', 'packages', 'features', 'modules', 'payments', 'subscriptions', 'payroll', 'my-salaries',
-    'live-chats', 'chats', 'contacts', 'support', 'reports', 'reviews', 'spams',
+    'live-chats', 'chats', 'contacts', 'support', 'projects', 'reports', 'reviews', 'spams',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
     'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
-    'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'my-salaries',
+    'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'projects', 'my-salaries',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
     'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',
-    'apps', 'spams', 'reports', 'blogs', 'support', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
+    'apps', 'spams', 'reports', 'blogs', 'support', 'projects', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
   ],
   marketer: [
     'overview', 'blogs', 'themes', 'leads',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { BiCheckCircle, BiLoaderAlt, BiKey, BiEnvelope, BiArrowBack, BiLockAlt } from 'react-icons/bi';
+import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
 
 export default function CreatorRecoveryPage() {
   const [step, setStep] = useState(1); // 1: Request Code, 2: Reset Password, 3: Completed
@@ -122,8 +123,32 @@ export default function CreatorRecoveryPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+    <CreatorAuthLayout
+      badge="Account Recovery"
+      headline="Securely Reset Your Password"
+      description="Forgot your password? No worries. Enter your registered email to receive a verified 6-digit recovery code and regain immediate access."
+      features={[
+        'End-to-end encrypted password verification tokens',
+        'Rapid account recovery with zero data loss',
+        'Instant access to your portfolios once updated',
+      ]}
+      stats={[
+        { label: 'Encryption', value: '256-Bit' },
+        { label: 'Code Expiry', value: '15 Mins' },
+        { label: 'Recovery SLA', value: 'Instant' },
+      ]}
+      quote={{
+        text: 'Account recovery was quick and protected our studio projects without any downtime.',
+        author: 'Sophia Chen',
+        role: 'Lead Architect, ArchiForm',
+      }}
+      topRightLink={{
+        prompt: 'Remember your password?',
+        text: 'Sign In',
+        href: '/creator/login',
+      }}
+    >
+      <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
@@ -322,6 +347,6 @@ export default function CreatorRecoveryPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </CreatorAuthLayout>
   );
 }

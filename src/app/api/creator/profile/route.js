@@ -23,7 +23,7 @@ export async function GET(request) {
     }
 
     const res = await queryDb(
-      `SELECT id, name, email, phone, bio, avatar_url, is_active, is_verified, two_factor_enabled, created_at, updated_at
+      `SELECT id, name, email, phone, bio, is_active, is_verified, two_factor_enabled, created_at, updated_at
        FROM creators WHERE id = $1 LIMIT 1`,
       [creatorId]
     );
@@ -57,11 +57,10 @@ export async function handleProfileAction(body, sessionCreator) {
       `UPDATE creators 
        SET name = COALESCE($1, name),
            phone = COALESCE($2, phone),
-           bio = COALESCE($3, bio),
-           avatar_url = COALESCE($4, avatar_url)
-       WHERE id = $5
-       RETURNING id, name, email, phone, bio, avatar_url, is_active, is_verified, two_factor_enabled, updated_at`,
-      [body.name, body.phone, body.bio, body.avatar_url, creatorId]
+           bio = COALESCE($3, bio)
+       WHERE id = $4
+       RETURNING id, name, email, phone, bio, is_active, is_verified, two_factor_enabled, updated_at`,
+      [body.name, body.phone, body.bio, creatorId]
     );
 
     if (res.rows.length === 0) {

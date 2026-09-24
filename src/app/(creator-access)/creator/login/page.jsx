@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BiLoaderAlt, BiLockAlt, BiShieldQuarter, BiEnvelope, BiArrowBack } from 'react-icons/bi';
+import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
 
 export default function CreatorLoginPage() {
   const router = useRouter();
@@ -40,6 +41,9 @@ export default function CreatorLoginPage() {
       const data = await res.json();
 
       if (data.success && data.creator) {
+        try {
+          localStorage.setItem('hiesci_creator', JSON.stringify(data.creator));
+        } catch (_) {}
         router.push(`/creator/${data.creator.id}`);
         return;
       }
@@ -96,8 +100,32 @@ export default function CreatorLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+    <CreatorAuthLayout
+      badge="Creator Studio"
+      headline="Welcome Back to Your Studio"
+      description="Access your visual site builder, manage live projects, monitor client inquiries, and scale your commerce operations."
+      features={[
+        'Drag-and-drop website editor with instant global publishing',
+        'Built-in store engine with zero commission and instant payouts',
+        'Automated appointment bookings, lead management, and live chat',
+      ]}
+      stats={[
+        { label: 'Active Creators', value: '23k+' },
+        { label: 'Websites Built', value: '54k+' },
+        { label: 'Uptime SLA', value: '99.99%' },
+      ]}
+      quote={{
+        text: 'Switching to this platform transformed our studio workflow. Publishing client sites takes minutes, not weeks.',
+        author: 'Elena Rostova',
+        role: 'Creative Director, Studio Aura',
+      }}
+      topRightLink={{
+        prompt: "Don't have a studio yet?",
+        text: 'Create Account',
+        href: '/creator/register',
+      }}
+    >
+      <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
@@ -258,6 +286,6 @@ export default function CreatorLoginPage() {
           </p>
         </div>
       </div>
-    </div>
+    </CreatorAuthLayout>
   );
 }

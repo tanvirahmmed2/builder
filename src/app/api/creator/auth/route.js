@@ -37,16 +37,15 @@ export async function handleAuthAction(body, request) {
     const verificationCode = crypto.randomInt(100000, 999999).toString();
 
     const res = await queryDb(
-      `INSERT INTO creators (name, email, password, phone, bio, avatar_url, is_active, is_verified, verification_code, verification_expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE, FALSE, $7, CURRENT_TIMESTAMP + INTERVAL '24 hours')
-       RETURNING id, name, email, phone, bio, avatar_url, is_active, is_verified, created_at`,
+      `INSERT INTO creators (name, email, password, phone, bio, is_active, is_verified, verification_code, verification_expires_at)
+       VALUES ($1, $2, $3, $4, $5, TRUE, FALSE, $6, CURRENT_TIMESTAMP + INTERVAL '24 hours')
+       RETURNING id, name, email, phone, bio, is_active, is_verified, created_at`,
       [
         d.name.trim(),
         cleanEmail,
         hashedPassword,
         d.phone ? d.phone.trim() : null,
         d.bio ? d.bio.trim() : 'New Platform Creator',
-        d.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
         verificationCode,
       ]
     );
@@ -408,6 +407,19 @@ export async function handleAuthAction(body, request) {
   }
 
   return NextResponse.json({ success: false, error: `Unknown auth action: ${action}` }, { status: 400 });
+}
+
+export async function GET(request) {
+  try {
+    const current = await getCreatorSession(request);
+    if (!current) {
+      return NextResponse.json({ success: false, creator: null, error: 'Not authenticated' }, { status: 401 });
+    }
+    return NextResponse.json({ success: true, creator: current });
+  } catch (error) {
+    console.error('Auth GET API error:', error);
+    return NextResponse.json({ success: false, creator: null, error: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request) {

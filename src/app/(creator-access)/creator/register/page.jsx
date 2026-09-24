@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BiLoaderAlt, BiUserPlus, BiEnvelope, BiBuilding, BiPhone, BiLockAlt, BiUser } from 'react-icons/bi';
+import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
 
 export default function CreatorRegisterPage() {
   const router = useRouter();
@@ -83,8 +84,32 @@ export default function CreatorRegisterPage() {
 
   if (registered) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 text-center">
+      <CreatorAuthLayout
+        badge="Verification Sent"
+        headline="Activate Your Creator Account"
+        description="We have dispatched a 6-digit confirmation code to your inbox. Complete verification to begin designing and publishing."
+        features={[
+          'Instant activation of your unique portfolio workspace',
+          'Custom domain setup & free automatic SSL certificates',
+          'Secure 2-factor authentication & team access controls',
+        ]}
+        stats={[
+          { label: 'Activation', value: 'Instant' },
+          { label: 'Security', value: '256-bit' },
+          { label: 'Support', value: '24/7' },
+        ]}
+        quote={{
+          text: 'Setting up my portfolio took under 5 minutes and the visual builder is pure joy to use.',
+          author: 'Liam Vance',
+          role: 'Product Designer',
+        }}
+        topRightLink={{
+          prompt: 'Already verified?',
+          text: 'Sign In',
+          href: '/creator/login',
+        }}
+      >
+        <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mx-auto border border-emerald-100 dark:border-emerald-800">
             <BiEnvelope />
           </div>
@@ -139,13 +164,37 @@ export default function CreatorRegisterPage() {
             </button>
           </div>
         </div>
-      </div>
+      </CreatorAuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+    <CreatorAuthLayout
+      badge="Instant Access"
+      headline="Launch Your Creative Identity"
+      description="Join thousands of world-class creators, designers, and agencies building high-converting portfolio sites and digital stores."
+      features={[
+        'Build in minutes with our visual drag-and-drop studio engine',
+        'Sell digital products, courses, and design kits with zero cuts',
+        'Custom domains, automatic SSL, and global edge CDN included',
+      ]}
+      stats={[
+        { label: 'Global Creators', value: '25,000+' },
+        { label: 'Avg Setup Time', value: '< 3 mins' },
+        { label: 'Commission Fee', value: '0%' },
+      ]}
+      quote={{
+        text: 'In our first month of switching, we closed $18k in design service bookings directly through our new site.',
+        author: 'Marcus Vance',
+        role: 'Founder, Vance Brand Labs',
+      }}
+      topRightLink={{
+        prompt: 'Already have an account?',
+        text: 'Sign In',
+        href: '/creator/login',
+      }}
+    >
+      <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
             <BiUserPlus />
@@ -260,6 +309,6 @@ export default function CreatorRegisterPage() {
           </p>
         </div>
       </div>
-    </div>
+    </CreatorAuthLayout>
   );
 }

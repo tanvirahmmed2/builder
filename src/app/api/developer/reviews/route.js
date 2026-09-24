@@ -20,7 +20,7 @@ export async function GET(request) {
       SELECT r.*,
              c.name AS creator_name,
              c.email AS creator_email,
-             c.avatar_url AS creator_avatar,
+             NULL::text AS creator_avatar,
              p.name AS package_name,
              p.slug AS package_slug,
              d.name AS approved_by_name,

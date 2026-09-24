@@ -34,6 +34,7 @@ import {
   BiLogoFacebookCircle,
   BiLogoInstagram,
   BiLogoWhatsapp,
+  BiBriefcase,
 } from 'react-icons/bi';
 import { ROLE_PERMISSIONS } from '@/app/(developers)/developer/layout';
 
@@ -82,6 +83,7 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/live-chats', label: 'Live Chats', icon: BiChat },
       { href: '/developer/contacts', label: 'Contacts', icon: BiEnvelope },
       { href: '/developer/support', label: 'Support Tickets', icon: BiHeadphone },
+      { href: '/developer/projects', label: 'Custom Projects', icon: BiBriefcase },
       { href: '/developer/reports', label: 'Reports', icon: BiMessageSquareDetail },
     ],
   },

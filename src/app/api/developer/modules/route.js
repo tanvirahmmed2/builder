@@ -22,6 +22,8 @@ function formatTableToModuleTitle(tableName) {
     gallery: 'Portfolio Gallery',
     offers: 'Offers & Discounts',
     support: 'Support Tickets',
+    project: 'Custom Projects',
+    projects: 'Custom Projects',
     roles: 'Roles & Permissions',
     role_permissions: 'Role Permissions',
     users: 'Team & Users',

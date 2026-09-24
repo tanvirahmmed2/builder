@@ -18,7 +18,7 @@ export async function GET(request, context) {
         c.id AS creator_id,
         c.name AS creator_name,
         c.email AS creator_email,
-        c.avatar_url AS creator_avatar,
+        NULL::text AS creator_avatar,
         d.name AS assigned_developer_name,
         COALESCE(dr.slug, 'developer') AS assigned_developer_role
       FROM support s

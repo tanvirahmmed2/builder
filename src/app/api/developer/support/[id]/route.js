@@ -23,7 +23,7 @@ export async function GET(request, context) {
         s.*,
         c.name AS creator_name,
         c.email AS creator_email,
-        c.avatar_url AS creator_avatar,
+        NULL::text AS creator_avatar,
         c.phone AS creator_phone,
         d.name AS assigned_developer_name,
         d.email AS assigned_developer_email,

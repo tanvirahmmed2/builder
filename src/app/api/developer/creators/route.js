@@ -10,7 +10,7 @@ export async function GET(request) {
     }
 
     const res = await queryDb(`
-      SELECT c.id, c.name, c.email, c.phone, c.avatar_url, c.bio, c.is_active, c.is_verified, c.two_factor_enabled, c.created_at,
+      SELECT c.id, c.name, c.email, c.phone, c.bio, c.is_active, c.is_verified, c.two_factor_enabled, c.created_at,
              COUNT(DISTINCT w.id)::int AS websites_count,
              p.name AS current_package,
              s.status AS subscription_status

@@ -349,18 +349,9 @@ export default function AdminCreatorsPage() {
                       {/* Creator Name & Avatar */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={
-                              creator.avatar_url ||
-                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'
-                            }
-                            alt={creator.name}
-                            className="w-9 h-9 rounded-full object-cover border border-slate-200 flex-shrink-0"
-                            onError={(e) => {
-                              e.target.src =
-                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100';
-                            }}
-                          />
+                          <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
+                            {creator.name ? creator.name.charAt(0).toUpperCase() : 'C'}
+                          </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-slate-900 group-hover:text-secondary transition-colors">

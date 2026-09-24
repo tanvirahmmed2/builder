@@ -46,41 +46,36 @@ export default function AppsPage() {
   return (
     <main className="min-h-screen bg-slate-50/60 pb-24">
       {/* Hero Header */}
-      <section className="relative overflow-hidden bg-slate-950 text-white pt-20 pb-20 px-4 lg:px-8 border-b border-white/10">
+      <section className="relative overflow-hidden bg-primary text-white pt-20 pb-20 px-4 lg:px-8 border-b border-white/10">
         <div className="absolute inset-0 bg-linear-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-6xl mx-auto text-center relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-primary text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-            <BiRocket className="text-sm text-secondary" />
-            <span>Platform Application Ecosystem</span>
-          </div>
+          
 
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto leading-tight">
-            Turnkey Web Apps Built for{' '}
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-primary-light via-primary to-secondary">
-              Modern Creators
-            </span>
+            Turnkey Website Built for{' '}
+            Modern Creators
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base  max-w-2xl mx-auto leading-relaxed">
             Expand your portfolio with pre-integrated storefronts, reservation systems, LMS modules, and custom platform applications ready to deploy.
           </p>
 
           {/* Search Bar */}
           <div className="pt-6 max-w-xl mx-auto">
             <div className="relative">
-              <BiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+              <BiSearch className="absolute left-4 top-1/2 -translate-y-1/2  text-lg" />
               <input
                 type="text"
                 placeholder="Search apps by title, capability, or use case..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white/10 border border-white/15 rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-primary focus:bg-white/15 transition-all shadow-lg backdrop-blur-md"
+                className="w-full bg-white/10 border border-white/15 rounded-2xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:border-primary focus:bg-white/15 transition-all shadow-lg backdrop-blur-md"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white px-2 py-1 rounded-md bg-white/10"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold  hover:text-white px-2 py-1 rounded-md bg-white/10"
                 >
                   Clear
                 </button>
@@ -91,7 +86,7 @@ export default function AppsPage() {
       </section>
 
       {/* Main Apps Directory Grid */}
-      <section className="max-w-7xl mx-auto px-4 lg:px-8 pt-12">
+      <section className="w-full px-4 lg:px-8 pt-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200">
           <div>
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -180,13 +175,13 @@ export default function AppsPage() {
       </section>
 
       {/* Creator Call To Action */}
-      <section className="max-w-6xl mx-auto px-4 lg:px-8 mt-20">
+      <section className="w-full px-4 lg:px-8 mt-20">
         <div className="bg-linear-to-r from-slate-900 to-slate-950 rounded-3xl p-8 sm:p-12 text-white border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl text-center md:text-left">
             <h3 className="text-2xl font-bold tracking-tight">
               Ready to deploy your customized application?
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs sm:text-sm  leading-relaxed">
               Create your account in seconds, connect your custom domain, and launch a complete online presence.
             </p>
           </div>

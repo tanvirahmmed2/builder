@@ -89,7 +89,7 @@ export const authenticateCreatorAuth = async (req) => {
 
     // Query creators table with exact columns that exist on creators
     const result = await query(
-      `SELECT id, name, email, phone, avatar_url, bio, is_active, is_verified, 
+      `SELECT id, name, email, phone, bio, is_active, is_verified, 
               two_factor_enabled, last_login_at, created_at, updated_at
        FROM creators
        WHERE id = $1`,
@@ -162,7 +162,7 @@ export async function authenticateCreator(email, password, reqDetails = {}) {
 
   try {
     const pgRes = await query(
-      `SELECT id, name, email, password, phone, avatar_url, bio, is_active, is_verified, 
+      `SELECT id, name, email, password, phone, bio, is_active, is_verified, 
               two_factor_enabled, last_login_at, created_at, updated_at
        FROM creators WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail]
@@ -302,7 +302,6 @@ export async function authenticateCreator(email, password, reqDetails = {}) {
       name: creator.name,
       email: creator.email,
       phone: creator.phone,
-      avatar_url: creator.avatar_url,
       bio: creator.bio,
       isActive: creator.is_active !== false,
       isVerified: creator.is_verified === true,

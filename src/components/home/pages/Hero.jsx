@@ -19,7 +19,7 @@ export default function Hero() {
   const [devicePreview, setDevicePreview] = useState('desktop');
 
   return (
-    <section className="relative overflow-hidden w-full bg-linear-to-b from-primary/10 via-slate-50 to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950 border-b border-slate-200/60 dark:border-slate-800/80 transition-colors">
+    <section className="relative overflow-hidden w-full bg-linear-to-b from-primary via-slate-50 to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950 transition-colors">
       {/* Background ambient decorative blurs */}
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 dark:bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 -right-32 w-96 h-96 bg-secondary/15 dark:bg-secondary/10 rounded-full blur-3xl pointer-events-none" />

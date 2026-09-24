@@ -34,12 +34,11 @@ export async function GET(request) {
                 pay.status AS payment_status, 
                 pay.transaction_id,
                 pay.payment_method,
-                pay.amount_in_cents AS payment_amount,
-                pay.currency AS payment_currency
+                pay.paid AS payment_amount
          FROM purchases pu
          LEFT JOIN packages p ON pu.package_id = p.id
-         LEFT JOIN payment pay ON pu.payment_id = pay.id
-         WHERE pu.id = $1 AND pu.creator_id = $2
+         LEFT JOIN payments pay ON pay.purchase_id = pu.id
+         WHERE pu.id = $1 AND pu.user_id = $2
          LIMIT 1`,
         [Number(purchaseIdParam), creatorId]
       );
@@ -56,15 +55,14 @@ export async function GET(request) {
       `SELECT pu.*, 
               p.name AS package_name, 
               p.slug AS package_slug, 
-              p.billing_interval AS package_interval,
               pay.status AS payment_status, 
               pay.transaction_id,
               pay.payment_method,
               pay.created_at AS payment_date
        FROM purchases pu
        LEFT JOIN packages p ON pu.package_id = p.id
-       LEFT JOIN payment pay ON pu.payment_id = pay.id
-       WHERE pu.creator_id = $1
+       LEFT JOIN payments pay ON pay.purchase_id = pu.id
+       WHERE pu.user_id = $1
        ORDER BY pu.id DESC`,
       [creatorId]
     );

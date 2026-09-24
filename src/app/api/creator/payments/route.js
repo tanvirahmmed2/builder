@@ -32,11 +32,10 @@ export async function GET(request) {
                 p.slug AS package_slug, 
                 p.billing_interval, 
                 p.price_in_cents AS package_price,
-                pu.status AS purchase_status,
-                pu.notes AS purchase_notes
+                s.status AS subscription_status
          FROM payment pay
          LEFT JOIN packages p ON pay.package_id = p.id
-         LEFT JOIN purchases pu ON pay.purchase_id = pu.id
+         LEFT JOIN subscription s ON pay.subscription_id = s.id
          WHERE pay.id = $1 AND pay.creator_id = $2
          LIMIT 1`,
         [Number(paymentIdParam), creatorId]
@@ -55,11 +54,10 @@ export async function GET(request) {
               p.name AS package_name, 
               p.slug AS package_slug, 
               p.billing_interval, 
-              pu.status AS purchase_status,
-              pu.id AS purchase_id_ref
+              s.status AS subscription_status
        FROM payment pay
        LEFT JOIN packages p ON pay.package_id = p.id
-       LEFT JOIN purchases pu ON pay.purchase_id = pu.id
+       LEFT JOIN subscription s ON pay.subscription_id = s.id
        WHERE pay.creator_id = $1
        ORDER BY pay.id DESC`,
       [creatorId]
@@ -96,10 +94,9 @@ export async function handlePaymentsAction(body, sessionCreator, request = null)
 
     // Fetch payment record
     const payRes = await queryDb(
-      `SELECT pay.*, p.name AS package_name, p.billing_interval, p.price_in_cents AS pkg_price, pu.notes AS purchase_notes
+      `SELECT pay.*, p.name AS package_name, p.billing_interval, p.price_in_cents AS pkg_price
        FROM payment pay
        LEFT JOIN packages p ON pay.package_id = p.id
-       LEFT JOIN purchases pu ON pay.purchase_id = pu.id
        WHERE pay.id = $1 AND pay.creator_id = $2
        LIMIT 1`,
       [paymentId, creatorId]

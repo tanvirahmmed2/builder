@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BiLoaderAlt, BiCheckCircle, BiErrorCircle, BiEnvelope, BiKey, BiShieldQuarter } from 'react-icons/bi';
+import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
 
 function CreatorVerifyContent() {
   const router = useRouter();
@@ -139,8 +140,32 @@ function CreatorVerifyContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-slate-50 dark:bg-slate-950 transition-colors">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+    <CreatorAuthLayout
+      badge="Email Verification"
+      headline="Activate Your Creator Account"
+      description="Verify your email address to unlock instantaneous website publishing, custom domain connection, and 0% commission creator store sales."
+      features={[
+        'Instant activation of cloud hosting & custom subdomain',
+        'Protected against bots and automated registrations',
+        'One-click verification or manual 6-digit code entry',
+      ]}
+      stats={[
+        { label: 'Verification', value: 'Instant' },
+        { label: 'Fast Activation', value: '100%' },
+        { label: 'Live Sites', value: '50k+' },
+      ]}
+      quote={{
+        text: 'One-click verification and my portfolio was live on the custom domain within seconds.',
+        author: 'David Kim',
+        role: 'Freelance UI/UX Specialist',
+      }}
+      topRightLink={{
+        prompt: 'Already verified?',
+        text: 'Sign In',
+        href: '/creator/login',
+      }}
+    >
+      <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         {/* State 1: Auto-verifying from URL */}
         {verifyingAuto && (
           <div className="text-center space-y-4 py-8">
@@ -290,7 +315,7 @@ function CreatorVerifyContent() {
           </div>
         )}
       </div>
-    </div>
+    </CreatorAuthLayout>
   );
 }
 

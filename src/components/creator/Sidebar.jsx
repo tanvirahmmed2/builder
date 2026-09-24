@@ -16,6 +16,7 @@ import {
   BiHome,
   BiX,
   BiCheckShield,
+  BiBriefcase,
 } from 'react-icons/bi';
 
 export const CREATOR_NAV_SECTIONS = [
@@ -24,6 +25,7 @@ export const CREATOR_NAV_SECTIONS = [
     links: [
       { href: '', label: 'Overview', icon: BiLayer, exact: true },
       { href: '/webites', label: 'My Websites', icon: BiDesktop },
+      { href: '/projects', label: 'Custom Projects', icon: BiBriefcase },
       { href: '/subscription', label: 'My Subscription', icon: BiCheckShield },
       { href: '/purchases', label: 'Packages & Plans', icon: BiCube },
       { href: '/payments', label: 'Billing & Invoices', icon: BiCreditCard },
@@ -78,6 +80,9 @@ export default function CreatorSidebar({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'logout' }),
       });
+    } catch (_) {}
+    try {
+      localStorage.removeItem('hiesci_creator');
     } catch (_) {}
     router.push('/creator/login');
   };

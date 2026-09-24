@@ -104,21 +104,32 @@ export async function GET(request) {
       ),
       // Payment history
       queryDb(
-        `SELECT pay.*, p.name AS package_name, p.slug AS package_slug, p.billing_interval, pu.status AS purchase_status
+        `SELECT pay.*, 
+                p.name AS package_name, 
+                p.slug AS package_slug, 
+                p.billing_interval, 
+                s.status AS subscription_status
          FROM payment pay
          LEFT JOIN packages p ON pay.package_id = p.id
-         LEFT JOIN purchases pu ON pay.purchase_id = pu.id
+         LEFT JOIN subscription s ON pay.subscription_id = s.id
          WHERE pay.creator_id = $1
          ORDER BY pay.id DESC`,
         [creatorId]
-      ),
+      ).catch((err) => {
+        console.error('Error fetching payments:', err);
+        return { rows: [] };
+      }),
       // Purchases history
       queryDb(
-        `SELECT pu.*, p.name AS package_name, p.slug AS package_slug, pay.status AS payment_status, pay.transaction_id
+        `SELECT pu.*, 
+                p.name AS package_name, 
+                p.slug AS package_slug, 
+                pay.status AS payment_status, 
+                pay.transaction_id
          FROM purchases pu
          LEFT JOIN packages p ON pu.package_id = p.id
-         LEFT JOIN payment pay ON pu.payment_id = pay.id
-         WHERE pu.creator_id = $1
+         LEFT JOIN payments pay ON pay.purchase_id = pu.id
+         WHERE pu.user_id = $1
          ORDER BY pu.id DESC`,
         [creatorId]
       ).catch(() => ({ rows: [] })),
@@ -137,8 +148,16 @@ export async function GET(request) {
       ),
       // Creators list for switcher
       queryDb(
-        `SELECT id, name, email, avatar_url FROM creators ORDER BY id ASC`
+        `SELECT id, name, email FROM creators ORDER BY id ASC`
       ),
+      // Custom projects
+      queryDb(
+        `SELECT * FROM project WHERE creator_id = $1 ORDER BY id DESC LIMIT 50`,
+        [creatorId]
+      ).catch((err) => {
+        console.error('Error fetching creator projects:', err);
+        return { rows: [] };
+      }),
     ]);
 
     const activeSub = activeSubRes.rows[0] || null;
@@ -150,6 +169,7 @@ export async function GET(request) {
     const updates = updatesRes.rows;
     const subscriptions = allSubsRes.rows;
     const creators = allCreatorsRes.rows;
+    const projects = projectsRes.rows;
 
     // Calculate days remaining
     let daysRemaining = 0;
@@ -175,6 +195,7 @@ export async function GET(request) {
       purchases,
       packages,
       tickets,
+      projects,
       updates,
       creators,
       stats: {

@@ -9,9 +9,11 @@ export const ContextProvider = ({ children }) => {
   const [apps, setApps] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [creator, setCreator] = useState(null);
+  const [creatorLoading, setCreatorLoading] = useState(true);
   const [theme, setThemeState] = useState('light'); // default 'light'
 
-  // Initialize theme on client mount
+  // Initialize theme and cached creator on client mount
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem('portfoliobuilder_theme');
@@ -21,6 +23,16 @@ export const ContextProvider = ({ children }) => {
       } else {
         setThemeState('light');
         document.documentElement.classList.remove('dark');
+      }
+    } catch (_) {}
+
+    try {
+      const cachedCreator = localStorage.getItem('hiesci_creator');
+      if (cachedCreator) {
+        const parsed = JSON.parse(cachedCreator);
+        if (parsed && parsed.id) {
+          setCreator(parsed);
+        }
       }
     } catch (_) {}
   }, []);
@@ -70,6 +82,32 @@ export const ContextProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchCreator = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/creator/me', {
+        withCredentials: true,
+      });
+      if (res.data?.success && res.data?.creator) {
+        setCreator(res.data.creator);
+        try {
+          localStorage.setItem('hiesci_creator', JSON.stringify(res.data.creator));
+        } catch (_) {}
+        return res.data.creator;
+      }
+      setCreator(null);
+      try {
+        localStorage.removeItem('hiesci_creator');
+      } catch (_) {}
+    } catch (_) {
+      setCreator(null);
+      try {
+        localStorage.removeItem('hiesci_creator');
+      } catch (_) {}
+    } finally {
+      setCreatorLoading(false);
+    }
+  }, []);
+
   const fetchApps = useCallback(async () => {
     try {
       const res = await axios.get('/api/apps');
@@ -98,9 +136,10 @@ export const ContextProvider = ({ children }) => {
 
   useEffect(() => {
     fetchUser();
+    fetchCreator();
     fetchApps();
     fetchReviews();
-  }, [fetchUser, fetchApps, fetchReviews]);
+  }, [fetchUser, fetchCreator, fetchApps, fetchReviews]);
 
   const contextValues = {
     theme,
@@ -117,6 +156,10 @@ export const ContextProvider = ({ children }) => {
     loading,
     setLoading,
     refetchUser: fetchUser,
+    creator,
+    setCreator,
+    creatorLoading,
+    refetchCreator: fetchCreator,
   };
 
   return <Context.Provider value={contextValues}>{children}</Context.Provider>;

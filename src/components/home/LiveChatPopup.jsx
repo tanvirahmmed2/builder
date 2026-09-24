@@ -206,7 +206,7 @@ export default function LiveChatPopup() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-6 left-8 z-50 font-sans">
       {/* Expanded Chat Popup Window */}
       {isOpen && (
         <div className="mb-4 w-[350px] sm:w-[400px] h-[520px] max-h-[82vh] bg-white border border-slate-200 shadow-2xl rounded-3xl flex flex-col overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">

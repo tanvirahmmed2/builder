@@ -44,7 +44,7 @@ export async function GET(request) {
         s.created_at,
         s.updated_at,
         c.name AS creator_name,
-        c.avatar_url AS creator_avatar,
+        NULL::text AS creator_avatar,
         d.name AS assigned_developer_name,
         COALESCE(dr.slug, 'developer') AS assigned_developer_role,
         COALESCE(dr.name, 'Developer') AS assigned_developer_role_name,

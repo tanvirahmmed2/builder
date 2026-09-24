@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
 
     // 1. Fetch creator profile
     const creatorRes = await queryDb(
-      `SELECT id, name, email, phone, avatar_url, bio, is_active, is_verified, 
+      `SELECT id, name, email, phone, bio, is_active, is_verified, 
               two_factor_enabled, last_login_at, last_login_ip, created_at, updated_at
        FROM creators 
        WHERE id = $1 LIMIT 1`,
@@ -163,7 +163,7 @@ export async function PUT(request, { params }) {
 
     const res = await queryDb(
       `UPDATE creators SET ${setClauses.join(', ')} WHERE id = $${values.length} 
-       RETURNING id, name, email, phone, avatar_url, bio, is_active, is_verified, two_factor_enabled, updated_at`,
+       RETURNING id, name, email, phone, bio, is_active, is_verified, two_factor_enabled, updated_at`,
       values
     );
 
