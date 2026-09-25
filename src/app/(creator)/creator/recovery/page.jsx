@@ -151,9 +151,7 @@ export default function CreatorRecoveryPage() {
       <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
-            {step === 3 ? <BiCheckCircle /> : step === 2 ? <BiLockAlt /> : <BiKey />}
-          </div>
+          
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {step === 1 && 'Reset Password'}
             {step === 2 && 'Set New Password'}

@@ -109,6 +109,7 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/leads', label: 'Leads', icon: BiTrendingUp },
       { href: '/developer/subscribers', label: 'Subscribers', icon: BiEnvelope },
       { href: '/developer/apps', label: 'Ecosystem Apps', icon: BiGridAlt },
+      { href: '/developer/careers', label: 'Careers & Hiring', icon: BiBriefcase },
     ],
   },
 ];

@@ -50,14 +50,11 @@ export default function FaqsPage() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 py-16 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-4xl mx-auto space-y-12">
+      <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-            <BiHelpCircle className="text-base" />
-            <span>Help & Knowledge Base</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+         
+          <h1 className="text-3xl sm:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight">
             Frequently Asked Questions
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
@@ -90,7 +87,7 @@ export default function FaqsPage() {
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-2xl">
               <BiSearch />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">No matching questions found</h3>
+            <h3 className="text-base font-semibold text-slate-800 dark:text-white">No matching questions found</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               We couldn&apos;t find an answer matching &ldquo;{searchTerm}&rdquo;. Feel free to reach out to our team directly!
             </p>
@@ -120,7 +117,7 @@ export default function FaqsPage() {
                     className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer"
                     aria-expanded={isOpen}
                   >
-                    <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                    <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white leading-snug">
                       {faq.question}
                     </span>
                     <span
@@ -146,7 +143,7 @@ export default function FaqsPage() {
         {/* Still Have Questions CTA Banner */}
         <div className="bg-linear-to-br from-slate-900 via-slate-800 to-indigo-950 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">
               Still have questions?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 max-w-lg leading-relaxed">
@@ -157,7 +154,7 @@ export default function FaqsPage() {
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-slate-900 hover:bg-primary-light font-bold text-xs transition-all shadow-md"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-slate-900 hover:bg-primary-light font-semibold text-xs transition-all shadow-md"
             >
               <BiEnvelope className="text-base" />
               <span>Contact Support</span>

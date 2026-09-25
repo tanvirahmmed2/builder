@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { SITE_NAME } from '@/lib/db/secret';
 
 export const Context = createContext();
 
@@ -13,10 +14,10 @@ export const ContextProvider = ({ children }) => {
   const [creatorLoading, setCreatorLoading] = useState(true);
   const [theme, setThemeState] = useState('light'); // default 'light'
 
-  // Initialize theme and cached creator on client mount
+  // Initialize theme on client mount
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('portfoliobuilder_theme');
+      const savedTheme = localStorage.getItem(`${SITE_NAME}`);
       if (savedTheme === 'dark') {
         setThemeState('dark');
         document.documentElement.classList.add('dark');
@@ -25,23 +26,13 @@ export const ContextProvider = ({ children }) => {
         document.documentElement.classList.remove('dark');
       }
     } catch (_) {}
-
-    try {
-      const cachedCreator = localStorage.getItem('hiesci_creator');
-      if (cachedCreator) {
-        const parsed = JSON.parse(cachedCreator);
-        if (parsed && parsed.id) {
-          setCreator(parsed);
-        }
-      }
-    } catch (_) {}
   }, []);
 
   const setTheme = useCallback((newTheme) => {
     const val = newTheme === 'dark' ? 'dark' : 'light';
     setThemeState(val);
     try {
-      localStorage.setItem('portfoliobuilder_theme', val);
+      localStorage.setItem(`${SITE_NAME}`, val);
       if (val === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
@@ -54,7 +45,7 @@ export const ContextProvider = ({ children }) => {
     setThemeState((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
       try {
-        localStorage.setItem('portfoliobuilder_theme', next);
+        localStorage.setItem(`${SITE_NAME}`, next);
         if (next === 'dark') {
           document.documentElement.classList.add('dark');
         } else {
@@ -89,20 +80,11 @@ export const ContextProvider = ({ children }) => {
       });
       if (res.data?.success && res.data?.creator) {
         setCreator(res.data.creator);
-        try {
-          localStorage.setItem('hiesci_creator', JSON.stringify(res.data.creator));
-        } catch (_) {}
         return res.data.creator;
       }
       setCreator(null);
-      try {
-        localStorage.removeItem('hiesci_creator');
-      } catch (_) {}
     } catch (_) {
       setCreator(null);
-      try {
-        localStorage.removeItem('hiesci_creator');
-      } catch (_) {}
     } finally {
       setCreatorLoading(false);
     }

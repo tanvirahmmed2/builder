@@ -32,22 +32,7 @@ export default function Reviews() {
             Discover how creative professionals and modern businesses use our platform to build their online authority, sell products, and streamline operations.
           </p>
 
-          {/* Dynamic Aggregate Rating Pill */}
-          {totalReviews > 0 && avgRating && (
-            <div className="inline-flex items-center gap-2 p-2 px-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="flex text-amber-400 text-base">
-                {[...Array(Math.min(5, Math.max(1, Math.round(Number(avgRating)))))].map((_, i) => (
-                  <BiStar key={i} className="fill-current" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                {avgRating} / 5.0 Average Rating
-              </span>
-              <span className="text-xs text-slate-400">
-                &bull; {totalReviews} Verified Review{totalReviews === 1 ? '' : 's'}
-              </span>
-            </div>
-          )}
+         
         </div>
 
         {/* Reviews Horizontal Scrolling Carousel / Row */}
@@ -71,7 +56,7 @@ export default function Reviews() {
             href="/reviews"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold transition-all shadow-md"
           >
-            <span>View All Approved Reviews</span>
+            <span>View All Reviews</span>
             <BiChevronRight className="text-base" />
           </Link>
         </div>

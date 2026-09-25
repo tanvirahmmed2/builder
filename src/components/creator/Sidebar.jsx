@@ -81,9 +81,6 @@ export default function CreatorSidebar({
         body: JSON.stringify({ action: 'logout' }),
       });
     } catch (_) {}
-    try {
-      localStorage.removeItem('hiesci_creator');
-    } catch (_) {}
     router.push('/creator/login');
   };
 

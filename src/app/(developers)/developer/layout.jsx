@@ -18,13 +18,13 @@ export const ROLE_PERMISSIONS = {
     'blogs', 'themes', 'packages', 'features', 'modules', 'payments', 'subscriptions', 'payroll', 'my-salaries',
     'live-chats', 'chats', 'contacts', 'support', 'projects', 'reports', 'reviews', 'spams',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
+    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
     'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'projects', 'my-salaries',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials'
+    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',

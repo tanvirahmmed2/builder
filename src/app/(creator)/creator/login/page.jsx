@@ -41,9 +41,6 @@ export default function CreatorLoginPage() {
       const data = await res.json();
 
       if (data.success && data.creator) {
-        try {
-          localStorage.setItem('hiesci_creator', JSON.stringify(data.creator));
-        } catch (_) {}
         router.push(`/creator/${data.creator.id}`);
         return;
       }
@@ -128,9 +125,7 @@ export default function CreatorLoginPage() {
       <div className="w-full p-7 sm:p-9 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
-            {is2FARequired ? <BiShieldQuarter /> : <BiLockAlt />}
-          </div>
+          
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {is2FARequired ? 'Security Verification' : 'Creator Login'}
           </h1>
@@ -259,7 +254,7 @@ export default function CreatorLoginPage() {
                 <span>{is2FARequired ? 'Verifying...' : 'Authenticating...'}</span>
               </>
             ) : (
-              <span>{is2FARequired ? 'Verify & Continue →' : 'Sign In →'}</span>
+              <span>{is2FARequired ? 'Verify & Continue →' : 'Login →'}</span>
             )}
           </button>
         </form>

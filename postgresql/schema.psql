@@ -1045,6 +1045,67 @@ CREATE TABLE IF NOT EXISTS meta_messages (
 CREATE INDEX IF NOT EXISTS idx_meta_messages_conv ON meta_messages (conversation_id, created_at ASC);
 CREATE INDEX IF NOT EXISTS idx_meta_messages_ext ON meta_messages (platform, external_message_id);
 
+-- ============================================================================
+-- 28. CAREERS & JOB APPLICATIONS
+-- ============================================================================
 
+CREATE TABLE IF NOT EXISTS career (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    job_type VARCHAR(50) NOT NULL DEFAULT 'FULL_TIME' CHECK (job_type IN ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'REMOTE')),
+    workplace_type VARCHAR(50) NOT NULL DEFAULT 'REMOTE' CHECK (workplace_type IN ('REMOTE', 'ON_SITE', 'HYBRID')),
+    location VARCHAR(255) DEFAULT 'Remote',
+    experience_level VARCHAR(50) DEFAULT 'MID_LEVEL' CHECK (experience_level IN ('ENTRY_LEVEL', 'MID_LEVEL', 'SENIOR', 'LEAD', 'EXECUTIVE')),
+    salary_range VARCHAR(100),
+    description TEXT NOT NULL,
+    requirements TEXT,
+    responsibilities TEXT,
+    benefits TEXT,
+    deadline TIMESTAMPTZ,
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
+CREATE INDEX IF NOT EXISTS idx_career_slug ON career (slug);
+CREATE INDEX IF NOT EXISTS idx_career_published ON career (is_published, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_career_department ON career (department);
+CREATE INDEX IF NOT EXISTS idx_career_created_by ON career (created_by_developer_id);
 
+DROP TRIGGER IF EXISTS trg_career_updated_at ON career;
+CREATE TRIGGER trg_career_updated_at
+BEFORE UPDATE ON career
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS career_application (
+    id SERIAL PRIMARY KEY,
+    career_id INTEGER NOT NULL REFERENCES career(id) ON DELETE CASCADE,
+    applicant_name VARCHAR(255) NOT NULL,
+    applicant_email CITEXT NOT NULL,
+    applicant_phone VARCHAR(50),
+    resume_url TEXT NOT NULL,
+    portfolio_url TEXT,
+    linkedin_url TEXT,
+    cover_letter TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'HIRED')),
+    reviewer_notes TEXT,
+    reviewed_by_developer_id INTEGER REFERENCES developers(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_career_application_career ON career_application (career_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_career_application_email ON career_application (applicant_email);
+CREATE INDEX IF NOT EXISTS idx_career_application_status ON career_application (status);
+
+DROP TRIGGER IF EXISTS trg_career_application_updated_at ON career_application;
+CREATE TRIGGER trg_career_application_updated_at
+BEFORE UPDATE ON career_application
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();

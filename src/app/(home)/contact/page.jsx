@@ -51,7 +51,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+    <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 space-y-16">
       <div className="w-full flex flex-col gap-7">
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-semibold">

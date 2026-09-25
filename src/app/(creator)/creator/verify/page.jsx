@@ -161,7 +161,7 @@ function CreatorVerifyContent() {
       }}
       topRightLink={{
         prompt: 'Already verified?',
-        text: 'Sign In',
+        text: 'Login',
         href: '/creator/login',
       }}
     >
@@ -205,7 +205,7 @@ function CreatorVerifyContent() {
                   href="/creator/login"
                   className="w-full block py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all text-center cursor-pointer"
                 >
-                  Proceed to Sign In →
+                  Proceed to Login →
                 </Link>
               )}
             </div>
@@ -216,9 +216,7 @@ function CreatorVerifyContent() {
         {!verifyingAuto && !success && (
           <div className="space-y-5">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xl mx-auto shadow-sm">
-                <BiShieldQuarter />
-              </div>
+              
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Verify Email Address
               </h1>
@@ -309,7 +307,7 @@ function CreatorVerifyContent() {
                 href="/creator/login"
                 className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
               >
-                Back to Sign In
+                Back to Login
               </Link>
             </div>
           </div>
