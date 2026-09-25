@@ -51,13 +51,10 @@ export default function PublicReviewsPage() {
   });
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 w-full space-y-12">
       {/* Header & Hero Section */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold uppercase tracking-wider">
-          <BiStar className="text-amber-500 text-sm" />
-          <span>Verified Client & Creator Testimonials</span>
-        </div>
+        
         <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
           Loved by Creators, Trusted Worldwide
         </h1>
@@ -254,11 +251,11 @@ export default function PublicReviewsPage() {
       )}
 
       {/* Call to Action Card */}
-      <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-12 text-center max-w-4xl mx-auto space-y-6 shadow-xl">
+      <div className="rounded-3xl bg-primary text-white p-8 sm:p-12 text-center w-full space-y-6 shadow-xl">
         <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
           Ready to Elevate Your Portfolio?
         </h2>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm  max-w-xl mx-auto leading-relaxed">
           Join thousands of satisfied creators who publish dynamic, high-converting portfolio websites in minutes with {SITE_NAME}.
         </p>
         <div className="flex items-center justify-center gap-3 flex-wrap pt-2">
@@ -270,9 +267,9 @@ export default function PublicReviewsPage() {
           </Link>
           <Link
             href="/creator/login"
-            className="px-6 py-3 rounded-xl border border-slate-700 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+            className="px-6 py-3 rounded-xl border border-slate-700 text-white text-xs font-bold bg-slate-500 hover:bg-slate-800 transition-colors"
           >
-            Sign In to Creator Studio
+             Creator Studio
           </Link>
         </div>
       </div>

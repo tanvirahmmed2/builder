@@ -5,7 +5,7 @@
 :root {
   --primary: #A2AB73;
   --primary-light: #e0e7be;
-  --primary: #a1b34c;
+  --primary-dark: #a1b34c;
   --secondary: #CC3A63;
   --secondary-light: #e48ea6;
   --secondary-dark: #ce063e;
@@ -25,7 +25,7 @@
 }
 
 .input-style{
-  padding: 5px 14px;
+  padding: 10px 14px;
   border: solid 1px var(--primary);
   outline: none;
   border-radius: 4px;

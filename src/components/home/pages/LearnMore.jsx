@@ -17,12 +17,12 @@ export default function LearnMore() {
 
   return (
     <section className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="w-full space-y-12">
         {/* Section Heading */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight leading-snug">
             Drag &amp; drop tool to build pages instantly with live preview
           </h2>
 
@@ -93,7 +93,7 @@ export default function LearnMore() {
             href="/creator/login"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white font-bold text-xs shadow-md transition-all"
           >
-            <span>Try the Studio Free</span>
+            <span>Try the Studio</span>
           </Link>
         </div>
       </div>

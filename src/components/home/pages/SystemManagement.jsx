@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import {
   BiGridAlt,
   BiMessageSquareDetail,
@@ -9,24 +8,18 @@ import {
   BiGroup,
   BiShieldQuarter,
   BiLineChart,
-  BiRightArrowAlt,
-  BiCheckCircle,
-  BiCheck,
   BiDesktop,
 } from 'react-icons/bi';
 
 export default function SystemManagement() {
   return (
     <section className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-      <div className="max-w-7xl mx-auto space-y-16">
+      <div className="w-full space-y-16">
         {/* Section Heading */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold uppercase tracking-wider">
-            <BiGridAlt className="text-blue-500 text-sm" />
-            <span>Unified Business Operations</span>
-          </div>
+          
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight leading-snug">
             One central command hub for your entire business
           </h2>
 
@@ -104,48 +97,6 @@ export default function SystemManagement() {
           </div>
         </div>
 
-        {/* Dashboard Preview Banner */}
-        <div className="rounded-3xl p-8 bg-slate-950 border border-slate-800 text-white shadow-2xl space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <h4 className="text-lg font-bold">Platform Operations Live Feed</h4>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">Real-time activity across all connected websites and stores</p>
-            </div>
-            <Link
-              href="/creator/login"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md w-fit"
-            >
-              <span>Access Creator Dashboard</span>
-              <BiRightArrowAlt className="text-base" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Total Pageviews</span>
-              <span className="text-xl sm:text-2xl font-black text-white font-mono block mt-1">142,850</span>
-              <span className="text-[10px] text-emerald-400 font-bold">+18.4% vs last week</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Active Bookings</span>
-              <span className="text-xl sm:text-2xl font-black text-white font-mono block mt-1">38</span>
-              <span className="text-[10px] text-purple-400 font-bold">100% confirmed</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Live Inquiries</span>
-              <span className="text-xl sm:text-2xl font-black text-white font-mono block mt-1">12</span>
-              <span className="text-[10px] text-blue-400 font-bold">Avg reply: 2 mins</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-bold text-slate-400">System Uptime</span>
-              <span className="text-xl sm:text-2xl font-black text-white font-mono block mt-1">99.98%</span>
-              <span className="text-[10px] text-emerald-400 font-bold">Zero downtime</span>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

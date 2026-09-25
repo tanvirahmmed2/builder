@@ -25,6 +25,7 @@ export default function CreatorLayout({ children, params }) {
   const [data, setData] = useState({
     creator: null,
     activeSubscription: null,
+    pendingSubscription: null,
     subscriptions: [],
     websites: [],
     payments: [],

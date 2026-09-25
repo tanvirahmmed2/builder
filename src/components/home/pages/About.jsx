@@ -20,11 +20,11 @@ export const data = [
 export default function About() {
   return (
     <section className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-      <div className="max-w-7xl mx-auto space-y-16">
+      <div className="w-full space-y-16">
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight leading-snug">
             Simplifying your website building experience with ready-to-use, customizable tools
           </h2>
 
@@ -47,7 +47,7 @@ export default function About() {
                 >
                   <Icon />
                 </div>
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-slate-900 dark:text-white tracking-tight font-mono">
                   {item.number}
                 </div>
                 <div className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 mt-1">

@@ -1,5 +1,6 @@
 import About from '@/components/home/pages/About'
 import Ecommerce from '@/components/home/pages/E-commerce'
+import Restaurant from '@/components/home/pages/Restaurant'
 import Hero from '@/components/home/pages/Hero'
 import LearnMore from '@/components/home/pages/LearnMore'
 import Portfolio from '@/components/home/pages/Portfolio'
@@ -15,6 +16,7 @@ const page = () => {
       <About/>
       <LearnMore/>
       <Ecommerce/>
+      <Restaurant/>
       <Portfolio/>
       <SystemManagement/>
       <Themes/>

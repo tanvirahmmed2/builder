@@ -1,74 +1,79 @@
+'use client';
+
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { queryDb } from '@/lib/db/pg';
 import { SITE_NAME } from '@/lib/db/secret';
 import {
   BiArrowBack,
   BiCalendar,
   BiBell,
-  BiShareAlt,
   BiCheckCircle,
+  BiLoaderAlt,
 } from 'react-icons/bi';
 
-async function getUpdate(slug) {
-  try {
-    const res = await queryDb(
-      'SELECT id, title, description, slug, created_at, updated_at FROM updates WHERE slug = $1 LIMIT 1',
-      [slug]
-    );
-    if (res.rows.length === 0) return null;
-    return res.rows[0];
-  } catch (err) {
-    console.error('Error fetching update:', err);
-    return null;
-  }
-}
+export default function SingleUpdatePage({ params }) {
+  const unwrappedParams = use(params);
+  const slug = unwrappedParams?.slug;
 
-async function getRecentUpdates(currentId) {
-  try {
-    const res = await queryDb(
-      'SELECT id, title, slug, created_at FROM updates WHERE id != $1 ORDER BY created_at DESC LIMIT 3',
-      [currentId || 0]
-    );
-    return res.rows;
-  } catch (err) {
-    return [];
-  }
-}
+  const [update, setUpdate] = useState(null);
+  const [recentUpdates, setRecentUpdates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const item = await getUpdate(slug);
+  useEffect(() => {
+    if (!slug) return;
 
-  if (!item) {
-    return {
-      title: `Update Not Found - ${SITE_NAME}`,
-      description: 'The requested product update announcement could not be found.',
+    const fetchUpdate = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch(`/api/updates?slug=${encodeURIComponent(slug)}`);
+        const data = await res.json();
+        if (data.success && data.update) {
+          setUpdate(data.update);
+          setRecentUpdates(data.recentUpdates || []);
+        } else {
+          setError(data.error || 'Update not found.');
+        }
+      } catch (err) {
+        setError(err.message || 'Failed to load update.');
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchUpdate();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-400">
+        <BiLoaderAlt className="animate-spin text-4xl text-emerald-600" />
+        <p className="text-xs font-semibold">Loading product update...</p>
+      </div>
+    );
   }
 
-  // Strip HTML for meta description
-  const cleanDesc = item.description?.replace(/<[^>]+>/g, '').slice(0, 160) || '';
-
-  return {
-    title: `${item.title} | ${SITE_NAME} Product Updates`,
-    description: cleanDesc,
-    openGraph: {
-      title: `${item.title} | ${SITE_NAME}`,
-      description: cleanDesc,
-    },
-  };
-}
-
-export default async function SingleUpdatePage({ params }) {
-  const { slug } = await params;
-  const update = await getUpdate(slug);
-
-  if (!update) {
-    notFound();
+  if (error || !update) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
+        <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-3xl">
+          <BiBell />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800">Update Not Found</h2>
+        <p className="text-xs text-slate-500 max-w-sm">
+          {error || 'The requested product announcement could not be found.'}
+        </p>
+        <Link
+          href="/updates"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+        >
+          <BiArrowBack />
+          <span>Back to All Updates</span>
+        </Link>
+      </div>
+    );
   }
-
-  const recentUpdates = await getRecentUpdates(update.id);
 
   const formattedDate = new Date(update.created_at).toLocaleDateString('en-US', {
     year: 'numeric',

@@ -1,13 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import {
-  BoxIcon,
-  ExternalLinkIcon,
-  CheckCircleIcon,
-  StarIcon,
-} from '@/components/ui/Icons';
+import { BiPalette } from 'react-icons/bi';
 import Theme from '@/components/home/cards/Theme';
 
 export default function ThemesPage() {
@@ -98,9 +92,8 @@ export default function ThemesPage() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-16 space-y-16">
       <div className="text-center max-w-3xl mx-auto space-y-4">
-       
         <h1 className="text-4xl sm:text-5xl font-semibold text-primary tracking-tight">
-          Portfolio Themes & Visual Systems
+          Portfolio Themes &amp; Visual Systems
         </h1>
         <p className="text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
           Select from meticulously crafted design presets. Switch themes with 1-click in the drag-and-drop studio while retaining your appointments, blogs, and reviews.
@@ -111,7 +104,7 @@ export default function ThemesPage() {
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 selectedCategory === c.id
                   ? 'bg-secondary text-white shadow-lg shadow-indigo-500/20'
                   : 'bg-slate-900 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-800'
@@ -125,7 +118,7 @@ export default function ThemesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredThemes.map((t) => (
-          <Theme key={t.id} theme={t}/>
+          <Theme key={t.id} theme={t} />
         ))}
       </div>
     </div>

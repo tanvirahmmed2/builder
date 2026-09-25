@@ -35,15 +35,12 @@ export default function UpdatesPage() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 py-16 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-4xl mx-auto space-y-12">
+      <div className="w-full space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
-            <BiBell className="text-base" />
-            <span>Changelog & Releases</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Product Updates
+          
+          <h1 className="text-3xl sm:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight">
+            Updates
           </h1>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
             Follow our journey as we continuously enhance the portfolio builder. Discover our latest feature releases, performance boosts, and design studio tools.

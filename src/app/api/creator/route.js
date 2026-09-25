@@ -50,19 +50,14 @@ export async function GET(request) {
 
     const creatorId = creator.id;
 
-    // Run parallel queries across all relevant tables
+    // Fetch only active subscription, pending/unpaid subscription, and websites
     const [
       activeSubRes,
-      allSubsRes,
+      pendingSubRes,
+      pendingPurchaseRes,
       websitesRes,
-      paymentsRes,
-      purchasesRes,
-      packagesRes,
-      ticketsRes,
-      updatesRes,
-      allCreatorsRes,
     ] = await Promise.all([
-      // Active subscription
+      // 1. Active subscription
       queryDb(
         `SELECT s.*, 
                 p.name AS package_name, 
@@ -77,99 +72,63 @@ export async function GET(request) {
          WHERE s.creator_id = $1 AND s.status = 'ACTIVE'
          ORDER BY s.id DESC LIMIT 1`,
         [creatorId]
-      ),
-      // All historical subscriptions
+      ).catch(() => ({ rows: [] })),
+
+      // 2. Pending or unpaid subscription
       queryDb(
         `SELECT s.*, 
                 p.name AS package_name, 
+                p.slug AS package_slug, 
+                p.description AS package_description, 
                 p.price_in_cents, 
+                p.currency, 
                 p.billing_interval
          FROM subscription s
          JOIN packages p ON s.package_id = p.id
-         WHERE s.creator_id = $1
-         ORDER BY s.id DESC`,
+         WHERE s.creator_id = $1 AND s.status IN ('PENDING', 'UNPAID', 'OVERDUE')
+         ORDER BY s.id DESC LIMIT 1`,
         [creatorId]
-      ),
-      // Websites with settings
-      queryDb(
-        `SELECT w.*, 
-                ws.site_title, ws.tagline, ws.contact_email, ws.contact_phone, 
-                ws.primary_color, ws.secondary_color, ws.font_family, ws.currency AS setting_currency,
-                ws.social_links, ws.seo_config
-         FROM websites w
-         LEFT JOIN website_settings ws ON w.id = ws.website_id
-         WHERE w.creator_id = $1
-         ORDER BY w.id DESC`,
-        [creatorId]
-      ),
-      // Payment history
-      queryDb(
-        `SELECT pay.*, 
-                p.name AS package_name, 
-                p.slug AS package_slug, 
-                p.billing_interval, 
-                s.status AS subscription_status
-         FROM payment pay
-         LEFT JOIN packages p ON pay.package_id = p.id
-         LEFT JOIN subscription s ON pay.subscription_id = s.id
-         WHERE pay.creator_id = $1
-         ORDER BY pay.id DESC`,
-        [creatorId]
-      ).catch((err) => {
-        console.error('Error fetching payments:', err);
-        return { rows: [] };
-      }),
-      // Purchases history
+      ).catch(() => ({ rows: [] })),
+
+      // 3. Pending purchase order
       queryDb(
         `SELECT pu.*, 
                 p.name AS package_name, 
                 p.slug AS package_slug, 
-                pay.status AS payment_status, 
-                pay.transaction_id
+                p.price_in_cents
          FROM purchases pu
-         LEFT JOIN packages p ON pu.package_id = p.id
-         LEFT JOIN payments pay ON pay.purchase_id = pu.id
-         WHERE pu.user_id = $1
-         ORDER BY pu.id DESC`,
+         JOIN packages p ON pu.package_id = p.id
+         WHERE pu.user_id = $1 AND pu.status IN ('PENDING', 'UNPAID')
+         ORDER BY pu.id DESC LIMIT 1`,
         [creatorId]
       ).catch(() => ({ rows: [] })),
-      // Available active packages
+
+      // 4. Creator websites
       queryDb(
-        `SELECT * FROM packages WHERE is_active = TRUE ORDER BY price_in_cents ASC`
-      ),
-      // Support tickets
-      queryDb(
-        `SELECT * FROM support WHERE creator_id = $1 OR requester_email = $2 ORDER BY id DESC LIMIT 50`,
-        [creator.id, creator.email]
-      ),
-      // Platform updates
-      queryDb(
-        `SELECT * FROM updates ORDER BY created_at DESC LIMIT 10`
-      ),
-      // Creators list for switcher
-      queryDb(
-        `SELECT id, name, email FROM creators ORDER BY id ASC`
-      ),
-      // Custom projects
-      queryDb(
-        `SELECT * FROM project WHERE creator_id = $1 ORDER BY id DESC LIMIT 50`,
+        `SELECT id, name, subdomain, is_published, custom_domain
+         FROM websites
+         WHERE creator_id = $1
+         ORDER BY id DESC LIMIT 20`,
         [creatorId]
-      ).catch((err) => {
-        console.error('Error fetching creator projects:', err);
-        return { rows: [] };
-      }),
+      ).catch(() => ({ rows: [] })),
     ]);
 
     const activeSub = activeSubRes.rows[0] || null;
-    const websites = websitesRes.rows;
-    const payments = paymentsRes.rows;
-    const purchases = purchasesRes?.rows || [];
-    const packages = packagesRes.rows;
-    const tickets = ticketsRes.rows;
-    const updates = updatesRes.rows;
-    const subscriptions = allSubsRes.rows;
-    const creators = allCreatorsRes.rows;
-    const projects = projectsRes.rows;
+    const pendingSub =
+      pendingSubRes.rows[0] ||
+      (pendingPurchaseRes?.rows[0]
+        ? {
+            id: pendingPurchaseRes.rows[0].id,
+            package_name: pendingPurchaseRes.rows[0].package_name,
+            package_slug: pendingPurchaseRes.rows[0].package_slug,
+            price_in_cents: pendingPurchaseRes.rows[0].price_in_cents,
+            status: pendingPurchaseRes.rows[0].status || 'PENDING',
+            currency: 'USD',
+            billing_interval: 'MONTHLY',
+          }
+        : null);
+
+    const websites = websitesRes.rows || [];
 
     // Calculate days remaining
     let daysRemaining = 0;
@@ -180,31 +139,27 @@ export async function GET(request) {
       daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     }
 
-    // Stats
-    const totalSpentCents = payments.reduce((acc, p) => acc + (p.status === 'COMPLETED' ? Number(p.amount_in_cents || 0) : 0), 0);
-    const totalStorageMb = websites.reduce((acc, w) => acc + Number(w.storage_used_mb || 0), 0);
-
     return NextResponse.json({
       success: true,
       creator,
       activeSubscription: activeSub,
+      pendingSubscription: pendingSub,
       subscription: activeSub,
-      subscriptions,
+      subscriptions: activeSub ? [activeSub] : pendingSub ? [pendingSub] : [],
       websites,
-      payments,
-      purchases,
-      packages,
-      tickets,
-      projects,
-      updates,
-      creators,
+      payments: [],
+      purchases: [],
+      packages: [],
+      tickets: [],
+      projects: [],
+      updates: [],
+      creators: [],
       stats: {
         totalWebsites: websites.length,
         maxWebsites: activeSub?.max_portfolios || 0,
         daysRemaining,
-        totalSpentCents,
-        totalStorageMb,
         hasActivePackage: Boolean(activeSub && activeSub.status === 'ACTIVE' && daysRemaining > 0),
+        hasPendingSubscription: Boolean(pendingSub),
       },
     });
   } catch (error) {

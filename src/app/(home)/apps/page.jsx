@@ -30,7 +30,28 @@ export default function AppsPage() {
   };
 
   useEffect(() => {
-    fetchPublishedApps();
+    let isMounted = true;
+    axios
+      .get('/api/apps')
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.data?.success && Array.isArray(res.data?.apps)) {
+          setApps(res.data.apps);
+        } else {
+          setError(res.data?.error || 'Failed to load applications.');
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.response?.data?.error || err.message || 'Error fetching ecosystem applications.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredApps = apps.filter((app) => {

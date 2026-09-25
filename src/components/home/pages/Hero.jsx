@@ -19,25 +19,22 @@ export default function Hero() {
   const [devicePreview, setDevicePreview] = useState('desktop');
 
   return (
-    <section className="relative overflow-hidden w-full bg-linear-to-b from-primary via-slate-50 to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950 transition-colors">
-      {/* Background ambient decorative blurs */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 dark:bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 -right-32 w-96 h-96 bg-secondary/15 dark:bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-28 relative z-10">
+    <section className="relative overflow-hidden w-full bg-primary transition-colors">
+      
+    
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-28 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             
 
-            {/* Main Headline */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight sm:leading-none">
+            <h1 className="text-4xl md:text-6xl lg:text-8xl font-semibold text-light dark:text-dark tracking-tight leading-tight sm:leading-none">
               Build Your Digital Identity.{' '}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-secondary to-purple-600 dark:from-secondary-light dark:to-purple-400">
+              <span className="">
                 Beyond Limits.
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+            <p className="text-base sm:text-lg text-dark dark:text-light max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
               Effortlessly build, modify, and upgrade websites, portfolios, stores, and appointment systems in minutes.
               Intuitive drag-and-drop studio paired with powerful business operations.
             </p>

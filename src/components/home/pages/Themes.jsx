@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   BiPalette,
   BiStar,
   BiLinkExternal,
   BiRightArrowAlt,
-  BiCheck,
-  BiFilterAlt,
 } from 'react-icons/bi';
 
-const FALLBACK_THEMES = [
+const THEMES = [
   {
     id: 'theme-1',
     name: 'Aura Studio',
@@ -81,41 +79,12 @@ const FALLBACK_THEMES = [
 ];
 
 export default function Themes() {
-  const [themes, setThemes] = useState(FALLBACK_THEMES);
   const [activeCategory, setActiveCategory] = useState('all');
-
-  useEffect(() => {
-    let ignore = false;
-    fetch('/api/themes')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!ignore && data?.success && Array.isArray(data.themes) && data.themes.length > 0) {
-          // Merge API themes with fallback formatting
-          const formatted = data.themes.map((t, idx) => ({
-            id: t.id || `api-theme-${idx}`,
-            name: t.name || t.title,
-            category: (t.category || 'portfolio').toLowerCase(),
-            categoryLabel: t.category || 'Portfolio',
-            description: t.description || 'Modern responsive template optimized for speed and conversion.',
-            font: t.font || 'Inter / Outfit',
-            isPremium: Boolean(t.isPremium || t.is_premium),
-            colors: Array.isArray(t.colors) ? t.colors : ['#6366f1', '#ec4899', '#0f172a'],
-            gradient: FALLBACK_THEMES[idx % FALLBACK_THEMES.length].gradient,
-          }));
-          setThemes(formatted);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
 
   const filteredThemes =
     activeCategory === 'all'
-      ? themes
-      : themes.filter((t) => t.category === activeCategory);
+      ? THEMES
+      : THEMES.filter((t) => t.category === activeCategory);
 
   return (
     <section className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
@@ -124,7 +93,7 @@ export default function Themes() {
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold uppercase tracking-wider">
             <BiPalette className="text-purple-500 text-sm" />
-            <span>56+ Curated Designs</span>
+            <span>Curated Theme Showcase</span>
           </div>
 
           <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
@@ -248,7 +217,7 @@ export default function Themes() {
             href="/themes"
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs shadow-lg transition-all"
           >
-            <span>Browse All 56+ Themes &amp; Templates</span>
+            <span>Browse All Themes &amp; Templates</span>
             <BiRightArrowAlt className="text-base" />
           </Link>
         </div>

@@ -39,7 +39,28 @@ export default function BlogsPage() {
   };
 
   useEffect(() => {
-    fetchBlogs();
+    let isMounted = true;
+    fetch('/api/blogs')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && Array.isArray(data.blogs)) {
+          setBlogs(data.blogs);
+        } else {
+          setError(data.error || 'Failed to load blog articles.');
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message || 'Error fetching blog articles.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredBlogs = blogs.filter((blog) => {

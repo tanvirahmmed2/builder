@@ -5,67 +5,6 @@ import Link from 'next/link';
 import { BiLoaderAlt } from 'react-icons/bi';
 import Package from '@/components/home/cards/Package';
 
-const DEFAULT_PACKAGES = [
-  {
-    id: 1,
-    name: 'Starter Creator',
-    slug: 'starter-creator',
-    description: 'Essential toolkit for emerging independent talent, junior developers, and freelancers.',
-    monthlyPrice: 15,
-    yearlyPrice: 12,
-    maxPortfolios: 1,
-    popular: false,
-    features: [
-      'Visual Drag & Drop Canvas Studio',
-      'Single Isolated Subdomain (yourname.platform)',
-      'Experience Timeline & Milestones',
-      'Client Review Moderation',
-      'Standard Edge SSL Encryption',
-      'Community Forum Support',
-    ],
-    cta: 'Start with Starter',
-  },
-  {
-    id: 2,
-    name: 'Pro Studio',
-    slug: 'pro-studio',
-    description: 'Complete power for senior architects, boutique agencies, and consultants who need bookings and blogging.',
-    monthlyPrice: 35,
-    yearlyPrice: 28,
-    maxPortfolios: 5,
-    popular: true,
-    features: [
-      'Everything in Starter Creator',
-      'Full Blog & Case Studies Module',
-      'Interactive Appointment Booking Engine',
-      'Custom Domain Access (e.g. yourbrand.com)',
-      'Assign Managers with Edit Permissions',
-      'Priority Ticket Resolution (< 4h SLA)',
-      'Unlimited Monthly Visitors',
-    ],
-    cta: 'Claim Pro Studio Pass',
-  },
-  {
-    id: 3,
-    name: 'Agency Enterprise',
-    slug: 'agency-enterprise',
-    description: 'Tailored infrastructure with dedicated reverse proxies, custom database isolation, and team management.',
-    monthlyPrice: 89,
-    yearlyPrice: 72,
-    maxPortfolios: 25,
-    popular: false,
-    features: [
-      'Everything in Pro Studio',
-      'Up to 25 Isolated website Portfolios',
-      'Multi-Admin & Manager RBAC Governance',
-      'White-label Custom Email Invites',
-      'Dedicated SLA & Solution Architect',
-      'PostgreSQL Database Direct Sync',
-    ],
-    cta: 'Deploy Enterprise Tier',
-  },
-];
-
 export default function PackagesPage() {
   const [billingCycle, setBillingCycle] = useState('MONTHLY');
   const [packages, setPackages] = useState([]);
@@ -75,15 +14,15 @@ export default function PackagesPage() {
     fetch('/api/packages')
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.packages) && data.packages.length > 0) {
+        if (data.success && Array.isArray(data.packages)) {
           const mapped = data.packages.map((p, idx) => {
-            const monthly = Math.round(Number(p.price_in_cents || 0) / 100) || 15;
+            const monthly = Math.round(Number(p.price_in_cents || 0) / 100) || 0;
             const yearly = Math.round(monthly * 0.8);
             const feats = Array.isArray(p.features) && p.features.length > 0
-              ? p.features.map(f => f.name || f.description || f)
-              : (Array.isArray(p.allowed_modules) && p.allowed_modules.length > 0
-                ? p.allowed_modules.map(m => `Includes ${m} Module`)
-                : DEFAULT_PACKAGES[idx % DEFAULT_PACKAGES.length].features);
+              ? p.features.map((f) => f.name || f.description || f)
+              : Array.isArray(p.allowed_modules) && p.allowed_modules.length > 0
+                ? p.allowed_modules.map((m) => `Includes ${m} Module`)
+                : ['Standard Website Provisioning', 'Creator Dashboard Access'];
 
             return {
               id: p.id,
@@ -100,11 +39,11 @@ export default function PackagesPage() {
           });
           setPackages(mapped);
         } else {
-          setPackages(DEFAULT_PACKAGES);
+          setPackages([]);
         }
       })
       .catch(() => {
-        setPackages(DEFAULT_PACKAGES);
+        setPackages([]);
       })
       .finally(() => {
         setLoading(false);
@@ -154,6 +93,13 @@ export default function PackagesPage() {
         <div className="py-20 text-center">
           <BiLoaderAlt className="animate-spin text-4xl text-indigo-600 mx-auto" />
           <p className="text-xs text-slate-500 mt-2">Loading available packages...</p>
+        </div>
+      ) : packages.length === 0 ? (
+        <div className="py-16 text-center max-w-md mx-auto space-y-2 bg-slate-900 border border-white/10 rounded-3xl p-8">
+          <h3 className="text-base font-bold text-white">No Subscription Packages Available</h3>
+          <p className="text-xs text-slate-400">
+            Subscription tiers will appear here once published in the administrative system.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">

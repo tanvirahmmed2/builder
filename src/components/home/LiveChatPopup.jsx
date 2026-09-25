@@ -35,26 +35,29 @@ export default function LiveChatPopup() {
   }, [messages, isOpen]);
 
   // Check for existing 24-hour cookie session on mount
-  const checkActiveSession = useCallback(async () => {
-    try {
-      const res = await fetch('/api/live_chats');
-      const data = await res.json();
-      if (data.success && data.chat) {
-        setChatSession(data.chat);
-        setMessages(data.messages || []);
-        if (data.device) setDeviceInfo(data.device);
-      } else {
-        setChatSession(null);
-        setMessages([]);
-      }
-    } catch (err) {
-      console.error('Error checking live chat session:', err);
-    }
-  }, []);
-
   useEffect(() => {
-    checkActiveSession();
-  }, [checkActiveSession]);
+    let isMounted = true;
+    fetch('/api/live_chats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && data.chat) {
+          setChatSession(data.chat);
+          setMessages(data.messages || []);
+          if (data.device) setDeviceInfo(data.device);
+        } else {
+          setChatSession(null);
+          setMessages([]);
+        }
+      })
+      .catch((err) => {
+        console.error('Error checking live chat session:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Live polling: poll for new messages every 3.5s when chat popup is open
   useEffect(() => {
