@@ -9,14 +9,14 @@ import {
   BiSearch,
   BiDollarCircle,
   BiRightArrowAlt,
-  BiSparkles,
   BiGlobe,
   BiHeart,
   BiRocket,
-  BiShieldCheck,
   BiLaptop,
   BiTrendingUp,
+  BiSpeaker,
 } from 'react-icons/bi';
+import { SITE_NAME } from '@/lib/db/secret';
 
 export default function CareersPage() {
   const [careers, setCareers] = useState([]);
@@ -89,7 +89,7 @@ export default function CareersPage() {
       desc: 'Comprehensive health coverage, mental wellness memberships, and generous parental leave.',
     },
     {
-      icon: BiSparkles,
+      icon: BiSpeaker,
       title: 'Unlimited Paid Time Off',
       desc: 'Take the time you need to recharge, explore new hobbies, and spend quality moments with loved ones.',
     },
@@ -97,17 +97,12 @@ export default function CareersPage() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50 dark:bg-slate-950 py-12 md:py-16 px-4 sm:px-6 lg:px-8 space-y-16">
-      {/* Hero Section */}
-      <div className="max-w-4xl mx-auto text-center space-y-5">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
-          <BiSparkles /> We Are Hiring
-        </div>
-
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          Build The Next Generation of{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-rose-500">
-            Web & Portfolio Creation
-          </span>
+      
+      <div className="max-w-6xl mx-auto text-center space-y-5">
+       
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-slate-900 dark:text-white tracking-tight leading-tight">
+          Build The Next Generation of {SITE_NAME}
+          Web & Portfolio Creation
         </h1>
 
         <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
@@ -117,7 +112,7 @@ export default function CareersPage() {
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <a
             href="#openings"
-            className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-95 transition-all"
+            className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold shadow-md hover:opacity-95 transition-all"
           >
             Explore Open Positions ({careers.length})
           </a>
@@ -133,7 +128,7 @@ export default function CareersPage() {
       {/* Culture & Perks Grid */}
       <div id="culture" className="max-w-6xl mx-auto space-y-8 scroll-mt-24">
         <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
             Why You’ll Love Working With Us
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
@@ -152,7 +147,7 @@ export default function CareersPage() {
                 <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-2xl">
                   <Icon />
                 </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">
                   {perk.title}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -168,10 +163,10 @@ export default function CareersPage() {
       <div id="openings" className="max-w-6xl mx-auto space-y-6 scroll-mt-24">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Careers & Opportunities
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white mt-1">
               Current Open Roles
             </h2>
           </div>
@@ -196,7 +191,7 @@ export default function CareersPage() {
 
           {/* Department Pills */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">
               Department:
             </span>
             <button
@@ -229,7 +224,7 @@ export default function CareersPage() {
           {/* Type & Workplace filters */}
           <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Workplace:
               </span>
               <select
@@ -245,7 +240,7 @@ export default function CareersPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Type:
               </span>
               <select
@@ -289,7 +284,7 @@ export default function CareersPage() {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 flex items-center justify-center text-indigo-500 text-3xl">
               <BiBriefcase />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
               No matching positions found
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
@@ -306,7 +301,7 @@ export default function CareersPage() {
                 {/* Details */}
                 <div className="space-y-3 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">
                       {job.department}
                     </span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
@@ -317,14 +312,14 @@ export default function CareersPage() {
                       {job.location} ({job.workplace_type})
                     </span>
                     {job.is_featured && (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
                         ★ Featured
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {job.title}
                     </h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">

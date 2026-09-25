@@ -72,7 +72,7 @@ export default function AppsPage() {
         <div className="max-w-6xl mx-auto text-center relative z-10 space-y-4">
           
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-3xl mx-auto leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
             Turnkey Website Built for{' '}
             Modern Creators
           </h1>
@@ -110,7 +110,7 @@ export default function AppsPage() {
       <section className="w-full px-4 lg:px-8 pt-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
               <BiGridAlt className="text-primary text-2xl" /> Available Applications
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -135,7 +135,7 @@ export default function AppsPage() {
             <button
               type="button"
               onClick={fetchPublishedApps}
-              className="text-rose-600 hover:underline font-bold"
+              className="text-rose-600 hover:underline font-semibold"
             >
               Retry
             </button>
@@ -167,7 +167,7 @@ export default function AppsPage() {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-3xl mx-auto mb-4">
               <BiGridAlt />
             </div>
-            <h3 className="text-base font-bold text-slate-800">
+            <h3 className="text-base font-semibold text-slate-800">
               {search ? 'No Matching Applications' : 'No Published Applications Found'}
             </h3>
             <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
@@ -179,7 +179,7 @@ export default function AppsPage() {
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="mt-4 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="mt-4 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
               >
                 Clear Search Filter
               </button>
@@ -199,7 +199,7 @@ export default function AppsPage() {
       <section className="w-full px-4 lg:px-8 mt-20">
         <div className="bg-linear-to-r from-slate-900 to-slate-950 rounded-3xl p-8 sm:p-12 text-white border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl text-center md:text-left">
-            <h3 className="text-2xl font-bold tracking-tight">
+            <h3 className="text-2xl font-semibold tracking-tight">
               Ready to deploy your customized application?
             </h3>
             <p className="text-xs sm:text-sm  leading-relaxed">
@@ -208,7 +208,7 @@ export default function AppsPage() {
           </div>
           <Link
             href="/creator/login"
-            className="px-6 py-3.5 rounded-2xl bg-secondary hover:bg-secondary-dark text-white font-bold text-sm shadow-xl flex items-center gap-2 shrink-0 transition-all hover:scale-105 cursor-pointer"
+            className="px-6 py-3.5 rounded-2xl bg-secondary hover:bg-secondary-dark text-white font-semibold text-sm shadow-xl flex items-center gap-2 shrink-0 transition-all hover:scale-105 cursor-pointer"
           >
             <span>Get Started Now</span>
             <BiRightArrowAlt className="text-lg" />

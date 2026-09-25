@@ -18,26 +18,26 @@ export const ROLE_PERMISSIONS = {
     'blogs', 'themes', 'packages', 'features', 'modules', 'payments', 'subscriptions', 'payroll', 'my-salaries',
     'live-chats', 'chats', 'contacts', 'support', 'projects', 'reports', 'reviews', 'spams',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers'
+    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
   ],
   manager: [
     'overview', 'creators', 'users', 'websites', 'packages', 'features',
     'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'projects', 'my-salaries',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers'
+    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
   ],
   developer: [
     'overview', 'websites', 'themes', 'packages', 'features',
-    'apps', 'spams', 'reports', 'blogs', 'support', 'projects', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
+    'apps', 'spams', 'reports', 'blogs', 'support', 'projects', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates', 'policies'
   ],
   marketer: [
     'overview', 'blogs', 'themes', 'leads',
-    'packages', 'reviews', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
+    'packages', 'reviews', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates', 'policies'
   ],
   support: [
     'overview', 'live-chats', 'chats', 'contacts', 'support', 'reports',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'reviews', 'users', 'creators', 'subscribers', 'profile', 'settings', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates'
+    'reviews', 'users', 'creators', 'subscribers', 'profile', 'settings', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates', 'policies'
   ]
 };
 

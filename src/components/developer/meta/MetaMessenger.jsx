@@ -15,7 +15,7 @@ import {
   BiTimeFive,
   BiLoaderAlt,
   BiInfoCircle,
-  BiShieldCheck,
+  BiCheckShield,
   BiShieldX,
   BiDotsVerticalRounded,
   BiPhone,

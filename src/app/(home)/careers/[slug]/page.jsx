@@ -17,8 +17,8 @@ import {
   BiUser,
   BiEnvelope,
   BiPhone,
-  BiShieldCheck,
-  BiSparkles,
+  BiCheckShield,
+  BiStar,
 } from 'react-icons/bi';
 
 export default function CareerDetailPage({ params }) {
@@ -240,7 +240,7 @@ export default function CareerDetailPage({ params }) {
             {/* Overview */}
             <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BiSparkles className="text-indigo-600" />
+                <BiStar className="text-indigo-600" />
                 Role Overview
               </h2>
               <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
@@ -509,7 +509,7 @@ export default function CareerDetailPage({ params }) {
                     </button>
 
                     <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-1">
-                      <BiShieldCheck className="text-sm text-emerald-500" />
+                      <BiCheckShield className="text-sm text-emerald-500" />
                       <span>Your information is encrypted & kept strictly confidential.</span>
                     </div>
                   </form>

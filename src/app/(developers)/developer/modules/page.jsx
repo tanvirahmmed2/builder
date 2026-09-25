@@ -15,6 +15,8 @@ import {
   BiLayer,
   BiCodeBlock,
   BiCheckCircle,
+  BiArchive,
+  BiData,
 } from 'react-icons/bi';
 
 export default function AdminDatabaseModulesPage() {
@@ -23,11 +25,15 @@ export default function AdminDatabaseModulesPage() {
   const isAdminUser = Boolean(permissions.includes('modules'));
 
   const [modules, setModules] = useState([]);
+  const [counts, setCounts] = useState({ total: 0, website: 0, platform: 0, legacy: 0 });
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('website'); // 'website' | 'all' | 'platform'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'website' | 'platform' | 'legacy'
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Table inspection state
   const [inspectingTable, setInspectingTable] = useState(null);
-  const [tableSchema, setTableSchema] = useState(null);
+  const [inspectData, setInspectData] = useState(null);
+  const [inspectTab, setInspectTab] = useState('schema'); // 'schema' | 'preview'
   const [loadingSchema, setLoadingSchema] = useState(false);
 
   const fetchModules = async () => {
@@ -37,6 +43,9 @@ export default function AdminDatabaseModulesPage() {
       const data = await res.json();
       if (data.success) {
         setModules(data.modules || []);
+        if (data.counts) {
+          setCounts(data.counts);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch database modules:', err);
@@ -52,15 +61,16 @@ export default function AdminDatabaseModulesPage() {
   const handleInspectTable = async (tableName) => {
     setInspectingTable(tableName);
     setLoadingSchema(true);
-    setTableSchema(null);
+    setInspectData(null);
+    setInspectTab('schema');
     try {
       const res = await fetch(`/api/developer/modules?table=${encodeURIComponent(tableName)}`);
       const data = await res.json();
       if (data.success) {
-        setTableSchema(data.columns || []);
+        setInspectData(data);
       }
     } catch (e) {
-      console.error('Error fetching table schema:', e);
+      console.error('Error fetching table schema & preview:', e);
     } finally {
       setLoadingSchema(false);
     }
@@ -75,9 +85,7 @@ export default function AdminDatabaseModulesPage() {
         mod.module_title.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
-        activeFilter === 'all' ||
-        (activeFilter === 'website' && mod.category === 'website') ||
-        (activeFilter === 'platform' && mod.category === 'platform');
+        activeFilter === 'all' || mod.category === activeFilter;
 
       return matchesSearch && matchesCategory;
     });
@@ -87,6 +95,7 @@ export default function AdminDatabaseModulesPage() {
   const totalTables = modules.length;
   const websiteModules = modules.filter((m) => m.category === 'website').length;
   const platformTables = modules.filter((m) => m.category === 'platform').length;
+  const legacyTables = modules.filter((m) => m.category === 'legacy').length;
   const totalColumns = modules.reduce((acc, m) => acc + (m.columns_count || 0), 0);
 
   if (!isAdminUser) {
@@ -108,19 +117,19 @@ export default function AdminDatabaseModulesPage() {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
               Database Modules &amp; Tables
             </h1>
             <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-              PostgreSQL Schema
+              PostgreSQL Catalog ({totalTables} Tables)
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
               Admin Only
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Real-time introspection of PostgreSQL base tables mapped into modular website features and platform components.
+            Real-time introspection of PostgreSQL tables mapped into active website feature modules, platform core entities, and legacy archive schemas.
           </p>
         </div>
 
@@ -149,7 +158,7 @@ export default function AdminDatabaseModulesPage() {
             </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 dark:text-white">{totalTables}</div>
-          <p className="text-[11px] text-slate-400 mt-1">PostgreSQL base tables</p>
+          <p className="text-[11px] text-slate-400 mt-1">Base database tables</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
@@ -162,7 +171,7 @@ export default function AdminDatabaseModulesPage() {
             </div>
           </div>
           <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{websiteModules}</div>
-          <p className="text-[11px] text-slate-400 mt-1">website_* domain tables</p>
+          <p className="text-[11px] text-slate-400 mt-1">Multi-website domain modules</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
@@ -175,20 +184,20 @@ export default function AdminDatabaseModulesPage() {
             </div>
           </div>
           <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{platformTables}</div>
-          <p className="text-[11px] text-slate-400 mt-1">Auth, billing, and staff tables</p>
+          <p className="text-[11px] text-slate-400 mt-1">Modern SaaS core tables</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Columns
+              Legacy &amp; Old Modules
             </span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
-              <BiLayer className="text-xl" />
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+              <BiArchive className="text-xl" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{totalColumns}</div>
-          <p className="text-[11px] text-slate-400 mt-1">Schema fields defined</p>
+          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{legacyTables}</div>
+          <p className="text-[11px] text-slate-400 mt-1">Preserved prior system tables</p>
         </div>
       </div>
 
@@ -196,22 +205,11 @@ export default function AdminDatabaseModulesPage() {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xs overflow-hidden">
         {/* Filter Tabs & Search Bar */}
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
-            <button
-              type="button"
-              onClick={() => setActiveFilter('website')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeFilter === 'website'
-                  ? 'bg-white dark:bg-slate-700 text-secondary shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-              }`}
-            >
-              Website Modules ({websiteModules})
-            </button>
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit flex-wrap">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === 'all'
                   ? 'bg-white dark:bg-slate-700 text-secondary shadow-xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
@@ -221,14 +219,36 @@ export default function AdminDatabaseModulesPage() {
             </button>
             <button
               type="button"
+              onClick={() => setActiveFilter('website')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeFilter === 'website'
+                  ? 'bg-white dark:bg-slate-700 text-secondary shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              }`}
+            >
+              Website Modules ({websiteModules})
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveFilter('platform')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === 'platform'
                   ? 'bg-white dark:bg-slate-700 text-secondary shadow-xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
               }`}
             >
-              Platform Tables ({platformTables})
+              Platform Core ({platformTables})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('legacy')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeFilter === 'legacy'
+                  ? 'bg-white dark:bg-slate-700 text-secondary shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+              }`}
+            >
+              Legacy / Old Modules ({legacyTables})
             </button>
           </div>
 
@@ -236,7 +256,7 @@ export default function AdminDatabaseModulesPage() {
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
             <input
               type="text"
-              placeholder="Search by table name or module title..."
+              placeholder="Search table or module title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all font-medium"
@@ -254,8 +274,8 @@ export default function AdminDatabaseModulesPage() {
                 <th className="px-5 py-3.5 whitespace-nowrap">Category</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Columns</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Rows (Est.)</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Package Integration</th>
-                <th className="px-5 py-3.5 text-right whitespace-nowrap">Schema</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Integration Status</th>
+                <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -264,7 +284,7 @@ export default function AdminDatabaseModulesPage() {
                   <td colSpan={7} className="py-16 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-6 h-6 border-2 border-secondary border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs font-semibold">Querying PostgreSQL schema...</span>
+                      <span className="text-xs font-semibold">Querying PostgreSQL catalog...</span>
                     </div>
                   </td>
                 </tr>
@@ -278,9 +298,9 @@ export default function AdminDatabaseModulesPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((mod) => (
+                filtered.map((mod, idx) => (
                   <tr
-                    key={mod.table_name}
+                    key={`${mod.table_name}-${idx}`}
                     className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <td className="px-5 py-4 font-mono font-bold text-slate-900 dark:text-white">
@@ -296,15 +316,20 @@ export default function AdminDatabaseModulesPage() {
                     </td>
 
                     <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                          mod.category === 'website'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                            : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                        }`}
-                      >
-                        {mod.category === 'website' ? 'Website Module' : 'Platform Table'}
-                      </span>
+                      {mod.category === 'website' ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          Website Module
+                        </span>
+                      ) : mod.category === 'legacy' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <BiArchive className="text-xs" />
+                          <span>Legacy / Old</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                          Platform Core
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-5 py-4 font-mono font-semibold text-slate-700 dark:text-slate-300">
@@ -319,7 +344,11 @@ export default function AdminDatabaseModulesPage() {
                       {mod.is_primary_module ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                           <BiCheckCircle className="text-base" />
-                          <span>Selectable for Packages</span>
+                          <span>Selectable in Packages</span>
+                        </span>
+                      ) : mod.is_legacy ? (
+                        <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                          Archived System Table
                         </span>
                       ) : (
                         <span className="text-[11px] text-slate-400 italic">
@@ -335,7 +364,7 @@ export default function AdminDatabaseModulesPage() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-secondary hover:text-white dark:bg-slate-800 dark:hover:bg-secondary text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
                       >
                         <BiCodeBlock className="text-sm" />
-                        <span>Inspect Schema</span>
+                        <span>Inspect &amp; Preview</span>
                       </button>
                     </td>
                   </tr>
@@ -346,19 +375,34 @@ export default function AdminDatabaseModulesPage() {
         </div>
       </div>
 
-      {/* Schema Inspector Modal */}
+      {/* Schema & Live Data Inspector Modal */}
       {inspectingTable && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <BiTable className="text-secondary text-xl" />
                   <h3 className="text-base font-bold text-slate-900 dark:text-white font-mono">
                     {inspectingTable}
                   </h3>
+                  {inspectData && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      ({inspectData.module_title})
+                    </span>
+                  )}
+                  {inspectData?.is_legacy && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      Legacy Archive
+                    </span>
+                  )}
+                  {inspectData && (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {inspectData.total_rows} total rows
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">PostgreSQL columns definition</p>
+                <p className="text-xs text-slate-400 mt-0.5">PostgreSQL definition and real-time records introspection</p>
               </div>
 
               <button
@@ -370,51 +414,126 @@ export default function AdminDatabaseModulesPage() {
               </button>
             </div>
 
+            {/* Modal Tabs */}
+            <div className="px-5 pt-3 pb-0 border-b border-slate-100 dark:border-slate-800 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setInspectTab('schema')}
+                className={`pb-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 ${
+                  inspectTab === 'schema'
+                    ? 'border-secondary text-secondary'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                }`}
+              >
+                <BiCodeBlock className="text-base" />
+                <span>Column Schema ({inspectData?.columns?.length || 0})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectTab('preview')}
+                className={`pb-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-1.5 ${
+                  inspectTab === 'preview'
+                    ? 'border-secondary text-secondary'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                }`}
+              >
+                <BiData className="text-base" />
+                <span>Live Data Preview (Top {inspectData?.sample_rows?.length || 0})</span>
+              </button>
+            </div>
+
             <div className="p-5 overflow-y-auto flex-1">
               {loadingSchema ? (
                 <div className="py-12 text-center text-slate-400">
                   <div className="w-6 h-6 border-2 border-secondary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <span className="text-xs font-semibold">Reading columns from database...</span>
+                  <span className="text-xs font-semibold">Reading columns and records from PostgreSQL...</span>
                 </div>
-              ) : tableSchema && tableSchema.length > 0 ? (
-                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
-                        <th className="px-4 py-2.5">#</th>
-                        <th className="px-4 py-2.5">Column Name</th>
-                        <th className="px-4 py-2.5">Data Type</th>
-                        <th className="px-4 py-2.5">Nullable</th>
-                        <th className="px-4 py-2.5">Default</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                      {tableSchema.map((col, idx) => (
-                        <tr key={col.column_name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="px-4 py-2 text-slate-400 text-[11px]">{idx + 1}</td>
-                          <td className="px-4 py-2 font-bold text-slate-900 dark:text-white">{col.column_name}</td>
-                          <td className="px-4 py-2 text-secondary font-semibold">{col.data_type}</td>
-                          <td className="px-4 py-2">
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                col.is_nullable === 'YES'
-                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                              }`}
-                            >
-                              {col.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-slate-500 text-[10px] truncate max-w-xs">
-                            {col.column_default || '—'}
-                          </td>
+              ) : inspectTab === 'schema' ? (
+                inspectData?.columns && inspectData.columns.length > 0 ? (
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
+                          <th className="px-4 py-2.5">#</th>
+                          <th className="px-4 py-2.5">Column Name</th>
+                          <th className="px-4 py-2.5">Data Type</th>
+                          <th className="px-4 py-2.5">Nullable</th>
+                          <th className="px-4 py-2.5">Default Value</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                        {inspectData.columns.map((col, idx) => (
+                          <tr key={col.column_name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                            <td className="px-4 py-2 text-slate-400 text-[11px]">{idx + 1}</td>
+                            <td className="px-4 py-2 font-bold text-slate-900 dark:text-white">{col.column_name}</td>
+                            <td className="px-4 py-2 text-secondary font-semibold">{col.data_type}</td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  col.is_nullable === 'YES'
+                                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                }`}
+                              >
+                                {col.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-slate-500 text-[10px] truncate max-w-xs">
+                              {col.column_default || '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-6">No columns found for this table.</p>
+                )
               ) : (
-                <p className="text-xs text-slate-400 text-center py-6">No columns found for this table.</p>
+                /* Data Preview Tab */
+                inspectData?.sample_rows && inspectData.sample_rows.length > 0 ? (
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
+                          {Object.keys(inspectData.sample_rows[0]).map((k) => (
+                            <th key={k} className="px-4 py-2.5 whitespace-nowrap font-mono">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-[11px]">
+                        {inspectData.sample_rows.map((row, rIdx) => (
+                          <tr key={rIdx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                            {Object.keys(inspectData.sample_rows[0]).map((k) => {
+                              const val = row[k];
+                              const displayVal =
+                                val === null || val === undefined
+                                  ? 'NULL'
+                                  : typeof val === 'object'
+                                  ? JSON.stringify(val)
+                                  : String(val);
+
+                              return (
+                                <td key={k} className="px-4 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap max-w-xs truncate" title={displayVal}>
+                                  {val === null || val === undefined ? (
+                                    <span className="text-slate-400 italic">NULL</span>
+                                  ) : (
+                                    displayVal
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-400">
+                    <BiArchive className="text-4xl mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                    <p className="text-xs font-semibold">Table currently has 0 rows recorded.</p>
+                  </div>
+                )
               )}
             </div>
 

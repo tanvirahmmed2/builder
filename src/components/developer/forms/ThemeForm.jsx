@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BiPalette, BiCheck, BiX } from 'react-icons/bi';
 
 export default function ThemeForm({ onSuccess, onCancel }) {
+  const [apps, setApps] = useState([]);
   const [formData, setFormData] = useState({
+    app_id: '',
     name: '',
     slug: '',
     description: '',
@@ -16,22 +18,43 @@ export default function ThemeForm({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    async function loadApps() {
+      try {
+        const res = await fetch('/api/apps');
+        const data = await res.json();
+        if (data.success) {
+          setApps(data.apps || []);
+        }
+      } catch (e) {
+        console.error('Failed to load apps:', e);
+      }
+    }
+    loadApps();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     const slug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const payload = {
+      ...formData,
+      slug,
+      app_id: formData.app_id ? Number(formData.app_id) : null,
+    };
 
     try {
       const res = await fetch('/api/developer/themes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, slug }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
         setFormData({
+          app_id: '',
           name: '',
           slug: '',
           description: '',
@@ -81,7 +104,23 @@ export default function ThemeForm({ onSuccess, onCancel }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Target Application</label>
+            <select
+              value={formData.app_id || ''}
+              onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
+            >
+              <option value="">General / All Apps</option>
+              {apps.map((app) => (
+                <option key={app.id} value={app.id}>
+                  {app.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Theme Name</label>
             <input

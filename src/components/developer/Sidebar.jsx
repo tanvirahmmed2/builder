@@ -60,6 +60,7 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/developer/blogs', label: 'Blogs', icon: BiFile },
       { href: '/developer/themes', label: 'Themes', icon: BiPalette },
+      { href: '/developer/policies', label: 'Company Policies', icon: BiCheckShield },
       { href: '/developer/faqs', label: 'FAQs', icon: BiHelpCircle },
       { href: '/developer/updates', label: 'Product Updates', icon: BiBell },
       { href: '/developer/tutorials', label: 'Video Tutorials', icon: BiVideo },

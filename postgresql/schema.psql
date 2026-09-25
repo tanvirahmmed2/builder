@@ -5,7 +5,8 @@
 -- Description: Platform Admin, Apps, Apps_Images, Blogs, Blogs_Image, Packages, Feature,
 --              Packages_Feature, Live_Chats, Live_Chat_Messages,
 --              Contacts, Support, Support_Messages, Support_Images, Payment,
---              Subscription, Websites, Reports, Leads, Subscribers, Themes.
+--              Subscription, Websites, Reports, Leads, Subscribers, Themes,
+--              Tutorials, Tasks, Notices, Meta Messaging, Careers, Policies.
 -- ============================================================================
 
 -- 1. EXTENSIONS
@@ -1109,3 +1110,27 @@ CREATE TRIGGER trg_career_application_updated_at
 BEFORE UPDATE ON career_application
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 29. POLICIES (Platform Policies, Terms of Service, Privacy Policy, etc.)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS policies (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_policies_slug ON policies (slug);
+CREATE INDEX IF NOT EXISTS idx_policies_published ON policies (is_published, created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_policies_updated_at ON policies;
+CREATE TRIGGER trg_policies_updated_at
+BEFORE UPDATE ON policies
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+

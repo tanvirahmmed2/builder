@@ -8,7 +8,15 @@ export async function GET(request) {
     if (!auth.success) {
       return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
     }
-    const res = await queryDb('SELECT * FROM themes ORDER BY id ASC').catch(() => ({ rows: [] }));
+    const res = await queryDb(`
+      SELECT 
+        t.*,
+        a.title AS app_title,
+        a.slug AS app_slug
+      FROM themes t
+      LEFT JOIN apps a ON t.app_id = a.id
+      ORDER BY t.id ASC
+    `).catch(() => ({ rows: [] }));
     return NextResponse.json({ success: true, table: 'themes', records: res.rows });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

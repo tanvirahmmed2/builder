@@ -165,9 +165,14 @@ const Footer = () => {
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <span>Careers</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
-                    We're Hiring
-                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/policies"
+                  className="hover:text-white transition-colors"
+                >
+                  Company Policies
                 </Link>
               </li>
               {creator?.id ? (

@@ -134,6 +134,7 @@ export default function AdminThemesPage() {
                 <th className="px-4 py-3 whitespace-nowrap">ID</th>
                 <th className="px-4 py-3 whitespace-nowrap">Preview</th>
                 <th className="px-4 py-3 whitespace-nowrap">Theme Name</th>
+                <th className="px-4 py-3 whitespace-nowrap">Application</th>
                 <th className="px-4 py-3 whitespace-nowrap">Category</th>
                 <th className="px-4 py-3 whitespace-nowrap">Tier Access</th>
                 <th className="px-4 py-3 whitespace-nowrap">Status</th>
@@ -144,11 +145,11 @@ export default function AdminThemesPage() {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">Loading themes...</td>
+                  <td colSpan={9} className="py-12 text-center text-slate-400">Loading themes...</td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">No themes found.</td>
+                  <td colSpan={9} className="py-12 text-center text-slate-400">No themes found.</td>
                 </tr>
               ) : (
                 filtered.map((t) => (
@@ -170,6 +171,15 @@ export default function AdminThemesPage() {
                     <td className="px-4 py-3">
                       <div className="font-bold text-slate-800">{t.name}</div>
                       <div className="font-mono text-[11px] text-slate-400">/{t.slug}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {t.app_title ? (
+                        <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                          {t.app_title}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 italic">General</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">

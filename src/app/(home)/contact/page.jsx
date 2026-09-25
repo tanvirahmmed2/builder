@@ -163,14 +163,14 @@ export default function ContactPage() {
         <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6">
           
 
-          <div className="p-4 rounded-xl text-light bg-secondary w-full">
+          <div className="p-4 rounded-xl text-light bg-primary w-full">
             <h4 className="font-semibold  text-sm">Need Instant Assistance?</h4>
             <p className="text-  leading-relaxed">
               If you have already purchased a website subscription, you can submit priority tickets directly through the Creator Dashboard or inspect active solutions in the Admin Center.
             </p>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-light transition-colors"
             >
               <span>Go to Creator Workspace</span>
               <span>→</span>

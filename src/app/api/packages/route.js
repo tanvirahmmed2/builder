@@ -4,7 +4,7 @@ import { queryDb } from '@/lib/db/pg';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const appId = searchParams.get('appId') || searchParams.get('app_id');
+    const appId = searchParams.get('appId') || searchParams.get('app_id') || searchParams.get('app');
     const id = searchParams.get('id');
 
     let query = `
@@ -41,14 +41,42 @@ export async function GET(request) {
     if (id) {
       query += ` AND p.id = $1 GROUP BY p.id, a.id LIMIT 1`;
       params.push(Number(id));
-    } else if (appId) {
-      query += ` AND p.app_id = $1 GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
-      params.push(Number(appId));
+    } else if (appId && appId !== 'ALL' && appId !== 'all') {
+      if (!isNaN(appId)) {
+        query += ` AND p.app_id = $1 GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
+        params.push(Number(appId));
+      } else {
+        query += ` AND LOWER(a.slug) = $1 GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
+        params.push(appId.toLowerCase());
+      }
     } else {
       query += ` GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
     }
 
-    const res = await queryDb(query, params);
+    const appsQuery = `
+      SELECT 
+        a.id,
+        a.title,
+        a.slug,
+        a.short_description,
+        COUNT(p.id)::int AS package_count
+      FROM apps a
+      LEFT JOIN packages p ON p.app_id = a.id AND p.is_active = TRUE
+      WHERE a.is_published = TRUE
+      GROUP BY a.id, a.title, a.slug, a.short_description
+      ORDER BY a.title ASC
+    `;
+
+    const [res, appsRes] = await Promise.all([
+      queryDb(query, params).catch((err) => {
+        console.error('Error fetching packages:', err);
+        return { rows: [] };
+      }),
+      queryDb(appsQuery).catch((err) => {
+        console.error('Error fetching apps for packages categories:', err);
+        return { rows: [] };
+      }),
+    ]);
 
     if (id) {
       if (res.rows.length === 0) {
@@ -57,7 +85,11 @@ export async function GET(request) {
       return NextResponse.json({ success: true, package: res.rows[0] });
     }
 
-    return NextResponse.json({ success: true, packages: res.rows });
+    return NextResponse.json({
+      success: true,
+      packages: res.rows || [],
+      apps: appsRes.rows || [],
+    });
   } catch (error) {
     console.error('Public packages GET error:', error);
     return NextResponse.json(

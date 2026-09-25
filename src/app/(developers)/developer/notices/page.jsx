@@ -5,7 +5,7 @@ import {
   BiBell,
   BiPlus,
   BiPin,
-  BiShieldCheck,
+  BiCheckShield,
   BiRefresh,
   BiTrash,
   BiTime,

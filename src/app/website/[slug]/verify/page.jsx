@@ -10,6 +10,7 @@ import {
   BiLoaderAlt,
   BiRefresh,
   BiArrowBack,
+  BiCheckShield,
 } from 'react-icons/bi';
 
 function VerifyForm({ slug }) {
@@ -178,7 +179,7 @@ function VerifyForm({ slug }) {
               className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md mb-2"
               style={{ backgroundColor: primaryColor }}
             >
-              <BiShieldCheck className="text-2xl" />
+              <BiCheckShield className="text-2xl" />
             </div>
           )}
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
