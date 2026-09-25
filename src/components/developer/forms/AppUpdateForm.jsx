@@ -15,6 +15,9 @@ import {
   BiCloudUpload,
   BiImages,
   BiPlus,
+  BiLayer,
+  BiCheck,
+  BiReset,
 } from 'react-icons/bi';
 
 export default function AppUpdateForm({ app, onSuccess, onCancel }) {
@@ -25,6 +28,12 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
     description: app?.description || '',
     is_published: Boolean(app?.is_published),
   });
+
+  const [availableModules, setAvailableModules] = useState([]);
+  const [selectedModuleIds, setSelectedModuleIds] = useState(
+    app?.website_module_ids || (Array.isArray(app?.modules) ? app.modules.map((m) => m.id) : [])
+  );
+  const [loadingModules, setLoadingModules] = useState(false);
 
   const [images, setImages] = useState(app?.images || []);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -44,6 +53,23 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    const fetchWebsiteModules = async () => {
+      try {
+        setLoadingModules(true);
+        const res = await axios.get('/api/developer/apps?website_modules=true');
+        if (res.data?.success && Array.isArray(res.data?.website_modules)) {
+          setAvailableModules(res.data.website_modules);
+        }
+      } catch (err) {
+        console.error('Failed to load website modules:', err);
+      } finally {
+        setLoadingModules(false);
+      }
+    };
+    fetchWebsiteModules();
+  }, []);
+
+  useEffect(() => {
     if (app) {
       setFormData({
         title: app.title || '',
@@ -53,8 +79,25 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
         is_published: Boolean(app.is_published),
       });
       setImages(app.images || []);
+      setSelectedModuleIds(
+        app.website_module_ids || (Array.isArray(app.modules) ? app.modules.map((m) => m.id) : [])
+      );
     }
   }, [app]);
+
+  const toggleModule = (id) => {
+    setSelectedModuleIds((prev) =>
+      prev.includes(id) ? prev.filter((mId) => mId !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllModules = () => {
+    setSelectedModuleIds(availableModules.map((m) => m.id));
+  };
+
+  const clearAllModules = () => {
+    setSelectedModuleIds([]);
+  };
 
   // Load existing Cloudinary account assets using axios
   const loadCloudinaryLibrary = async () => {
@@ -215,13 +258,16 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
       const res = await axios.put('/api/developer/apps', {
         id: app.id,
         title: formData.title,
-        slug: formData.slug,
         short_description: formData.short_description,
         description: formData.description,
         is_published: isPublished,
+        website_module_ids: selectedModuleIds,
       });
 
       if (res.data?.success && res.data?.record) {
+        if (res.data.record.slug) {
+          setFormData((prev) => ({ ...prev, slug: res.data.record.slug }));
+        }
         setSuccessMsg(
           isPublished
             ? 'Application published live successfully!'
@@ -239,23 +285,23 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs mb-6 transition-all">
+    <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xl font-bold">
+          <div className="w-10 h-10 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center text-xl font-bold shrink-0">
             <BiEdit />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Edit Application: <span className="text-secondary">{formData.title || 'Untitled'}</span>
               </h3>
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
                   formData.is_published
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
                 }`}
               >
                 {formData.is_published ? (
@@ -269,7 +315,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                 )}
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Configure app metadata, upload image files stored in Cloudinary, and toggle published status.
             </p>
           </div>
@@ -279,7 +325,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
           <button
             type="button"
             onClick={onCancel}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer self-start sm:self-auto"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer self-start sm:self-auto"
             aria-label="Close"
           >
             <BiX className="text-xl" />
@@ -288,13 +334,13 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
       </div>
 
       {error && (
-        <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-xs font-semibold">
           {error}
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3 mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
           {successMsg}
         </div>
       )}
@@ -304,36 +350,66 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
           e.preventDefault();
           handleSubmit();
         }}
-        className="space-y-5"
+        className="space-y-6"
       >
         {/* Core Fields */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Application Title *</label>
-          <input
-            type="text"
-            required
-            placeholder="e.g. E-commerce Storefront"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-          />
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Application Title <span className="text-rose-500">*</span>
+              </label>
+              {formData.title && (
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                  slug: /{formData.slug || 'auto'}
+                </span>
+              )}
+            </div>
+            <input
+              type="text"
+              required
+              placeholder="e.g. E-commerce Storefront"
+              value={formData.title}
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                const autoSlug = newTitle
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^\w\-]+/g, '')
+                  .replace(/\-\-+/g, '-');
+                setFormData((prev) => ({
+                  ...prev,
+                  title: newTitle,
+                  slug: autoSlug || prev.slug,
+                }));
+              }}
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-secondary focus:bg-white dark:focus:bg-slate-800 transition-colors font-medium"
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Short Description (Summary)</label>
-          <input
-            type="text"
-            placeholder="One-line summary shown on cards and ecosystem directory..."
-            value={formData.short_description}
-            onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-          />
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              Short Description (Summary)
+            </label>
+            <input
+              type="text"
+              placeholder="One-line summary shown on cards and ecosystem directory..."
+              value={formData.short_description}
+              onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-secondary focus:bg-white dark:focus:bg-slate-800 transition-colors font-medium"
+            />
+          </div>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold text-slate-700">Full Description & Capabilities</label>
-            <span className="text-[11px] text-slate-400 font-medium">Rich text formatting enabled (Tiptap)</span>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Full Description &amp; Capabilities
+            </label>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+              Rich text formatting enabled (Tiptap)
+            </span>
           </div>
           <TiptapEditor
             value={formData.description}
@@ -344,10 +420,10 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
         </div>
 
         {/* Publication Status Toggle */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-bold text-slate-800">Publishing Status</div>
-            <p className="text-[11px] text-slate-500">
+            <div className="text-xs font-bold text-slate-900 dark:text-white">Publishing Status</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               When published, this application becomes active and accessible to creators across the platform.
             </p>
           </div>
@@ -359,30 +435,129 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
               onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            <span className="ml-2 text-xs font-bold text-slate-700">
+            <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+            <span className="ml-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 select-none">
               {formData.is_published ? 'Published' : 'Draft'}
             </span>
           </label>
         </div>
 
-        {/* Cloudinary Multiple Image Upload Section */}
-        <div className="border border-slate-200 rounded-xl p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Cloudinary Image Gallery ({images.length})
-              </h4>
-              <p className="text-[11px] text-slate-500">
-                Images are stored directly in Cloudinary (public_id as image, secret asset_id as image_id).
-              </p>
+        {/* Website Modules Linkage Section */}
+        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700/60 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center text-lg shrink-0">
+                <BiLayer />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Linked Website Modules
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary/10 text-secondary border border-secondary/20">
+                    {selectedModuleIds.length} Linked
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Select which website modules (Products, Blogs, Appointments, etc.) this app powers or integrates with.
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <button
                 type="button"
+                onClick={selectAllModules}
+                disabled={loadingModules || availableModules.length === 0}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Select All
+              </button>
+              <button
+                type="button"
+                onClick={clearAllModules}
+                disabled={loadingModules || selectedModuleIds.length === 0}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <BiReset className="text-xs" />
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+
+          {loadingModules ? (
+            <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs flex items-center justify-center gap-2">
+              <BiLoaderAlt className="animate-spin text-base text-secondary" />
+              <span>Loading website modules...</span>
+            </div>
+          ) : availableModules.length === 0 ? (
+            <div className="py-4 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+              No website modules registered yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {availableModules.map((mod) => {
+                const isSelected = selectedModuleIds.includes(mod.id);
+                return (
+                  <div
+                    key={mod.id}
+                    onClick={() => toggleModule(mod.id)}
+                    className={`relative p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-1.5 select-none ${
+                      isSelected
+                        ? 'bg-secondary/10 dark:bg-secondary/15 border-secondary/60 dark:border-secondary shadow-xs ring-1 ring-secondary/30'
+                        : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {mod.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate">
+                          {mod.slug}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 text-xs transition-colors ${
+                          isSelected
+                            ? 'bg-secondary text-white'
+                            : 'border border-slate-300 dark:border-slate-600 text-transparent'
+                        }`}
+                      >
+                        <BiCheck className="text-xs stroke-1" />
+                      </div>
+                    </div>
+
+                    {mod.description && (
+                      <p className="text-[10.5px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        {mod.description}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Cloudinary Multiple Image Upload Section */}
+        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700/60 pb-3">
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Cloudinary Image Gallery ({images.length})
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Images are stored directly in Cloudinary (public_id as image, secret asset_id as image_id).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+              <button
+                type="button"
                 onClick={loadCloudinaryLibrary}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-300"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
               >
                 <BiImages className="text-sm text-secondary" />
                 <span>Browse Cloudinary Library</span>
@@ -391,7 +566,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary text-xs font-bold transition-colors cursor-pointer border border-secondary/20"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 text-secondary text-xs font-bold transition-colors cursor-pointer border border-secondary/20"
               >
                 <BiUpload className="text-sm" />
                 <span>Upload Files</span>
@@ -410,33 +585,33 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
 
           {/* Modal / Panel for Existing Cloudinary Library */}
           {showCloudinaryLibrary && (
-            <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 space-y-3">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                     <BiImages className="text-base text-secondary" />
                     <span>Your Existing Cloudinary Assets ({cloudinaryAssets.length})</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    Click "Attach" on any asset to link its public_id and secret asset_id to this app.
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Click &quot;Attach&quot; on any asset to link its public_id and secret asset_id to this app.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCloudinaryLibrary(false)}
-                  className="text-slate-400 hover:text-slate-700 p-1"
+                  className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg p-1 transition-colors"
                 >
                   <BiX className="text-lg" />
                 </button>
               </div>
 
               {loadingAssets ? (
-                <div className="py-8 text-center flex items-center justify-center gap-2 text-xs text-slate-500">
+                <div className="py-8 text-center flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <BiLoaderAlt className="animate-spin text-lg text-secondary" />
                   <span>Loading assets from Cloudinary...</span>
                 </div>
               ) : cloudinaryAssets.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
+                <div className="py-6 text-center text-xs text-slate-400 dark:text-slate-500">
                   No assets found in Cloudinary library.
                 </div>
               ) : (
@@ -448,7 +623,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                     return (
                       <div
                         key={asset.public_id}
-                        className="group relative rounded-lg border border-slate-200 bg-white overflow-hidden aspect-video flex flex-col justify-between shadow-xs"
+                        className="group relative rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 overflow-hidden aspect-video flex flex-col justify-between shadow-xs"
                       >
                         <img
                           src={asset.secure_url}
@@ -465,8 +640,8 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                             onClick={() => handleAttachExistingAsset(asset)}
                             className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
                               isAlreadyAttached
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-white text-slate-900 hover:bg-secondary hover:text-white'
+                                ? 'bg-secondary text-white'
+                                : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-secondary hover:text-white'
                             }`}
                           >
                             {isAttaching ? (
@@ -498,7 +673,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                 return (
                   <div
                     key={img.id}
-                    className="relative group rounded-xl border border-slate-200 overflow-hidden bg-slate-100 aspect-video flex items-center justify-center shadow-xs"
+                    className="relative group rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800 aspect-video flex items-center justify-center shadow-xs"
                   >
                     <img
                       src={srcUrl}
@@ -536,16 +711,16 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
               })}
             </div>
           ) : (
-            <div className="py-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
+            <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
               No images in gallery yet. Upload new images or attach existing ones from your Cloudinary library above.
             </div>
           )}
 
           {/* Newly Selected Local Files (Pending Upload) */}
           {filePreviews.length > 0 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+            <div className="bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <BiCloudUpload className="text-base text-secondary" />
                   <span>Ready to Upload ({filePreviews.length} selected)</span>
                 </span>
@@ -554,7 +729,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                   type="button"
                   onClick={handleUploadFilesToCloudinary}
                   disabled={uploadingImages}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   {uploadingImages ? (
                     <>
@@ -574,15 +749,15 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
                 {filePreviews.map((p, idx) => (
                   <div
                     key={idx}
-                    className="relative rounded-lg overflow-hidden border border-slate-200 bg-white aspect-video flex flex-col justify-between p-1 shadow-xs"
+                    className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 aspect-video flex flex-col justify-between p-1.5 shadow-xs"
                   >
-                    <img src={p.url} alt={p.name} className="w-full h-16 object-cover rounded" />
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                    <img src={p.url} alt={p.name} className="w-full h-16 object-cover rounded-lg" />
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1">
                       <span className="truncate max-w-[80px] font-mono">{p.name}</span>
                       <button
                         type="button"
                         onClick={() => removeSelectedFile(idx)}
-                        className="text-rose-500 hover:text-rose-700 p-0.5"
+                        className="text-rose-500 hover:text-rose-700 p-0.5 transition-colors"
                         title="Remove"
                       >
                         <BiX className="text-sm" />
@@ -596,18 +771,18 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
-          <div className="text-[11px] text-slate-400 font-mono">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 mt-6 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
             {formData.slug ? `/apps/${formData.slug}` : 'No slug set'}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
                 disabled={loading || uploadingImages}
-                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -618,7 +793,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
               type="button"
               disabled={loading || uploadingImages}
               onClick={() => handleSubmit(false)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
             >
               <BiTimeFive className="text-sm" />
               <span>Save as Draft</span>
@@ -629,7 +804,7 @@ export default function AppUpdateForm({ app, onSuccess, onCancel }) {
               type="button"
               disabled={loading || uploadingImages}
               onClick={() => handleSubmit(true)}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>

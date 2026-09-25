@@ -58,7 +58,7 @@ export default function TiptapEditor({
     editorProps: {
       attributes: {
         class:
-          'focus:outline-none px-4 py-3 text-slate-800 text-sm leading-relaxed prose prose-slate max-w-none min-h-[160px]',
+          'focus:outline-none px-4 py-3 text-slate-800 dark:text-slate-100 text-sm leading-relaxed prose prose-slate dark:prose-invert max-w-none min-h-[160px]',
       },
     },
   });
@@ -76,7 +76,7 @@ export default function TiptapEditor({
   if (!editor) {
     return (
       <div
-        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-xs text-slate-400 animate-pulse flex items-center justify-center"
+        className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs text-slate-400 dark:text-slate-500 animate-pulse flex items-center justify-center"
         style={{ minHeight }}
       >
         Loading rich text editor...
@@ -86,10 +86,10 @@ export default function TiptapEditor({
 
   return (
     <div
-      className={`tiptap-container bg-slate-50 border border-slate-300 rounded-xl overflow-hidden focus-within:border-secondary focus-within:bg-white transition-all shadow-xs ${className}`}
+      className={`tiptap-container bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-secondary focus-within:bg-white dark:focus-within:bg-slate-800 transition-all shadow-xs ${className}`}
     >
       {/* Editor Toolbar */}
-      <div className="bg-slate-100/80 border-b border-slate-200 px-2 py-1.5 flex flex-wrap items-center gap-1">
+      <div className="bg-slate-100/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 px-2 py-1.5 flex flex-wrap items-center gap-1">
         {/* Headings */}
         <button
           type="button"
@@ -97,7 +97,7 @@ export default function TiptapEditor({
           className={`px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('paragraph')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Normal Paragraph"
         >
@@ -110,7 +110,7 @@ export default function TiptapEditor({
           className={`px-2 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('heading', { level: 2 })
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Heading 2"
         >
@@ -123,14 +123,14 @@ export default function TiptapEditor({
           className={`px-2 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('heading', { level: 3 })
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Heading 3"
         >
           H3
         </button>
 
-        <div className="w-px h-4 bg-slate-300 mx-1" />
+        <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
 
         {/* Text formatting */}
         <button
@@ -140,7 +140,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('bold')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Bold (Ctrl+B)"
         >
@@ -154,7 +154,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('italic')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Italic (Ctrl+I)"
         >
@@ -168,7 +168,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('strike')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Strikethrough"
         >
@@ -182,14 +182,14 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('code')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Inline Code"
         >
           <BiCode className="text-base" />
         </button>
 
-        <div className="w-px h-4 bg-slate-300 mx-1" />
+        <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
 
         {/* Lists & Blocks */}
         <button
@@ -198,7 +198,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('bulletList')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Bullet List"
         >
@@ -211,7 +211,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('orderedList')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Ordered List"
         >
@@ -224,7 +224,7 @@ export default function TiptapEditor({
           className={`p-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('codeBlock')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Code Block"
         >
@@ -237,21 +237,21 @@ export default function TiptapEditor({
           className={`px-2 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
             editor.isActive('blockquote')
               ? 'bg-secondary text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700'
           }`}
           title="Quote"
         >
           &ldquo; Quote
         </button>
 
-        <div className="w-px h-4 bg-slate-300 mx-1" />
+        <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
 
         {/* Undo / Redo / Clear */}
         <button
           type="button"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().chain().focus().undo().run()}
-          className="p-1.5 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-200/80 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg transition-colors cursor-pointer"
+          className="p-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg transition-colors cursor-pointer"
           title="Undo (Ctrl+Z)"
         >
           <BiUndo className="text-base" />
@@ -261,7 +261,7 @@ export default function TiptapEditor({
           type="button"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().chain().focus().redo().run()}
-          className="p-1.5 text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-200/80 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg transition-colors cursor-pointer"
+          className="p-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg transition-colors cursor-pointer"
           title="Redo (Ctrl+Y)"
         >
           <BiRedo className="text-base" />
@@ -270,7 +270,7 @@ export default function TiptapEditor({
         <button
           type="button"
           onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-          className="p-1.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer ml-auto"
+          className="p-1.5 text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer ml-auto"
           title="Clear formatting"
         >
           <BiReset className="text-base" />
@@ -294,6 +294,9 @@ export default function TiptapEditor({
           pointer-events: none;
           height: 0;
         }
+        html.dark .tiptap-container .ProseMirror p.is-editor-empty:first-child::before {
+          color: #64748b;
+        }
         .tiptap-container .ProseMirror h1 {
           font-size: 1.5rem;
           font-weight: 800;
@@ -301,6 +304,9 @@ export default function TiptapEditor({
           margin-top: 0.8rem;
           margin-bottom: 0.4rem;
           line-height: 1.25;
+        }
+        html.dark .tiptap-container .ProseMirror h1 {
+          color: #f8fafc;
         }
         .tiptap-container .ProseMirror h2 {
           font-size: 1.25rem;
@@ -310,6 +316,9 @@ export default function TiptapEditor({
           margin-bottom: 0.35rem;
           line-height: 1.3;
         }
+        html.dark .tiptap-container .ProseMirror h2 {
+          color: #f1f5f9;
+        }
         .tiptap-container .ProseMirror h3 {
           font-size: 1.1rem;
           font-weight: 700;
@@ -317,11 +326,17 @@ export default function TiptapEditor({
           margin-top: 0.6rem;
           margin-bottom: 0.3rem;
         }
+        html.dark .tiptap-container .ProseMirror h3 {
+          color: #e2e8f0;
+        }
         .tiptap-container .ProseMirror p {
           margin-top: 0.35rem;
           margin-bottom: 0.35rem;
           color: #1e293b;
           line-height: 1.6;
+        }
+        html.dark .tiptap-container .ProseMirror p {
+          color: #cbd5e1;
         }
         .tiptap-container .ProseMirror ul {
           list-style-type: disc;
@@ -346,6 +361,10 @@ export default function TiptapEditor({
           color: #475569;
           margin: 0.6rem 0;
         }
+        html.dark .tiptap-container .ProseMirror blockquote {
+          border-left-color: #cc3a63;
+          color: #94a3b8;
+        }
         .tiptap-container .ProseMirror code {
           background-color: #f1f5f9;
           color: #0f172a;
@@ -353,6 +372,10 @@ export default function TiptapEditor({
           border-radius: 0.25rem;
           font-family: monospace;
           font-size: 0.85em;
+        }
+        html.dark .tiptap-container .ProseMirror code {
+          background-color: #1e293b;
+          color: #e48ea6;
         }
         .tiptap-container .ProseMirror pre {
           background: #0f172a;
@@ -363,6 +386,10 @@ export default function TiptapEditor({
           overflow-x: auto;
           font-family: monospace;
           font-size: 0.85em;
+        }
+        html.dark .tiptap-container .ProseMirror pre {
+          background: #020617;
+          color: #f8fafc;
         }
         .tiptap-container .ProseMirror pre code {
           background: transparent;

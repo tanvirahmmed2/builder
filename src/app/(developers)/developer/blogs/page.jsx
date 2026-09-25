@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   BiSearch,
   BiPlus,
@@ -32,6 +33,36 @@ export default function AdminBlogsPage() {
 
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const canManage = permissions.includes('blogs');
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateDefaultBlog = async () => {
+    if (!canManage || creating) return;
+    try {
+      setCreating(true);
+      setActionError('');
+      const res = await fetch('/api/developer/blogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Untitled Article',
+          content: '<p>Write your article content here...</p>',
+          summary: '',
+          is_published: false,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.record?.slug) {
+        router.push(`/developer/blogs/${data.record.slug}`);
+      } else {
+        setActionError(data.error || 'Failed to create article.');
+        setCreating(false);
+      }
+    } catch (err) {
+      setActionError(err.message || 'Error creating article.');
+      setCreating(false);
+    }
+  };
 
   const fetchBlogs = async () => {
     try {
@@ -142,14 +173,16 @@ export default function AdminBlogsPage() {
           >
             <BiRefresh className="text-lg" />
           </button>
-          <Link
-            href="/developer/blogs/create"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
+          <button
+            type="button"
+            disabled={creating || !canManage}
+            onClick={handleCreateDefaultBlog}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-60"
             title="Create New Blog Article"
           >
-            <BiPlus className="text-base" />
-            <span>Create Article</span>
-          </Link>
+            {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+            <span>{creating ? 'Creating...' : 'Create Article'}</span>
+          </button>
         </div>
       </div>
 

@@ -107,16 +107,16 @@ export default function AppDetailPage({ params }) {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header and Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
             <Link href="/developer" className="hover:text-secondary">Dashboard</Link>
             <span>/</span>
             <Link href="/developer/apps" className="hover:text-secondary">Apps</Link>
             <span>/</span>
-            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{app.slug}</span>
+            <span className="text-slate-800 dark:text-slate-200 truncate max-w-50">{app.slug}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -168,7 +168,7 @@ export default function AppDetailPage({ params }) {
         </div>
       </div>
 
-      {/* Direct Update Form */}
+      {/* Direct Update Form Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
         <AppUpdateForm
           app={app}

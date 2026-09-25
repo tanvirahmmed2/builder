@@ -136,18 +136,15 @@ export async function POST(request) {
 
     // CREATE PACKAGE
     const data = body.data || body;
-    const name = (data.name || '').trim();
-    if (!name) {
-      return NextResponse.json({ success: false, error: 'Package name is required' }, { status: 400 });
-    }
+    const name = (data.name || '').trim() || 'Untitled Package';
 
-    let slug = generateSlug(data.slug || name);
-    if (!slug) slug = `pkg-${Date.now()}`;
+    const baseSlug = generateSlug(name) || 'package';
+    let slug = baseSlug;
 
-    // Check if slug already taken, append timestamp if so
+    // Check if slug already taken, append suffix if so
     const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 LIMIT 1', [slug]);
     if (slugCheck.rows.length > 0) {
-      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
     const description = data.description || '';
@@ -236,9 +233,14 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, error: 'Package name cannot be empty' }, { status: 400 });
     }
 
-    let slug = data.slug !== undefined ? generateSlug(data.slug) : current.slug;
-    if (!slug) {
-      slug = generateSlug(name) || `pkg-${Date.now()}`;
+    let slug = current.slug;
+    if (name && name !== current.name) {
+      const baseSlug = generateSlug(name) || 'package';
+      slug = baseSlug;
+      const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1', [slug, Number(id)]);
+      if (slugCheck.rows.length > 0) {
+        slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
     const description = data.description !== undefined ? data.description : current.description;

@@ -17,6 +17,7 @@ import {
   BiLockAlt,
 } from 'react-icons/bi';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function DeveloperUpdatesPage() {
   const { user } = useContext(Context);
@@ -27,6 +28,35 @@ export default function DeveloperUpdatesPage() {
 
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const canManage = permissions.includes('updates');
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateDefaultUpdate = async () => {
+    if (!canManage || creating) return;
+    try {
+      setCreating(true);
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const res = await fetch('/api/developer/updates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Untitled Update',
+          description: 'Details about this update...',
+          slug: `untitled-update-${randomSuffix}`,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.record?.slug) {
+        router.push(`/developer/updates/${data.record.slug}`);
+      } else {
+        alert(data.error || 'Failed to create update.');
+        setCreating(false);
+      }
+    } catch (e) {
+      alert(e.message || 'Error creating update.');
+      setCreating(false);
+    }
+  };
 
   const fetchUpdates = async () => {
     try {
@@ -119,14 +149,16 @@ export default function DeveloperUpdatesPage() {
           </button>
 
           {canManage ? (
-            <Link
-              href="/developer/updates/create"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-              title="Publish Update in Full-Page Studio"
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleCreateDefaultUpdate}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-60"
+              title="Post Update"
             >
-              <BiPlus className="text-base" />
-              <span>Post Update</span>
-            </Link>
+              {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+              <span>{creating ? 'Posting...' : 'Post Update'}</span>
+            </button>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-semibold">
               <BiLockAlt className="text-sm" />
@@ -180,13 +212,15 @@ export default function DeveloperUpdatesPage() {
             {searchTerm ? `No updates matched "${searchTerm}".` : 'No product changelog updates published yet.'}
           </p>
           {canManage && !searchTerm && (
-            <Link
-              href="/developer/updates/create"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-white text-xs font-bold hover:bg-secondary-dark transition-colors cursor-pointer shadow-xs"
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleCreateDefaultUpdate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-white text-xs font-bold hover:bg-secondary-dark transition-colors cursor-pointer shadow-xs disabled:opacity-60"
             >
-              <BiPlus />
-              <span>Post First Update</span>
-            </Link>
+              {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus />}
+              <span>{creating ? 'Posting...' : 'Post First Update'}</span>
+            </button>
           )}
         </div>
       ) : (

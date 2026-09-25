@@ -102,14 +102,15 @@ export async function PUT(request, { params }) {
 
     const newTitle = data.title !== undefined ? data.title.trim() : currentBlog.title;
     let newSlug = currentBlog.slug;
-    if (data.slug && data.slug.trim() && data.slug !== currentBlog.slug) {
-      newSlug = slugify(data.slug);
+    if (newTitle && newTitle !== currentBlog.title) {
+      const baseSlug = slugify(newTitle) || 'article';
+      newSlug = baseSlug;
       const slugCheck = await queryDb(
         'SELECT id FROM blogs WHERE slug = $1 AND id != $2 LIMIT 1',
         [newSlug, currentBlog.id]
       );
       if (slugCheck.rows.length > 0) {
-        newSlug = `${newSlug}-${Date.now().toString().slice(-4)}`;
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 

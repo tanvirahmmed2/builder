@@ -88,11 +88,8 @@ export default function PackageForm({
 
   const handleNameChange = (val) => {
     setFormData((prev) => {
-      const next = { ...prev, name: val };
-      if (!isCustomSlug && !isEditing) {
-        next.slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      }
-      return next;
+      const autoSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return { ...prev, name: val, slug: autoSlug || prev.slug };
     });
   };
 
@@ -133,19 +130,14 @@ export default function PackageForm({
     setLoading(true);
     setError('');
 
-    const slug = (
-      formData.slug ||
-      formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    );
-
     const payloadData = {
       ...formData,
-      slug,
       price_in_cents: Math.max(0, parseInt(formData.price_in_cents, 10) || 0),
       max_portfolios: Math.max(1, parseInt(formData.max_portfolios, 10) || 1),
       app_id: formData.app_id ? parseInt(formData.app_id, 10) : null,
       allowed_modules: selectedModules,
     };
+    delete payloadData.slug;
 
     try {
       const payload = isEditing ? { id: initialData.id, ...payloadData } : payloadData;
@@ -225,37 +217,25 @@ export default function PackageForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-slate-700">
               Package Name <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Pro Studio Pass"
-              value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-secondary focus:bg-white focus:ring-1 focus:ring-secondary transition-all font-medium"
-            />
+            {formData.name && (
+              <span className="text-[10px] font-mono text-slate-400">
+                slug: /{formData.slug || 'auto'}
+              </span>
+            )}
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Slug Identifier <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. pro-studio-pass"
-              value={formData.slug}
-              onChange={(e) => {
-                setIsCustomSlug(true);
-                setFormData({ ...formData, slug: e.target.value });
-              }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary focus:bg-white focus:ring-1 focus:ring-secondary transition-all"
-            />
-          </div>
+          <input
+            type="text"
+            required
+            placeholder="e.g. Pro Studio Pass"
+            value={formData.name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-secondary focus:bg-white focus:ring-1 focus:ring-secondary transition-all font-medium"
+          />
         </div>
 
         {/* Pricing & Billing Configuration */}

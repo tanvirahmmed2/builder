@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useContext } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Context } from '@/components/helper/Context';
 import {
   BiSearch,
@@ -18,12 +19,45 @@ import {
   BiTrendingUp,
   BiLockAlt,
   BiGridAlt,
+  BiLoaderAlt,
 } from 'react-icons/bi';
 
 export default function AdminPackagesPage() {
   const { user } = useContext(Context) || {};
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const isAdminUser = Boolean(permissions.includes('packages'));
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateDefaultPackage = async () => {
+    if (!isAdminUser || creating) return;
+    try {
+      setCreating(true);
+      setFeedback(null);
+      const res = await fetch('/api/developer/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Untitled Package',
+          price: 0,
+          billing_interval: 'MONTHLY',
+          max_portfolios: 1,
+          is_active: false,
+          description: '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.record?.slug) {
+        router.push(`/developer/packages/${data.record.slug}`);
+      } else {
+        setFeedback({ type: 'error', message: data.error || 'Failed to create package.' });
+        setCreating(false);
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Error creating package.' });
+      setCreating(false);
+    }
+  };
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,14 +235,16 @@ export default function AdminPackagesPage() {
             <BiRefresh className="text-xl" />
           </button>
           {isAdminUser ? (
-            <Link
-              href="/developer/packages/create"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
-              title="Create Package via Full-Page Studio"
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleCreateDefaultPackage}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-60"
+              title="Create Package"
             >
-              <BiPlus className="text-base" />
-              <span>Create Package</span>
-            </Link>
+              {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+              <span>{creating ? 'Creating...' : 'Create Package'}</span>
+            </button>
           ) : (
             <div className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold">
               <BiLockAlt className="text-sm" />

@@ -138,6 +138,7 @@ export default function BlogForm({
       ...formData,
       app_id: formData.app_id ? Number(formData.app_id) : null,
     };
+    delete payload.slug;
 
     if (isEditing) {
       payload.id = currentBlog.id;
@@ -239,29 +240,27 @@ export default function BlogForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Article Title *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. 10 Portfolio Trends Dominating 2026"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-            />
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-bold text-slate-700">Article Title *</label>
+            {formData.title && (
+              <span className="text-[10px] font-mono text-slate-400">
+                slug: /{formData.slug || 'auto'}
+              </span>
+            )}
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Slug (URL identifier)</label>
-            <input
-              type="text"
-              placeholder="e.g. 10-portfolio-trends-2026 (auto-generated if empty)"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-            />
-          </div>
+          <input
+            type="text"
+            required
+            placeholder="e.g. 10 Portfolio Trends Dominating 2026"
+            value={formData.title}
+            onChange={(e) => {
+              const newTitle = e.target.value;
+              const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+              setFormData((prev) => ({ ...prev, title: newTitle, slug: autoSlug || prev.slug }));
+            }}
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

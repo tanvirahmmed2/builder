@@ -12,6 +12,7 @@ import {
   BiEdit,
   BiTrash,
   BiLoaderAlt,
+  BiLayer,
 } from 'react-icons/bi';
 
 export default function DeveloperAppCard({
@@ -93,6 +94,36 @@ export default function DeveloperAppCard({
             {descriptionSnippet || 'No detailed description provided yet.'}
           </p>
         </div>
+
+        {/* Linked Website Modules Preview */}
+        {Array.isArray(app.modules) && app.modules.length > 0 && (
+          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="flex items-center gap-1">
+                <BiLayer className="text-xs text-secondary" /> Linked Modules
+              </span>
+              <span className="text-secondary font-mono">
+                {app.modules.length}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {app.modules.slice(0, 3).map((mod) => (
+                <span
+                  key={mod.id}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200 truncate max-w-[120px]"
+                  title={mod.name}
+                >
+                  {mod.name}
+                </span>
+              ))}
+              {app.modules.length > 3 && (
+                <span className="px-1.5 py-0.5 rounded-md bg-secondary/10 text-secondary text-[10px] font-bold">
+                  +{app.modules.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Gallery Preview */}
         {images.length > 0 && (

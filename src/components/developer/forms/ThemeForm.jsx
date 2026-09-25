@@ -57,14 +57,13 @@ export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
     setLoading(true);
     setError('');
 
-    const slug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const payload = {
       ...formData,
       id: initialData?.id,
       title: formData.name,
-      slug,
       app_id: formData.app_id ? Number(formData.app_id) : null,
     };
+    delete payload.slug;
 
     const url = isEdit
       ? `/api/developer/themes/${initialData.slug || initialData.id}`
@@ -157,24 +156,24 @@ export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Theme Name</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-700">Theme Name</label>
+              {formData.name && (
+                <span className="text-[10px] font-mono text-slate-400">
+                  slug: /{formData.slug || 'auto'}
+                </span>
+              )}
+            </div>
             <input
               type="text"
               required
               placeholder="e.g. Nordic Minimalist"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Slug Identifier</label>
-            <input
-              type="text"
-              placeholder="e.g. nordic-minimalist"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              onChange={(e) => {
+                const newName = e.target.value;
+                const autoSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                setFormData((prev) => ({ ...prev, name: newName, slug: autoSlug || prev.slug }));
+              }}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
             />
           </div>

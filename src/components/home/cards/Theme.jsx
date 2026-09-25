@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BiStar, BiPalette, BiLayer } from 'react-icons/bi';
 
 export default function Theme({ theme }) {
@@ -40,10 +41,12 @@ export default function Theme({ theme }) {
         {/* Preview Viewport */}
         <div className="relative aspect-16/10 overflow-hidden bg-slate-950 flex items-center justify-center">
           {t.preview_image ? (
-            <img
+            <Image
               src={t.preview_image}
-              alt={t.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              alt={t.name || 'Theme Preview'}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div

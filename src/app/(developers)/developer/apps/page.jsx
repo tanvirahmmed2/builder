@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import {
   BiGridAlt,
@@ -33,6 +34,29 @@ export default function DeveloperAppsPage() {
 
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const canManage = permissions.includes('apps');
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateDefaultApp = async () => {
+    if (!canManage || creating) return;
+    try {
+      setCreating(true);
+      setActionError('');
+      const res = await axios.post('/api/developer/apps', {
+        title: 'Untitled App',
+      });
+      if (res.data?.success && (res.data.app || res.data.record)) {
+        const newApp = res.data.app || res.data.record;
+        router.push(`/developer/apps/${newApp.slug}`);
+      } else {
+        setActionError(res.data?.error || 'Failed to create application.');
+        setCreating(false);
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.error || err.message || 'Error creating application.');
+      setCreating(false);
+    }
+  };
 
   const fetchApps = async () => {
     try {
@@ -145,14 +169,16 @@ export default function DeveloperAppsPage() {
           </button>
 
           {canManage ? (
-            <Link
-              href="/developer/apps/create"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
-              title="Create App via Full Page Studio"
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleCreateDefaultApp}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-60"
+              title="Create New Application"
             >
-              <BiPlus className="text-base" />
-              <span>Create App</span>
-            </Link>
+              {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+              <span>{creating ? 'Creating...' : 'Create App'}</span>
+            </button>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
               <BiShieldQuarter className="text-sm text-slate-400" />
@@ -227,13 +253,15 @@ export default function DeveloperAppsPage() {
               : 'There are currently no ecosystem applications in this view.'}
           </p>
           {canManage && (
-            <Link
-              href="/developer/apps/create"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary-dark text-white cursor-pointer shadow-xs"
+            <button
+              type="button"
+              disabled={creating}
+              onClick={handleCreateDefaultApp}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary-dark text-white cursor-pointer shadow-xs disabled:opacity-60"
             >
-              <BiPlus className="text-base" />
-              <span>Create Your First App</span>
-            </Link>
+              {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+              <span>{creating ? 'Creating...' : 'Create Your First App'}</span>
+            </button>
           )}
         </div>
       ) : (

@@ -12,6 +12,26 @@ function slugify(text) {
     .replace(/\-\-+/g, '-');
 }
 
+function parseModuleIds(input) {
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return input
+      .map((id) => (typeof id === 'object' && id !== null ? Number(id.id) : Number(id)))
+      .filter((id) => !isNaN(id) && id > 0);
+  }
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed)) return parseModuleIds(parsed);
+    } catch (_) {}
+    return input
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((id) => !isNaN(id) && id > 0);
+  }
+  return [];
+}
+
 export async function GET(req) {
   try {
     const auth = await hasModulePermission(req, 'apps');
@@ -24,6 +44,23 @@ export async function GET(req) {
     const search = url.searchParams.get('search') || url.searchParams.get('q');
     const status = url.searchParams.get('status');
     const listCloudinary = url.searchParams.get('cloudinary_assets');
+    const getWebsiteModules =
+      url.searchParams.get('website_modules') === 'true' || url.searchParams.get('modules') === 'true';
+
+    // Endpoint to retrieve selectable canonical website modules
+    if (getWebsiteModules) {
+      const modRes = await query(
+        'SELECT id, name, slug, description FROM website_modules WHERE (website_id IS NULL OR is_enabled = true) AND is_active = true ORDER BY id ASC'
+      );
+      return Response.json(
+        {
+          success: true,
+          modules: modRes.rows || [],
+          website_modules: modRes.rows || [],
+        },
+        { status: 200 }
+      );
+    }
 
     if (listCloudinary === 'true') {
       try {
@@ -54,20 +91,48 @@ export async function GET(req) {
         a.created_at,
         a.updated_at,
         COALESCE(
-          json_agg(
-            json_build_object(
-              'id', ai.id,
-              'app_id', ai.app_id,
-              'image', ai.image,
-              'image_id', ai.image_id,
-              'title', ai.title,
-              'created_at', ai.created_at
-            ) ORDER BY ai.id ASC
-          ) FILTER (WHERE ai.id IS NOT NULL),
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', ai.id,
+                'app_id', ai.app_id,
+                'image', ai.image,
+                'image_id', ai.image_id,
+                'title', ai.title,
+                'created_at', ai.created_at
+              ) ORDER BY ai.id ASC
+            )
+            FROM apps_images ai
+            WHERE ai.app_id = a.id
+          ),
           '[]'::json
-        ) AS images
+        ) AS images,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', wm.id,
+                'name', wm.name,
+                'slug', wm.slug,
+                'description', wm.description,
+                'is_active', am.is_active
+              ) ORDER BY wm.id ASC
+            )
+            FROM app_modules am
+            JOIN website_modules wm ON am.website_module_id = wm.id
+            WHERE am.app_id = a.id
+          ),
+          '[]'::json
+        ) AS modules,
+        COALESCE(
+          (
+            SELECT array_agg(am.website_module_id ORDER BY am.website_module_id ASC)
+            FROM app_modules am
+            WHERE am.app_id = a.id
+          ),
+          ARRAY[]::integer[]
+        ) AS website_module_ids
       FROM apps a
-      LEFT JOIN apps_images ai ON a.id = ai.app_id
     `;
     let params = [];
     let whereClauses = [];
@@ -93,7 +158,7 @@ export async function GET(req) {
       sql += ' WHERE ' + whereClauses.join(' AND ');
     }
 
-    sql += ` GROUP BY a.id ORDER BY a.id DESC`;
+    sql += ` ORDER BY a.id DESC`;
     const result = await query(sql, params);
     const mappedRows = result.rows || [];
 
@@ -128,6 +193,7 @@ export async function POST(req) {
     let description = '';
     let short_description = '';
     let is_published = true;
+    let websiteModuleIds = [];
     let imageFiles = [];
     let attachPublicId = null;
     let attachAssetId = null;
@@ -141,6 +207,11 @@ export async function POST(req) {
       short_description = formData.get('short_description') || '';
       const isActiveVal = formData.get('is_published') ?? formData.get('is_active');
       is_published = isActiveVal === 'false' ? false : true;
+
+      const rawModIds = formData.getAll && formData.getAll('website_module_ids').length
+        ? formData.getAll('website_module_ids')
+        : (formData.get('website_module_ids') || formData.get('module_ids'));
+      websiteModuleIds = parseModuleIds(rawModIds);
 
       attachPublicId = formData.get('public_id');
       attachAssetId = formData.get('asset_id');
@@ -157,21 +228,22 @@ export async function POST(req) {
       description = body.description || '';
       short_description = body.short_description || '';
       is_published = body.is_published !== false && body.is_active !== false;
+      websiteModuleIds = parseModuleIds(body.website_module_ids ?? body.module_ids ?? body.modules);
       attachPublicId = body.public_id;
       attachAssetId = body.asset_id;
       attachTitle = body.image_title || body.title;
     }
 
     if (!title) {
-      return Response.json({ error: 'App title is required' }, { status: 400 });
+      title = 'Untitled App';
     }
 
     const baseSlug = slugify(title) || 'app';
-    let slug = baseSlug + '-' + Math.floor(1000 + Math.random() * 9000);
+    let slug = baseSlug;
 
-    const checkSlug = await query('SELECT id FROM apps WHERE slug = $1', [slug]);
+    const checkSlug = await query('SELECT id FROM apps WHERE slug = $1 LIMIT 1', [slug]);
     if (checkSlug.rows.length > 0) {
-      slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
+      slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
     await query('BEGIN');
@@ -185,6 +257,18 @@ export async function POST(req) {
     );
 
     const app = appResult.rows[0];
+
+    // Link website modules in app_modules junction table
+    if (websiteModuleIds.length > 0) {
+      for (const modId of websiteModuleIds) {
+        await query(
+          `INSERT INTO app_modules (app_id, website_module_id, is_active)
+           VALUES ($1, $2, TRUE)
+           ON CONFLICT (app_id, website_module_id) DO UPDATE SET is_active = TRUE`,
+          [app.id, modId]
+        );
+      }
+    }
 
     for (const imgFile of imageFiles) {
       const uploadResult = await uploadToCloudinary(imgFile, 'portfoliobuilder/apps');
@@ -210,26 +294,58 @@ export async function POST(req) {
     const fullAppRes = await query(
       `SELECT a.*, 
         COALESCE(
-          json_agg(
-            json_build_object(
-              'id', ai.id,
-              'app_id', ai.app_id,
-              'image', ai.image,
-              'image_id', ai.image_id,
-              'title', ai.title,
-              'created_at', ai.created_at
-            ) ORDER BY ai.id ASC
-          ) FILTER (WHERE ai.id IS NOT NULL),
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', ai.id,
+                'app_id', ai.app_id,
+                'image', ai.image,
+                'image_id', ai.image_id,
+                'title', ai.title,
+                'created_at', ai.created_at
+              ) ORDER BY ai.id ASC
+            )
+            FROM apps_images ai
+            WHERE ai.app_id = a.id
+          ),
           '[]'::json
-        ) AS images
+        ) AS images,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', wm.id,
+                'name', wm.name,
+                'slug', wm.slug,
+                'description', wm.description,
+                'is_active', am.is_active
+              ) ORDER BY wm.id ASC
+            )
+            FROM app_modules am
+            JOIN website_modules wm ON am.website_module_id = wm.id
+            WHERE am.app_id = a.id
+          ),
+          '[]'::json
+        ) AS modules,
+        COALESCE(
+          (
+            SELECT array_agg(am.website_module_id ORDER BY am.website_module_id ASC)
+            FROM app_modules am
+            WHERE am.app_id = a.id
+          ),
+          ARRAY[]::integer[]
+        ) AS website_module_ids
        FROM apps a
-       LEFT JOIN apps_images ai ON a.id = ai.app_id
-       WHERE a.id = $1
-       GROUP BY a.id`,
+       WHERE a.id = $1`,
       [app.id]
     );
 
-    const record = fullAppRes.rows[0] || { ...app, images: [] };
+    const record = fullAppRes.rows[0] || {
+      ...app,
+      images: [],
+      modules: [],
+      website_module_ids: websiteModuleIds,
+    };
 
     return Response.json(
       {
@@ -259,6 +375,8 @@ export async function PUT(req) {
     let description = null;
     let short_description = null;
     let is_published = null;
+    let hasModuleIdsPayload = false;
+    let websiteModuleIds = [];
     let imageFiles = [];
     let attachPublicId = null;
     let attachAssetId = null;
@@ -276,6 +394,13 @@ export async function PUT(req) {
       if (formData.has('is_published') || formData.has('is_active')) {
         const val = formData.get('is_published') ?? formData.get('is_active');
         is_published = val === 'true' || val === true;
+      }
+      if (formData.has('website_module_ids') || formData.has('module_ids')) {
+        hasModuleIdsPayload = true;
+        const raw = formData.getAll && formData.getAll('website_module_ids').length
+          ? formData.getAll('website_module_ids')
+          : (formData.get('website_module_ids') || formData.get('module_ids'));
+        websiteModuleIds = parseModuleIds(raw);
       }
       attachPublicId = formData.get('public_id');
       attachAssetId = formData.get('asset_id');
@@ -298,6 +423,18 @@ export async function PUT(req) {
       if (data.is_published !== undefined || data.is_active !== undefined) {
         const val = data.is_published ?? data.is_active;
         is_published = Boolean(val);
+      }
+      if (
+        data.website_module_ids !== undefined ||
+        data.module_ids !== undefined ||
+        data.modules !== undefined ||
+        body.website_module_ids !== undefined ||
+        body.module_ids !== undefined
+      ) {
+        hasModuleIdsPayload = true;
+        websiteModuleIds = parseModuleIds(
+          data.website_module_ids ?? data.module_ids ?? data.modules ?? body.website_module_ids ?? body.module_ids
+        );
       }
       attachPublicId = data.public_id || body.public_id;
       attachAssetId = data.asset_id || body.asset_id;
@@ -325,7 +462,11 @@ export async function PUT(req) {
       let newSlug = current.slug;
       if (title !== null && title !== current.title && title.trim()) {
         const baseSlug = slugify(newTitle) || 'app';
-        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+        newSlug = baseSlug;
+        const check = await query('SELECT id FROM apps WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, appId]);
+        if (check.rows.length > 0) {
+          newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+        }
       }
       const newDesc = description !== null ? description : current.description;
       const newShortDesc = short_description !== null ? short_description : current.short_description;
@@ -337,6 +478,19 @@ export async function PUT(req) {
          WHERE id = $6`,
         [newTitle, newSlug, newShortDesc, newDesc, newPublished, appId]
       );
+    }
+
+    // Synchronize website modules in app_modules if provided
+    if (hasModuleIdsPayload) {
+      await query('DELETE FROM app_modules WHERE app_id = $1', [appId]);
+      for (const modId of websiteModuleIds) {
+        await query(
+          `INSERT INTO app_modules (app_id, website_module_id, is_active)
+           VALUES ($1, $2, TRUE)
+           ON CONFLICT (app_id, website_module_id) DO UPDATE SET is_active = TRUE`,
+          [appId, modId]
+        );
+      }
     }
 
     // Upload & attach any new images
@@ -365,22 +519,49 @@ export async function PUT(req) {
     const updatedRes = await query(
       `SELECT a.*, 
         COALESCE(
-          json_agg(
-            json_build_object(
-              'id', ai.id,
-              'app_id', ai.app_id,
-              'image', ai.image,
-              'image_id', ai.image_id,
-              'title', ai.title,
-              'created_at', ai.created_at
-            ) ORDER BY ai.id ASC
-          ) FILTER (WHERE ai.id IS NOT NULL),
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', ai.id,
+                'app_id', ai.app_id,
+                'image', ai.image,
+                'image_id', ai.image_id,
+                'title', ai.title,
+                'created_at', ai.created_at
+              ) ORDER BY ai.id ASC
+            )
+            FROM apps_images ai
+            WHERE ai.app_id = a.id
+          ),
           '[]'::json
-        ) AS images
+        ) AS images,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', wm.id,
+                'name', wm.name,
+                'slug', wm.slug,
+                'description', wm.description,
+                'is_active', am.is_active
+              ) ORDER BY wm.id ASC
+            )
+            FROM app_modules am
+            JOIN website_modules wm ON am.website_module_id = wm.id
+            WHERE am.app_id = a.id
+          ),
+          '[]'::json
+        ) AS modules,
+        COALESCE(
+          (
+            SELECT array_agg(am.website_module_id ORDER BY am.website_module_id ASC)
+            FROM app_modules am
+            WHERE am.app_id = a.id
+          ),
+          ARRAY[]::integer[]
+        ) AS website_module_ids
        FROM apps a
-       LEFT JOIN apps_images ai ON a.id = ai.app_id
-       WHERE a.id = $1
-       GROUP BY a.id`,
+       WHERE a.id = $1`,
       [appId]
     );
 
@@ -391,6 +572,8 @@ export async function PUT(req) {
       message: 'Application updated successfully.',
       record,
       images: record?.images || [],
+      modules: record?.modules || [],
+      website_module_ids: record?.website_module_ids || [],
       ...record,
     }, { status: 200 });
   } catch (error) {
@@ -450,6 +633,7 @@ export async function DELETE(req) {
 
     // Safely delete/unlink foreign keys before deleting from apps
     await query('DELETE FROM apps_images WHERE app_id = $1', [appId]);
+    await query('DELETE FROM app_modules WHERE app_id = $1', [appId]);
     await query('UPDATE packages SET app_id = NULL WHERE app_id = $1', [appId]).catch(() => {});
     await query('UPDATE blogs SET app_id = NULL WHERE app_id = $1', [appId]).catch(() => {});
     await query('DELETE FROM apps WHERE id = $1', [appId]);

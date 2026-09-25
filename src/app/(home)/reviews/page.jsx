@@ -215,10 +215,11 @@ export default function PublicReviewsPage() {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {rev.creator_avatar ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <Image
                       src={rev.creator_avatar}
-                      alt={rev.creator_name}
+                      alt={rev.creator_name || 'Reviewer'}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
                     />
                   ) : (

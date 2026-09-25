@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BiArrowBack,
   BiCheckCircle,
@@ -10,6 +11,10 @@ import {
   BiImage,
   BiRocket,
   BiRightArrowAlt,
+  BiLayer,
+  BiPalette,
+  BiPackage,
+  BiStar,
 } from 'react-icons/bi';
 
 export default function SingleAppPage({ params }) {
@@ -46,12 +51,12 @@ export default function SingleAppPage({ params }) {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center mx-auto animate-spin text-2xl">
             <BiRocket />
           </div>
-          <p className="text-xs font-semibold text-slate-500">Loading application details...</p>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Loading application details...</p>
         </div>
       </main>
     );
@@ -59,18 +64,18 @@ export default function SingleAppPage({ params }) {
 
   if (error || !app) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-2xl">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xs text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-2xl">
             <BiGridAlt />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">Application Unavailable</h2>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Application Unavailable</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             {error || 'The requested application could not be found or has not been published.'}
           </p>
           <Link
             href="/apps"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
           >
             <BiArrowBack /> Back to Apps Directory
           </Link>
@@ -82,148 +87,248 @@ export default function SingleAppPage({ params }) {
   const images = Array.isArray(app.images) ? app.images : [];
   const currentImgObj = images[activeImageIndex] || images[0] || null;
   const activeImage = currentImgObj?.image || currentImgObj?.url || null;
+  const modules = Array.isArray(app.modules) ? app.modules : [];
+  const themes = Array.isArray(app.themes) ? app.themes : [];
+  const packages = Array.isArray(app.packages) ? app.packages : [];
 
   return (
-    <main className="min-h-screen bg-slate-50/70 pb-20">
-      {/* Top Breadcrumbs & Hero */}
-      <section className="bg-slate-950 text-white pt-10 pb-12 px-4 lg:px-8 border-b border-white/10">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Link
-            href="/apps"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            <BiArrowBack className="text-sm" /> All Applications
-          </Link>
+    <main className="min-h-screen bg-slate-50/70 dark:bg-slate-950/70 ">
+      <div className="w-full space-y-10">
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold uppercase tracking-wider">
-                <BiCheckCircle /> Published Ecosystem App
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{app.title}</h1>
-              {app.short_description && (
-                <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-                  {app.short_description}
-                </p>
-              )}
-            </div>
 
-            <Link
-              href="/creator/login"
-              className="px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 self-start md:self-auto transition-all hover:scale-105 shrink-0"
-            >
-              <span>Deploy Application</span>
-              <BiRightArrowAlt className="text-lg" />
-            </Link>
-          </div>
-        </div>
-      </section>
+        {app.short_description && (
+          <section className="bg-primary-light dark:bg-primary-dark border border-slate-200/90 dark:border-slate-800  p-6 sm:p-8 shadow-xs space-y-3">
 
-      {/* Main Content Area */}
-      <section className="max-w-6xl mx-auto px-4 lg:px-8 pt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Columns: Media Gallery & Rich Description */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Main Gallery Display */}
-          {images.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-xs space-y-3">
-              <div className="aspect-16/10 rounded-2xl overflow-hidden bg-slate-900 border border-slate-100 flex items-center justify-center">
-                {activeImage ? (
-                  <img
-                    src={activeImage}
-                    alt={app.title}
-                    className="w-full h-full object-cover transition-all duration-300"
-                  />
-                ) : (
-                  <div className="text-slate-500 text-sm flex items-center gap-2">
-                    <BiImage className="text-xl" /> Preview Unavailable
-                  </div>
-                )}
-              </div>
+            <p className="text-lg text-center sm:text-2xl font-semibold py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight">
+              {app.short_description}
+            </p>
+          </section>
+        )}
 
-              {/* Thumbnails */}
-              {images.length > 1 && (
-                <div className="flex gap-2.5 overflow-x-auto py-1">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={`w-16 h-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
-                        idx === activeImageIndex
-                          ? 'border-secondary shadow-xs scale-105'
-                          : 'border-slate-200 opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      <img src={img.image || img.url} alt={img.title || app.title} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+        <div className='w-full py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-10'>
+          <section className="bg-white dark:bg-slate-900">
+            <div className="relative aspect-16/10 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/40 dark:border-slate-800 flex items-center justify-center">
+              {activeImage ? (
+                <Image
+                  src={activeImage}
+                  alt={app.title || 'App Image'}
+                  fill
+                  priority
+                  sizes="(max-width: 1200px) 100vw, 1200px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="text-slate-400 dark:text-slate-500 text-sm flex items-center gap-2">
+                  <BiImage className="text-2xl" /> Visual Preview Unavailable
                 </div>
               )}
             </div>
-          )}
 
-          {/* Full Rich Text Capabilities (Tiptap HTML Output) */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2">
-              <BiRocket className="text-primary" /> Application Details & Features
-            </h2>
+            {images.length > 1 && (
+              <div className="flex gap-2.5 overflow-x-auto py-1">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${idx === activeImageIndex
+                        ? 'border-secondary shadow-md scale-105'
+                        : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100'
+                      }`}
+                    aria-label={`Show image ${idx + 1}`}
+                  >
+                    <Image
+                      src={img.image || img.url}
+                      alt={img.title || app.title || 'Thumbnail'}
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 3. THEN: TITLE */}
+          <section className="">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  {app.title}
+                </h1>
+                
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Link
+                  href={`/packages?app=${app.slug}`}
+                  className="px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Deploy Now</span>
+                  <BiRightArrowAlt className="text-base" />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="">
+           
 
             {app.description ? (
               <div
-                className="prose prose-slate max-w-none text-sm text-slate-700 leading-relaxed [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-slate-900 [&_h3]:text-sm [&_h3]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-secondary [&_blockquote]:pl-3 [&_blockquote]:italic"
+                className="prose prose-slate dark:prose-invert max-w-none text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-white [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_blockquote]:border-l-4 [&_blockquote]:border-secondary [&_blockquote]:pl-4 [&_blockquote]:italic [&_p]:mb-4"
                 dangerouslySetInnerHTML={{ __html: app.description }}
               />
             ) : (
-              <p className="text-xs text-slate-500 italic">No detailed description provided.</p>
+              <p className="text-xs text-slate-500 italic">No detailed description provided for this application.</p>
             )}
-          </div>
-        </div>
+          </section>
 
-        {/* Right Sidebar: App Specs & Integration */}
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold text-slate-900">Application Info</h3>
-            <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-slate-400">Route Endpoint</span>
-                <span className="font-mono font-semibold text-slate-700">/apps/{app.slug}</span>
-              </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-slate-400">Status</span>
-                <span className="font-bold text-emerald-600 flex items-center gap-1">
-                  <BiCheckCircle /> Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-slate-400">Visual Assets</span>
-                <span className="font-semibold text-slate-700">{images.length} Image{images.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Updated</span>
-                <span className="font-semibold text-slate-700">
-                  {new Date(app.updated_at || app.created_at).toLocaleDateString()}
-                </span>
+          {/* 5. THEN: MODULES */}
+          <section className=" space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <BiLayer className="text-secondary text-2xl" />
+                  <span>Integrated Website Modules</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  Functional components and native modules connected directly to {app.title}.
+                </p>
               </div>
             </div>
 
-            <div className="pt-3 space-y-2">
-              <Link
-                href={`/creator/checkout?appId=${app.id}`}
-                className="w-full py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
-              >
-                <span>Deploy with Package →</span>
-                <BiRightArrowAlt className="text-base" />
-              </Link>
-              <Link
-                href="/packages"
-                className="w-full py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center transition-colors"
-              >
-                View All Plans
-              </Link>
+            {modules.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {modules.map((mod) => (
+                  <div
+                    key={mod.id}
+                    className="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 hover:border-secondary/40 transition-all shadow-xs flex flex-col justify-between gap-3 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center font-semibold text-base">
+                          <BiCheckCircle />
+                        </div>
+                      </div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-secondary transition-colors">
+                        {mod.name}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3">
+                        {mod.description || 'Full functional module bundled into this application.'}
+                      </p>
+                    </div>
+                    
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-center text-xs text-slate-500">
+                No specific modules currently linked to this application.
+              </div>
+            )}
+          </section>
+
+          {/* 6. THEN: LINK TO GO TO THEME AND PACKAGES */}
+          <section className="space-y-6 pt-2">
+            <div className="pb-1">
+              <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
+                Themes &amp; Packages for {app.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Select design templates and subscription tiers configured for this application.
+              </p>
             </div>
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Go to Themes Card */}
+              <div className="bg-linear-to-br from-purple-900/10 via-white dark:via-slate-900 to-indigo-900/10 border border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center text-2xl font-semibold">
+                    <BiPalette />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">
+                      Explore Themes
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      Browse responsive, conversion-tested themes built specifically to showcase {app.title} with fluid animations and custom styling.
+                    </p>
+                  </div>
+
+                  {themes.length > 0 ? (
+                    <div className="pt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                        {themes.length} Theme{themes.length !== 1 ? 's' : ''} available
+                      </span>
+                      {themes.slice(0, 3).map((t) => (
+                        <span key={t.id} className="text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                          {t.name || t.title}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400">
+                      Discover compatible themes across all catalog categories.
+                    </p>
+                  )}
+                </div>
+
+                <Link
+                  href={`/themes?app=${app.slug}`}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs sm:text-sm shadow-md transition-all group-hover:gap-3 cursor-pointer"
+                >
+                  <span>Go to Themes</span>
+                  <BiRightArrowAlt className="text-lg" />
+                </Link>
+              </div>
+
+              {/* Go to Packages Card */}
+              <div className="bg-linear-to-br from-secondary/10 via-white dark:via-slate-900 to-rose-900/10 border border-secondary/20 dark:border-secondary/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center text-2xl font-semibold">
+                    <BiPackage />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">
+                      Subscription Packages
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      Deploy {app.title} with automated database provisioning, live editor studio, custom domain linking, and hosting.
+                    </p>
+                  </div>
+
+                  {packages.length > 0 ? (
+                    <div className="pt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
+                        {packages.length} Plan{packages.length !== 1 ? 's' : ''} available
+                      </span>
+                      {packages.slice(0, 2).map((p) => (
+                        <span key={p.id} className="text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                          {p.name}: ${Math.round(Number(p.price_in_cents || 0) / 100)}/mo
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400">
+                      Explore available monthly and annual subscription plans.
+                    </p>
+                  )}
+                </div>
+
+                <Link
+                  href={`/packages?app=${app.slug}`}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white font-semibold text-xs sm:text-sm shadow-md transition-all group-hover:gap-3 cursor-pointer"
+                >
+                  <span>Go to Packages</span>
+                  <BiRightArrowAlt className="text-lg" />
+                </Link>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

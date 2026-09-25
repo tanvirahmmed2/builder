@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { BiUser, BiStar, BiCheckShield, BiCube } from 'react-icons/bi';
 
 export default function Review({ review }) {
@@ -42,10 +43,11 @@ export default function Review({ review }) {
       {/* Author Details */}
       <div className="pt-3 border-t border-slate-200/70 dark:border-slate-700/80 flex items-center gap-3">
         {avatar ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={avatar}
             alt={name}
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
           />
         ) : (

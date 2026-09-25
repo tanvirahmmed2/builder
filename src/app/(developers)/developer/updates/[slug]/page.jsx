@@ -67,7 +67,6 @@ export default function UpdateDetailPage({ params }) {
         body: JSON.stringify({
           id: update.id,
           title: editForm.title,
-          slug: editForm.slug,
           description: editForm.description,
         }),
       });
@@ -205,27 +204,26 @@ export default function UpdateDetailPage({ params }) {
 
       {/* Direct Update Form */}
       <form onSubmit={handleSaveEdit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Title</label>
-            <input
-              type="text"
-              required
-              value={editForm.title}
-              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-secondary font-medium"
-            />
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Title</label>
+            {editForm.title && (
+              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                slug: /{editForm.slug || 'auto'}
+              </span>
+            )}
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Slug</label>
-            <input
-              type="text"
-              required
-              value={editForm.slug}
-              onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-secondary font-medium"
-            />
-          </div>
+          <input
+            type="text"
+            required
+            value={editForm.title}
+            onChange={(e) => {
+              const newTitle = e.target.value;
+              const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+              setEditForm((prev) => ({ ...prev, title: newTitle, slug: autoSlug || prev.slug }));
+            }}
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-secondary font-medium"
+          />
         </div>
 
         <div>

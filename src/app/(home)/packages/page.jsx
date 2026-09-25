@@ -61,6 +61,11 @@ export default function PackagesPage() {
 
   useEffect(() => {
     fetchPackagesAndApps();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('app') || params.get('app_id');
+      if (q) setSelectedApp(q);
+    }
   }, []);
 
   const filteredPackages = useMemo(() => {

@@ -66,11 +66,12 @@ export async function PUT(request, { params }) {
     const name = title;
     let newSlug = current.slug;
 
-    if (data.slug && data.slug.trim() && data.slug !== current.slug) {
-      newSlug = slugify(data.slug);
+    if (title && (title !== current.title && title !== current.name)) {
+      const baseSlug = slugify(title) || 'theme';
+      newSlug = baseSlug;
       const slugCheck = await queryDb('SELECT id FROM themes WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, current.id]);
       if (slugCheck.rows.length > 0) {
-        newSlug = `${newSlug}-${Date.now().toString().slice(-4)}`;
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 

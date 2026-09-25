@@ -88,11 +88,12 @@ export async function PUT(request, { params }) {
 
     const name = data.name !== undefined ? data.name.trim() : current.name;
     let newSlug = current.slug;
-    if (data.slug && data.slug.trim() && data.slug !== current.slug) {
-      newSlug = generateSlug(data.slug);
+    if (name && name !== current.name) {
+      const baseSlug = generateSlug(name) || 'package';
+      newSlug = baseSlug;
       const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, current.id]);
       if (slugCheck.rows.length > 0) {
-        newSlug = `${newSlug}-${Date.now().toString().slice(-4)}`;
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 

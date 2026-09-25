@@ -136,20 +136,16 @@ export async function POST(request) {
     const data = body.data || body;
     const { title, summary, content, cover_image, app_id, is_published = true, images = [] } = data;
 
-    if (!title || !title.trim()) {
-      return NextResponse.json({ success: false, error: 'Article title is required.' }, { status: 400 });
-    }
-    if (!content || !content.trim()) {
-      return NextResponse.json({ success: false, error: 'Article content is required.' }, { status: 400 });
-    }
+    const cleanTitle = (title && title.trim()) || 'Untitled Article';
+    const cleanContent = (content && content.trim()) || '<p>Write your article content here...</p>';
 
-    let slug = data.slug?.trim() ? slugify(data.slug) : slugify(title);
-    if (!slug) slug = 'post-' + Date.now();
+    const baseSlug = slugify(cleanTitle) || 'article';
+    let slug = baseSlug;
 
     // Check slug uniqueness
     const checkSlug = await queryDb('SELECT id FROM blogs WHERE slug = $1 LIMIT 1', [slug]);
     if (checkSlug.rows.length > 0) {
-      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
     const insertRes = await queryDb(
@@ -159,10 +155,10 @@ export async function POST(request) {
       RETURNING *`,
       [
         app_id ? Number(app_id) : null,
-        title.trim(),
+        cleanTitle,
         slug,
         summary ? summary.trim() : null,
-        content.trim(),
+        cleanContent,
         cover_image ? cover_image.trim() : null,
         auth.staff.id,
         Boolean(is_published),
@@ -224,11 +220,12 @@ export async function PUT(request) {
 
     const newTitle = data.title !== undefined ? data.title.trim() : currentBlog.title;
     let newSlug = currentBlog.slug;
-    if (data.slug && data.slug.trim() && data.slug !== currentBlog.slug) {
-      newSlug = slugify(data.slug);
-      const slugCheck = await queryDb('SELECT id FROM blogs WHERE slug = $1 AND id != $2', [newSlug, id]);
+    if (newTitle && newTitle !== currentBlog.title) {
+      const baseSlug = slugify(newTitle) || 'article';
+      newSlug = baseSlug;
+      const slugCheck = await queryDb('SELECT id FROM blogs WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, id]);
       if (slugCheck.rows.length > 0) {
-        newSlug = `${newSlug}-${Date.now().toString().slice(-4)}`;
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 

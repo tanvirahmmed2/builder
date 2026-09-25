@@ -84,6 +84,7 @@ function formatTableToModuleTitle(tableName) {
     // Platform Core modules
     apps: 'Ecosystem Apps',
     apps_images: 'App Showcase Media',
+    app_modules: 'Application Modules',
     themes: 'Visual Themes',
     themes_images: 'Theme Showcase Media',
     packages: 'Subscription Packages',

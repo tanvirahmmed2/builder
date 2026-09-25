@@ -2,13 +2,46 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BiSearch, BiPlus, BiTrash, BiRefresh, BiEdit } from 'react-icons/bi';
+import { useRouter } from 'next/navigation';
+import { BiSearch, BiPlus, BiTrash, BiRefresh, BiEdit, BiLoaderAlt } from 'react-icons/bi';
 
 export default function AdminThemesPage() {
   const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const router = useRouter();
+
+  const handleCreateDefaultTheme = async () => {
+    if (creating) return;
+    try {
+      setCreating(true);
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const res = await fetch('/api/developer/themes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Untitled Theme',
+          title: 'Untitled Theme',
+          slug: `untitled-theme-${randomSuffix}`,
+          category: 'Modern',
+          is_active: false,
+          is_premium: false,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.record?.slug) {
+        router.push(`/developer/themes/${data.record.slug}`);
+      } else {
+        alert(data.error || 'Failed to create theme.');
+        setCreating(false);
+      }
+    } catch (e) {
+      alert(e.message || 'Error creating theme.');
+      setCreating(false);
+    }
+  };
 
   const fetchThemes = async () => {
     try {
@@ -82,14 +115,16 @@ export default function AdminThemesPage() {
           >
             <BiRefresh className="text-lg" />
           </button>
-          <Link
-            href="/developer/themes/create"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
-            title="Create New Theme in Studio"
+          <button
+            type="button"
+            disabled={creating}
+            onClick={handleCreateDefaultTheme}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-60"
+            title="Create Theme"
           >
-            <BiPlus className="text-base" />
-            <span>Create Theme</span>
-          </Link>
+            {creating ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
+            <span>{creating ? 'Creating...' : 'Create Theme'}</span>
+          </button>
         </div>
       </div>
 

@@ -50,9 +50,9 @@ export default function HomeNavbar() {
 
               {apps && apps.length > 0 && (
                 <div className="absolute left-0 top-full pt-1 hidden group-hover:flex flex-col z-50 animate-in fade-in duration-150">
-                  <div className="py-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 min-w-56 overflow-hidden">
+                  <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200  shadow-2xl border border-slate-100 dark:border-slate-800 min-w-56 overflow-hidden">
                     
-                    <div className="max-h-64 overflow-y-auto py-1">
+                    <div className="max-h-64 overflow-y-auto ">
                       {apps.map((a) => (
                         <Link
                           key={a.id}

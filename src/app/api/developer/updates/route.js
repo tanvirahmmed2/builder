@@ -57,25 +57,16 @@ export async function POST(request) {
       );
     }
 
-    const body = await request.json();
-    const title = body.title?.trim();
-    const description = body.description?.trim();
-    let slug = body.slug?.trim() || formatSlug(title);
-
-    if (!title) {
-      return NextResponse.json({ success: false, error: 'Title is required.' }, { status: 400 });
-    }
-    if (!description) {
-      return NextResponse.json({ success: false, error: 'Description is required.' }, { status: 400 });
-    }
-    if (!slug) {
-      slug = formatSlug(title) || `update-${Date.now()}`;
-    }
+    const body = await request.json().catch(() => ({}));
+    const title = body.title?.trim() || 'Untitled Update';
+    const description = body.description?.trim() || 'Update details coming soon...';
+    const baseSlug = formatSlug(title) || 'update';
+    let slug = baseSlug;
 
     // Check slug uniqueness
     const existingSlug = await queryDb('SELECT id FROM updates WHERE slug = $1 LIMIT 1', [slug]);
     if (existingSlug.rows.length > 0) {
-      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
     const res = await queryDb(
@@ -108,30 +99,27 @@ export async function PUT(request) {
     const id = body.id || body.updateId;
     const title = body.title?.trim();
     const description = body.description?.trim();
-    let slug = body.slug?.trim() || formatSlug(title);
+    const existingRes = await queryDb('SELECT * FROM updates WHERE id = $1', [Number(id)]);
+    if (existingRes.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Update record not found.' }, { status: 404 });
+    }
+    const current = existingRes.rows[0];
 
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Update ID is required for update.' }, { status: 400 });
-    }
-    if (!title) {
-      return NextResponse.json({ success: false, error: 'Title is required.' }, { status: 400 });
-    }
-    if (!description) {
-      return NextResponse.json({ success: false, error: 'Description is required.' }, { status: 400 });
-    }
-    if (!slug) {
-      slug = formatSlug(title) || `update-${Date.now()}`;
-    }
-
-    // Check slug uniqueness excluding current record
-    const existingSlug = await queryDb('SELECT id FROM updates WHERE slug = $1 AND id != $2 LIMIT 1', [slug, Number(id)]);
-    if (existingSlug.rows.length > 0) {
-      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+    const newTitle = title || current.title;
+    const newDescription = description !== undefined ? description : current.description;
+    let newSlug = current.slug;
+    if (title && title !== current.title) {
+      const baseSlug = formatSlug(title) || 'update';
+      newSlug = baseSlug;
+      const existingSlug = await queryDb('SELECT id FROM updates WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, current.id]);
+      if (existingSlug.rows.length > 0) {
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
     const res = await queryDb(
       `UPDATE updates SET title = $1, description = $2, slug = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *`,
-      [title, description, slug, Number(id)]
+      [newTitle, newDescription, newSlug, current.id]
     );
 
     if (res.rows.length === 0) {

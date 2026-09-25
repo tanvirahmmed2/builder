@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BiArrowBack,
   BiCalendar,
@@ -171,14 +172,14 @@ export default function SingleBlogPage({ params }) {
       <article className="max-w-4xl mx-auto px-4 lg:px-8 -mt-8 space-y-10">
         {/* Cover Image */}
         {blog.cover_image && (
-          <div className="rounded-3xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-16/9">
-            <img
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-16/9">
+            <Image
               src={blog.cover_image}
-              alt={blog.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
+              alt={blog.title || 'Blog cover'}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 896px"
+              className="object-cover"
             />
           </div>
         )}
@@ -214,11 +215,13 @@ export default function SingleBlogPage({ params }) {
                   className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 group hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => setSelectedGalleryImage(img)}
                 >
-                  <div className="aspect-16/10 overflow-hidden bg-slate-900">
-                    <img
+                  <div className="relative aspect-16/10 overflow-hidden bg-slate-900">
+                    <Image
                       src={img.image_url}
-                      alt={img.alt_text || blog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      alt={img.alt_text || blog.title || 'Gallery image'}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                   {(img.alt_text || img.caption) && (
@@ -243,12 +246,16 @@ export default function SingleBlogPage({ params }) {
             className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-xs cursor-pointer"
             onClick={() => setSelectedGalleryImage(null)}
           >
-            <div className="max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden p-2 shadow-2xl relative">
-              <img
-                src={selectedGalleryImage.image_url}
-                alt={selectedGalleryImage.alt_text || 'Full image'}
-                className="max-h-[80vh] w-auto mx-auto object-contain rounded-xl"
-              />
+            <div className="w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden p-3 shadow-2xl relative">
+              <div className="relative w-full h-[70vh]">
+                <Image
+                  src={selectedGalleryImage.image_url}
+                  alt={selectedGalleryImage.alt_text || 'Full image'}
+                  fill
+                  sizes="100vw"
+                  className="object-contain rounded-xl"
+                />
+              </div>
               {selectedGalleryImage.caption && (
                 <p className="text-center text-xs text-slate-600 font-medium py-2">
                   {selectedGalleryImage.caption}

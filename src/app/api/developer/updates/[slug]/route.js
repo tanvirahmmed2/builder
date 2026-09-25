@@ -54,12 +54,12 @@ export async function PUT(request, { params }) {
     const title = body.title?.trim() || current.title;
     const description = body.description?.trim() || current.description;
     let newSlug = current.slug;
-
-    if (body.slug && body.slug.trim() && body.slug !== current.slug) {
-      newSlug = formatSlug(body.slug);
+    if (title && title !== current.title) {
+      const baseSlug = formatSlug(title) || 'update';
+      newSlug = baseSlug;
       const slugCheck = await queryDb('SELECT id FROM updates WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, current.id]);
       if (slugCheck.rows.length > 0) {
-        newSlug = `${newSlug}-${Date.now().toString().slice(-4)}`;
+        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 
