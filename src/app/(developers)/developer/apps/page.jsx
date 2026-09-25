@@ -20,8 +20,6 @@ import {
   BiShieldQuarter,
 } from 'react-icons/bi';
 import { Context } from '@/components/helper/Context';
-import AppCreateForm from '@/components/developer/forms/AppCreateForm';
-import AppUpdateForm from '@/components/developer/forms/AppUpdateForm';
 import DeveloperAppCard from '@/components/developer/card/AppCard';
 
 export default function DeveloperAppsPage() {
@@ -30,9 +28,6 @@ export default function DeveloperAppsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PUBLISHED' | 'DRAFTS'
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingApp, setEditingApp] = useState(null);
-  const [creatingDraft, setCreatingDraft] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [actionError, setActionError] = useState('');
 
@@ -60,33 +55,6 @@ export default function DeveloperAppsPage() {
     fetchApps();
   }, []);
 
-  // One-click draft auto-creation workflow using axios
-  const handleQuickCreateDraft = async () => {
-    if (!canManage) return;
-    setCreatingDraft(true);
-    setActionError('');
-
-    try {
-      const res = await axios.post('/api/developer/apps', {
-        title: 'Untitled App',
-        is_published: false,
-      });
-
-      if (res.data?.success && res.data?.record) {
-        // Prepend new draft to list and open update form immediately
-        setApps((prev) => [res.data.record, ...prev]);
-        setEditingApp(res.data.record);
-        setShowCreateModal(false);
-      } else {
-        setActionError(res.data?.error || 'Failed to auto-create draft app.');
-      }
-    } catch (err) {
-      setActionError(err.response?.data?.error || err.message || 'Network error while creating draft.');
-    } finally {
-      setCreatingDraft(false);
-    }
-  };
-
   // Delete App using axios
   const handleDeleteApp = async (id, title) => {
     if (!canManage) return;
@@ -100,7 +68,6 @@ export default function DeveloperAppsPage() {
 
       if (res.data?.success) {
         setApps((prev) => prev.filter((a) => a.id !== id));
-        if (editingApp?.id === id) setEditingApp(null);
       } else {
         setActionError(res.data?.error || 'Failed to delete application.');
       }
@@ -128,7 +95,6 @@ export default function DeveloperAppsPage() {
 
       if (res.data?.success && res.data?.record) {
         setApps((prev) => prev.map((a) => (a.id === app.id ? res.data.record : a)));
-        if (editingApp?.id === app.id) setEditingApp(res.data.record);
       } else {
         setActionError(res.data?.error || 'Failed to toggle publishing status.');
       }
@@ -179,22 +145,14 @@ export default function DeveloperAppsPage() {
           </button>
 
           {canManage ? (
-            <div className="flex items-center gap-2">
-              {/* Quick Auto-Create Draft Button */}
-              <button
-                type="button"
-                onClick={handleQuickCreateDraft}
-                disabled={creatingDraft}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer disabled:opacity-50"
-              >
-                {creatingDraft ? (
-                  <BiLoaderAlt className="animate-spin text-base" />
-                ) : (
-                  <BiPlus className="text-base" />
-                )}
-                <span>{creatingDraft ? 'Creating Draft...' : 'Create App'}</span>
-              </button>
-            </div>
+            <Link
+              href="/developer/apps/create"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
+              title="Create App via Full Page Studio"
+            >
+              <BiPlus className="text-base" />
+              <span>Create App</span>
+            </Link>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
               <BiShieldQuarter className="text-sm text-slate-400" />
@@ -215,30 +173,6 @@ export default function DeveloperAppsPage() {
             Dismiss
           </button>
         </div>
-      )}
-
-      {/* Optional Quick Create Modal/Form */}
-      {showCreateModal && canManage && (
-        <AppCreateForm
-          onSuccess={(newRecord) => {
-            setApps((prev) => [newRecord, ...prev]);
-            setShowCreateModal(false);
-            setEditingApp(newRecord);
-          }}
-          onCancel={() => setShowCreateModal(false)}
-        />
-      )}
-
-      {/* Editing Form */}
-      {editingApp && canManage && (
-        <AppUpdateForm
-          app={editingApp}
-          onSuccess={(updatedRecord) => {
-            setApps((prev) => prev.map((a) => (a.id === updatedRecord.id ? updatedRecord : a)));
-            setEditingApp(updatedRecord);
-          }}
-          onCancel={() => setEditingApp(null)}
-        />
       )}
 
       {/* Search & Filter Bar */}
@@ -293,15 +227,13 @@ export default function DeveloperAppsPage() {
               : 'There are currently no ecosystem applications in this view.'}
           </p>
           {canManage && (
-            <button
-              type="button"
-              onClick={handleQuickCreateDraft}
-              disabled={creatingDraft}
+            <Link
+              href="/developer/apps/create"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary-dark text-white cursor-pointer shadow-xs"
             >
               <BiPlus className="text-base" />
               <span>Create Your First App</span>
-            </button>
+            </Link>
           )}
         </div>
       ) : (
@@ -310,10 +242,8 @@ export default function DeveloperAppsPage() {
             <DeveloperAppCard
               key={app.id}
               app={app}
-              isEditing={editingApp?.id === app.id}
               canManage={canManage}
               deletingAppId={deletingId}
-              onEdit={setEditingApp}
               onTogglePublish={handleTogglePublish}
               onDelete={handleDeleteApp}
             />

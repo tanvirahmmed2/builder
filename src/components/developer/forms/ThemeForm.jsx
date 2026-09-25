@@ -3,20 +3,39 @@
 import { useState, useEffect } from 'react';
 import { BiPalette, BiCheck, BiX } from 'react-icons/bi';
 
-export default function ThemeForm({ onSuccess, onCancel }) {
+export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
   const [apps, setApps] = useState([]);
   const [formData, setFormData] = useState({
-    app_id: '',
-    name: '',
-    slug: '',
-    description: '',
-    category: 'Modern',
-    preview_image: '',
-    is_active: true,
-    is_premium: false,
+    app_id: initialData?.app_id || '',
+    name: initialData?.name || initialData?.title || '',
+    slug: initialData?.slug || '',
+    description: initialData?.description || '',
+    category: initialData?.category || 'Modern',
+    preview_image: initialData?.preview_image || initialData?.image || '',
+    link: initialData?.link || '',
+    is_active: initialData?.is_active !== undefined ? initialData.is_active : true,
+    is_premium: initialData?.is_premium !== undefined ? initialData.is_premium : false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isEdit = Boolean(initialData?.id);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        app_id: initialData.app_id || '',
+        name: initialData.name || initialData.title || '',
+        slug: initialData.slug || '',
+        description: initialData.description || '',
+        category: initialData.category || 'Modern',
+        preview_image: initialData.preview_image || initialData.image || '',
+        link: initialData.link || '',
+        is_active: initialData.is_active !== undefined ? initialData.is_active : true,
+        is_premium: initialData.is_premium !== undefined ? initialData.is_premium : false,
+      });
+    }
+  }, [initialData]);
 
   useEffect(() => {
     async function loadApps() {
@@ -41,31 +60,41 @@ export default function ThemeForm({ onSuccess, onCancel }) {
     const slug = formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const payload = {
       ...formData,
+      id: initialData?.id,
+      title: formData.name,
       slug,
       app_id: formData.app_id ? Number(formData.app_id) : null,
     };
 
+    const url = isEdit
+      ? `/api/developer/themes/${initialData.slug || initialData.id}`
+      : '/api/developer/themes';
+    const method = isEdit ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/developer/themes', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
-        setFormData({
-          app_id: '',
-          name: '',
-          slug: '',
-          description: '',
-          category: 'Modern',
-          preview_image: '',
-          is_active: true,
-          is_premium: false,
-        });
+        if (!isEdit) {
+          setFormData({
+            app_id: '',
+            name: '',
+            slug: '',
+            description: '',
+            category: 'Modern',
+            preview_image: '',
+            link: '',
+            is_active: true,
+            is_premium: false,
+          });
+        }
         if (onSuccess) onSuccess(data.record);
       } else {
-        setError(data.error || 'Failed to add theme');
+        setError(data.error || 'Failed to save theme');
       }
     } catch (err) {
       setError(err.message || 'Network error');
@@ -75,15 +104,21 @@ export default function ThemeForm({ onSuccess, onCancel }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs mb-6">
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs mb-6">
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
             <BiPalette className="text-xl" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-800">Add Design Theme</h3>
-            <p className="text-xs text-slate-500">Provide pre-built templates, color styles, and fonts for portfolio sites.</p>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">
+              {isEdit ? `Edit Theme: ${formData.name || 'Untitled'}` : 'Add Design Theme'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {isEdit
+                ? 'Update theme parameters, styling, category, and app associations.'
+                : 'Provide pre-built templates, color styles, and fonts for portfolio sites.'}
+            </p>
           </div>
         </div>
         {onCancel && (
@@ -226,7 +261,7 @@ export default function ThemeForm({ onSuccess, onCancel }) {
             className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
           >
             <BiCheck className="text-base" />
-            <span>{loading ? 'Saving...' : 'Save Theme'}</span>
+            <span>{loading ? 'Saving...' : isEdit ? 'Update Theme' : 'Save Theme'}</span>
           </button>
         </div>
       </form>

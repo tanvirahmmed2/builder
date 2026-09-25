@@ -16,10 +16,8 @@ import {
 
 export default function DeveloperAppCard({
   app,
-  isEditing = false,
   canManage = false,
   deletingAppId = null,
-  onEdit,
   onTogglePublish,
   onDelete,
 }) {
@@ -34,11 +32,7 @@ export default function DeveloperAppCard({
 
   return (
     <div
-      className={`group bg-white border rounded-2xl p-5 transition-all shadow-xs flex flex-col justify-between hover:shadow-md ${
-        isEditing
-          ? 'border-secondary ring-2 ring-secondary/20'
-          : 'border-slate-200 hover:border-slate-300'
-      }`}
+      className="group bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 transition-all shadow-xs flex flex-col justify-between hover:shadow-md"
     >
       <div className="space-y-3">
         {/* Header / Icon & Badge */}
@@ -59,9 +53,11 @@ export default function DeveloperAppCard({
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-secondary transition-colors truncate">
-                {app.title}
-              </h3>
+              <Link href={`/developer/apps/${app.slug}`} className="hover:underline">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-secondary transition-colors truncate">
+                  {app.title}
+                </h3>
+              </Link>
               <div className="text-[11px] font-mono text-slate-400 truncate">/{app.slug}</div>
             </div>
           </div>
@@ -171,21 +167,14 @@ export default function DeveloperAppCard({
                 </button>
               )}
 
-              {/* Edit Button */}
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={() => onEdit(app)}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer text-sm ${
-                    isEditing
-                      ? 'bg-secondary text-white'
-                      : 'text-slate-600 hover:text-secondary hover:bg-slate-100'
-                  }`}
-                  title="Edit details & images"
-                >
-                  <BiEdit className="text-base" />
-                </button>
-              )}
+              {/* Edit Application in Workspace */}
+              <Link
+                href={`/developer/apps/${app.slug}`}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-secondary hover:bg-secondary/10 transition-colors text-sm"
+                title="Edit Application in Workspace"
+              >
+                <BiEdit className="text-base" />
+              </Link>
 
               {/* Delete Button */}
               {onDelete && (

@@ -40,30 +40,22 @@ import { ROLE_PERMISSIONS } from '@/app/(developers)/developer/layout';
 
 export const ADMIN_NAV_SECTIONS = [
   {
-    title: 'Platform Core',
+    title: 'Workspace & Overview',
     links: [
       { href: '/developer', label: 'Overview', icon: BiLayer, exact: true },
       { href: '/developer/tasks', label: 'Tasks & Sprints', icon: BiTask },
       { href: '/developer/notices', label: 'Company Notices', icon: BiBell },
-      { href: '/developer/profile', label: 'My Profile', icon: BiUser },
-      { href: '/developer/my-salaries', label: 'My Salaries', icon: BiCreditCard },
-      { href: '/developer/settings', label: 'Settings', icon: BiCog },
-      { href: '/developer/developers', label: 'Developers Team', icon: BiUserCheck },
-      { href: '/developer/roles', label: 'Roles & Permissions', icon: BiShieldQuarter },
-      { href: '/developer/creators', label: 'Creators', icon: BiGroup },
-      { href: '/developer/users', label: 'End-Users', icon: BiUser },
-      { href: '/developer/websites', label: 'Websites', icon: BiDesktop },
+      { href: '/developer/chats', label: 'Internal Chat', icon: BiMessageSquareDetail },
     ],
   },
   {
-    title: 'Content & Design',
+    title: 'Websites & Audience',
     links: [
-      { href: '/developer/blogs', label: 'Blogs', icon: BiFile },
-      { href: '/developer/themes', label: 'Themes', icon: BiPalette },
-      { href: '/developer/policies', label: 'Company Policies', icon: BiCheckShield },
-      { href: '/developer/faqs', label: 'FAQs', icon: BiHelpCircle },
-      { href: '/developer/updates', label: 'Product Updates', icon: BiBell },
-      { href: '/developer/tutorials', label: 'Video Tutorials', icon: BiVideo },
+      { href: '/developer/websites', label: 'Websites', icon: BiDesktop },
+      { href: '/developer/creators', label: 'Creators', icon: BiGroup },
+      { href: '/developer/users', label: 'End-Users', icon: BiUser },
+      { href: '/developer/leads', label: 'Leads', icon: BiTrendingUp },
+      { href: '/developer/subscribers', label: 'Subscribers', icon: BiEnvelope },
     ],
   },
   {
@@ -71,21 +63,30 @@ export const ADMIN_NAV_SECTIONS = [
     links: [
       { href: '/developer/packages', label: 'Packages', icon: BiCube },
       { href: '/developer/features', label: 'Features', icon: BiCheckShield },
-      { href: '/developer/modules', label: 'Database Modules', icon: BiGridAlt },
-      { href: '/developer/payments', label: 'Payments', icon: BiCreditCard },
       { href: '/developer/subscriptions', label: 'Subscriptions', icon: BiCheckShield },
-      { href: '/developer/payroll', label: 'Payroll & Salaries', icon: BiCreditCard },
+      { href: '/developer/payments', label: 'Payments', icon: BiCreditCard },
+      { href: '/developer/projects', label: 'Custom Projects', icon: BiBriefcase },
+    ],
+  },
+  {
+    title: 'Content & Design',
+    links: [
+      { href: '/developer/themes', label: 'Themes', icon: BiPalette },
+      { href: '/developer/blogs', label: 'Blogs', icon: BiFile },
+      { href: '/developer/policies', label: 'Company Policies', icon: BiCheckShield },
+      { href: '/developer/updates', label: 'Product Updates', icon: BiBell },
+      { href: '/developer/tutorials', label: 'Video Tutorials', icon: BiVideo },
+      { href: '/developer/faqs', label: 'FAQs', icon: BiHelpCircle },
     ],
   },
   {
     title: 'Support & Comms',
     links: [
-      { href: '/developer/chats', label: 'Internal Chat', icon: BiMessageSquareDetail },
+      { href: '/developer/support', label: 'Support Tickets', icon: BiHeadphone },
       { href: '/developer/live-chats', label: 'Live Chats', icon: BiChat },
       { href: '/developer/contacts', label: 'Contacts', icon: BiEnvelope },
-      { href: '/developer/support', label: 'Support Tickets', icon: BiHeadphone },
-      { href: '/developer/projects', label: 'Custom Projects', icon: BiBriefcase },
       { href: '/developer/reports', label: 'Reports', icon: BiMessageSquareDetail },
+      { href: '/developer/reviews', label: 'Reviews', icon: BiStar },
     ],
   },
   {
@@ -96,21 +97,24 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/whatsapp-messages', label: 'WhatsApp Messages', icon: BiLogoWhatsapp },
     ],
   },
-
   {
-    title: 'Security & Trust',
+    title: 'Team & Organization',
     links: [
-      { href: '/developer/reviews', label: 'Reviews', icon: BiStar },
-      { href: '/developer/spams', label: 'Spam Defense', icon: BiShieldX },
+      { href: '/developer/developers', label: 'Developers Team', icon: BiUserCheck },
+      { href: '/developer/roles', label: 'Roles & Permissions', icon: BiShieldQuarter },
+      { href: '/developer/payroll', label: 'Payroll & Salaries', icon: BiCreditCard },
+      { href: '/developer/my-salaries', label: 'My Salaries', icon: BiCreditCard },
+      { href: '/developer/careers', label: 'Careers & Hiring', icon: BiBriefcase },
     ],
   },
   {
-    title: 'Growth & Ecosystem',
+    title: 'Platform & Settings',
     links: [
-      { href: '/developer/leads', label: 'Leads', icon: BiTrendingUp },
-      { href: '/developer/subscribers', label: 'Subscribers', icon: BiEnvelope },
       { href: '/developer/apps', label: 'Ecosystem Apps', icon: BiGridAlt },
-      { href: '/developer/careers', label: 'Careers & Hiring', icon: BiBriefcase },
+      { href: '/developer/modules', label: 'Database Modules', icon: BiGridAlt },
+      { href: '/developer/spams', label: 'Spam Defense', icon: BiShieldX },
+      { href: '/developer/settings', label: 'Settings', icon: BiCog },
+      { href: '/developer/profile', label: 'My Profile', icon: BiUser },
     ],
   },
 ];

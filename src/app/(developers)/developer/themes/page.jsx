@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BiSearch, BiPlus, BiMinus, BiTrash, BiRefresh } from 'react-icons/bi';
-import ThemeForm from '@/components/developer/forms/ThemeForm';
+import Link from 'next/link';
+import { BiSearch, BiPlus, BiTrash, BiRefresh, BiEdit } from 'react-icons/bi';
 
 export default function AdminThemesPage() {
   const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
@@ -83,31 +82,16 @@ export default function AdminThemesPage() {
           >
             <BiRefresh className="text-lg" />
           </button>
-          <button
-            type="button"
-            onClick={() => setShowForm(!showForm)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              showForm
-                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                : 'bg-secondary hover:bg-secondary-dark text-white'
-            }`}
+          <Link
+            href="/developer/themes/create"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
+            title="Create New Theme in Studio"
           >
-            {showForm ? <BiMinus className="text-base" /> : <BiPlus className="text-base" />}
-            <span>{showForm ? 'Hide Form' : 'Add Theme'}</span>
-          </button>
+            <BiPlus className="text-base" />
+            <span>Create Theme</span>
+          </Link>
         </div>
       </div>
-
-      {showForm && (
-        <ThemeForm
-          apiEndpoint="/api/developer/themes"
-          onSuccess={() => {
-            setShowForm(false);
-            fetchThemes();
-          }}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
 
       {/* Table Card */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
@@ -169,7 +153,13 @@ export default function AdminThemesPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-bold text-slate-800">{t.name}</div>
+                      <Link
+                        href={`/developer/themes/${t.slug}`}
+                        className="font-bold text-slate-800 hover:text-secondary block truncate"
+                        title="Open Theme Workspace"
+                      >
+                        {t.name}
+                      </Link>
                       <div className="font-mono text-[11px] text-slate-400">/{t.slug}</div>
                     </td>
                     <td className="px-4 py-3">
@@ -212,15 +202,24 @@ export default function AdminThemesPage() {
                       {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        disabled={deletingId === t.id}
-                        onClick={() => handleDelete(t.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                        title="Delete record"
-                      >
-                        <BiTrash className="text-base" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/developer/themes/${t.slug}`}
+                          className="text-slate-400 hover:text-secondary p-1.5 rounded-lg hover:bg-secondary/10 transition-colors cursor-pointer"
+                          title="Edit Theme in Workspace"
+                        >
+                          <BiEdit className="text-base" />
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={deletingId === t.id}
+                          onClick={() => handleDelete(t.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Delete record"
+                        >
+                          <BiTrash className="text-base" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

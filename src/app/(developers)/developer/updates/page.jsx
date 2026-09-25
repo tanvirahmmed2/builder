@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useContext } from 'react';
 import { Context } from '@/components/helper/Context';
-import TiptapEditor from '@/components/ui/TiptapEditor';
-import slugify from 'slugify';
 import {
   BiSearch,
   BiPlus,
@@ -11,9 +9,7 @@ import {
   BiTrash,
   BiRefresh,
   BiBell,
-  BiX,
   BiCheckCircle,
-  BiErrorCircle,
   BiLoaderAlt,
   BiShieldQuarter,
   BiCalendar,
@@ -27,15 +23,7 @@ export default function DeveloperUpdatesPage() {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Modal states
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingUpdate, setEditingUpdate] = useState(null);
-  const [formData, setFormData] = useState({ title: '', slug: '', description: '' });
-  const [manualSlugEdit, setManualSlugEdit] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [feedback, setFeedback] = useState({ type: '', message: '' });
 
   const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
   const canManage = permissions.includes('updates');
@@ -59,117 +47,30 @@ export default function DeveloperUpdatesPage() {
     fetchUpdates();
   }, []);
 
-  const openCreateModal = () => {
-    if (!canManage) {
-      alert('Access denied: updates permission required.');
-      return;
-    }
-    setEditingUpdate(null);
-    setFormData({ title: '', slug: '', description: '' });
-    setManualSlugEdit(false);
-    setFeedback({ type: '', message: '' });
-    setModalOpen(true);
-  };
-
-  const openEditModal = (item) => {
-    if (!canManage) {
-      alert('Access denied: updates permission required.');
-      return;
-    }
-    setEditingUpdate(item);
-    setFormData({
-      title: item.title || '',
-      slug: item.slug || '',
-      description: item.description || '',
-    });
-    setManualSlugEdit(true);
-    setFeedback({ type: '', message: '' });
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditingUpdate(null);
-    setFormData({ title: '', slug: '', description: '' });
-    setManualSlugEdit(false);
-  };
-
-  const handleTitleChange = (val) => {
-    const updated = { ...formData, title: val };
-    if (!manualSlugEdit) {
-      updated.slug = slugify(val, { lower: true, strict: true, trim: true });
-    }
-    setFormData(updated);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canManage) {
-      setFeedback({ type: 'error', message: 'Access denied: updates permission required to publish or edit updates.' });
-      return;
-    }
-
-    if (!formData.title.trim()) {
-      setFeedback({ type: 'error', message: 'Title is required.' });
-      return;
-    }
-    if (!formData.description.trim()) {
-      setFeedback({ type: 'error', message: 'Please write an update description using the rich text editor.' });
-      return;
-    }
-
-    setSubmitting(true);
-    setFeedback({ type: '', message: '' });
-
-    try {
-      const method = editingUpdate ? 'PUT' : 'POST';
-      const payload = editingUpdate ? { id: editingUpdate.id, ...formData } : formData;
-
-      const res = await fetch('/api/developer/updates', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setFeedback({
-          type: 'success',
-          message: editingUpdate ? 'Update saved successfully!' : 'Update published successfully!',
-        });
-        await fetchUpdates();
-        setTimeout(() => closeModal(), 900);
-      } else {
-        setFeedback({ type: 'error', message: data.error || 'Operation failed.' });
-      }
-    } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Network error.' });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleDelete = async (id) => {
     if (!canManage) {
       alert('Access denied: updates permission required.');
       return;
     }
 
-    if (!confirm('Are you sure you want to permanently delete this update announcement?')) return;
-    setDeletingId(id);
+    if (!window.confirm('Are you sure you want to permanently delete this update?')) {
+      return;
+    }
+
     try {
+      setDeletingId(id);
       const res = await fetch(`/api/developer/updates?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
       if (data.success) {
-        await fetchUpdates();
+        setUpdates((prev) => prev.filter((u) => u.id !== id));
       } else {
-        alert(data.error || 'Failed to delete update.');
+        alert(data.error || 'Failed to delete update');
       }
     } catch (err) {
-      console.error(err);
-      alert('Error occurred while deleting update.');
+      console.error('Error deleting update:', err);
+      alert(err.message || 'Error deleting update');
     } finally {
       setDeletingId(null);
     }
@@ -202,7 +103,7 @@ export default function DeveloperUpdatesPage() {
             )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Publish, edit, and manage product feature releases and changelogs formatted with TipTap rich text.
+            Publish, edit, and manage product feature releases and changelogs.
           </p>
         </div>
 
@@ -218,14 +119,14 @@ export default function DeveloperUpdatesPage() {
           </button>
 
           {canManage ? (
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            <Link
+              href="/developer/updates/create"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              title="Publish Update in Full-Page Studio"
             >
               <BiPlus className="text-base" />
-              <span>Post New Update</span>
-            </button>
+              <span>Post Update</span>
+            </Link>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-semibold">
               <BiLockAlt className="text-sm" />
@@ -279,14 +180,13 @@ export default function DeveloperUpdatesPage() {
             {searchTerm ? `No updates matched "${searchTerm}".` : 'No product changelog updates published yet.'}
           </p>
           {canManage && !searchTerm && (
-            <button
-              type="button"
-              onClick={openCreateModal}
+            <Link
+              href="/developer/updates/create"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-white text-xs font-bold hover:bg-secondary-dark transition-colors cursor-pointer shadow-xs"
             >
               <BiPlus />
               <span>Post First Update</span>
-            </button>
+            </Link>
           )}
         </div>
       ) : (
@@ -298,9 +198,15 @@ export default function DeveloperUpdatesPage() {
             >
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                    {item.title}
-                  </h3>
+                  <Link
+                    href={`/developer/updates/${item.slug}`}
+                    className="hover:underline"
+                    title="Open Dedicated Update Workspace"
+                  >
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight hover:text-secondary dark:hover:text-secondary transition-colors">
+                      {item.title}
+                    </h3>
+                  </Link>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                     /{item.slug}
                   </span>
@@ -334,14 +240,13 @@ export default function DeveloperUpdatesPage() {
 
               {canManage && (
                 <div className="flex items-center gap-1.5 self-end md:self-start shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(item)}
+                  <Link
+                    href={`/developer/updates/${item.slug}`}
                     className="p-2 rounded-lg text-slate-500 hover:text-secondary hover:bg-secondary/10 transition-colors text-base cursor-pointer"
-                    title="Edit Update"
+                    title="Open Dedicated Update Workspace"
                   >
                     <BiEdit />
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => handleDelete(item.id)}
@@ -355,116 +260,6 @@ export default function DeveloperUpdatesPage() {
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Create / Edit Modal with TipTap Editor */}
-      {modalOpen && canManage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs overflow-y-auto animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center text-lg">
-                  <BiBell />
-                </div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  {editingUpdate ? 'Edit Product Update' : 'Publish New Product Update'}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <BiX className="text-xl" />
-              </button>
-            </div>
-
-            {feedback.message && (
-              <div
-                className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
-                  feedback.type === 'success'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
-                }`}
-              >
-                {feedback.type === 'success' ? (
-                  <BiCheckCircle className="text-base shrink-0" />
-                ) : (
-                  <BiErrorCircle className="text-base shrink-0" />
-                )}
-                <span>{feedback.message}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Update Title <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., Release v2.1: Instant Canvas Preview"
-                    value={formData.title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    URL Slug <span className="text-slate-400 font-normal">(auto-generated)</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., release-v2-1-instant-canvas-preview"
-                    value={formData.slug}
-                    onChange={(e) => {
-                      setManualSlugEdit(true);
-                      setFormData({ ...formData, slug: e.target.value });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-mono focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Update Description <span className="text-rose-500">*</span>{' '}
-                  <span className="text-slate-400 font-normal">(Rich Text powered by TipTap)</span>
-                </label>
-                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800">
-                  <TiptapEditor
-                    value={formData.description}
-                    onChange={(html) => setFormData({ ...formData, description: html })}
-                    placeholder="Describe the new features, bug fixes, or platform enhancements in detail..."
-                    minHeight="220px"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-xs"
-                >
-                  {submitting && <BiLoaderAlt className="animate-spin text-sm" />}
-                  <span>{editingUpdate ? 'Save Changes' : 'Publish Update'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

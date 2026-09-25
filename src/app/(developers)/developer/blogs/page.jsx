@@ -18,16 +18,12 @@ import {
   BiRocket,
   BiLoaderAlt,
 } from 'react-icons/bi';
-import BlogForm from '@/components/developer/forms/BlogForm';
 import { Context } from '@/components/helper/Context';
 
 export default function AdminBlogsPage() {
   const { user } = useContext(Context);
   const [blogs, setBlogs] = useState([]);
-  const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingBlog, setEditingBlog] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PUBLISHED' | 'DRAFTS'
   const [deletingId, setDeletingId] = useState(null);
@@ -45,7 +41,6 @@ export default function AdminBlogsPage() {
       const data = await res.json();
       if (data.success) {
         setBlogs(data.records || []);
-        if (data.apps) setApps(data.apps);
       } else {
         setActionError(data.error || 'Failed to fetch blogs');
       }
@@ -72,7 +67,6 @@ export default function AdminBlogsPage() {
       const data = await res.json();
       if (data.success) {
         setBlogs((prev) => prev.filter((b) => b.id !== id));
-        if (editingBlog?.id === id) setEditingBlog(null);
       } else {
         setActionError(data.error || 'Failed to delete blog');
       }
@@ -98,7 +92,6 @@ export default function AdminBlogsPage() {
       const data = await res.json();
       if (data.success && data.record) {
         setBlogs((prev) => prev.map((b) => (b.id === blog.id ? data.record : b)));
-        if (editingBlog?.id === blog.id) setEditingBlog(data.record);
       } else {
         setActionError(data.error || 'Failed to toggle publication status');
       }
@@ -149,25 +142,14 @@ export default function AdminBlogsPage() {
           >
             <BiRefresh className="text-lg" />
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (showForm) {
-                setShowForm(false);
-              } else {
-                setEditingBlog(null);
-                setShowForm(true);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              showForm && !editingBlog
-                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                : 'bg-secondary hover:bg-secondary-dark text-white'
-            }`}
+          <Link
+            href="/developer/blogs/create"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
+            title="Create New Blog Article"
           >
-            {showForm && !editingBlog ? <BiMinus className="text-base" /> : <BiPlus className="text-base" />}
-            <span>{showForm && !editingBlog ? 'Hide Form' : 'Add Blog Article'}</span>
-          </button>
+            <BiPlus className="text-base" />
+            <span>Create Article</span>
+          </Link>
         </div>
       </div>
 
@@ -182,28 +164,6 @@ export default function AdminBlogsPage() {
             Dismiss
           </button>
         </div>
-      )}
-
-      {/* Create / Edit Form */}
-      {(showForm || editingBlog) && (
-        <BlogForm
-          blog={editingBlog}
-          apps={apps}
-          apiEndpoint="/api/developer/blogs"
-          onSuccess={(savedRecord) => {
-            if (editingBlog) {
-              setBlogs((prev) => prev.map((b) => (b.id === savedRecord.id ? savedRecord : b)));
-              setEditingBlog(null);
-            } else {
-              setBlogs((prev) => [savedRecord, ...prev]);
-              setShowForm(false);
-            }
-          }}
-          onCancel={() => {
-            setShowForm(false);
-            setEditingBlog(null);
-          }}
-        />
       )}
 
       {/* Search & Filter Card */}
@@ -305,7 +265,13 @@ export default function AdminBlogsPage() {
                       </td>
 
                       <td className="px-4 py-3 max-w-xs">
-                        <div className="font-semibold text-slate-800 truncate">{blog.title}</div>
+                        <Link
+                          href={`/developer/blogs/${blog.slug}`}
+                          className="font-semibold text-slate-800 hover:text-secondary truncate block"
+                          title="Open Article Workspace"
+                        >
+                          {blog.title}
+                        </Link>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="font-mono text-[10px] text-slate-400 truncate">
                             /{blog.slug}
@@ -373,18 +339,14 @@ export default function AdminBlogsPage() {
                             </Link>
                           )}
 
-                          {/* Edit Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingBlog(blog);
-                              setShowForm(false);
-                            }}
+                          {/* Edit Article Link */}
+                          <Link
+                            href={`/developer/blogs/${blog.slug}`}
                             className="text-slate-400 hover:text-secondary p-1.5 rounded-lg hover:bg-secondary/10 transition-colors cursor-pointer"
-                            title="Edit article and images"
+                            title="Edit Article in Workspace"
                           >
                             <BiEdit className="text-base" />
-                          </button>
+                          </Link>
 
                           {/* Delete Button */}
                           <button

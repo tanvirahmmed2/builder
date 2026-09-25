@@ -16,12 +16,14 @@ import {
 
 export default function BlogForm({
   blog = null,
+  initialData = null,
   apps = [],
   onSuccess,
   onCancel,
   apiEndpoint = '/api/developer/blogs',
 }) {
-  const isEditing = Boolean(blog?.id);
+  const currentBlog = blog || initialData;
+  const isEditing = Boolean(currentBlog?.id);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -60,17 +62,17 @@ export default function BlogForm({
 
   // Initialize form data when blog prop changes
   useEffect(() => {
-    if (blog) {
+    if (currentBlog) {
       setFormData({
-        title: blog.title || '',
-        slug: blog.slug || '',
-        summary: blog.summary || '',
-        content: blog.content || '',
-        cover_image: blog.cover_image || '',
-        app_id: blog.app_id ? String(blog.app_id) : '',
-        is_published: Boolean(blog.is_published),
+        title: currentBlog.title || '',
+        slug: currentBlog.slug || '',
+        summary: currentBlog.summary || '',
+        content: currentBlog.content || '',
+        cover_image: currentBlog.cover_image || '',
+        app_id: currentBlog.app_id ? String(currentBlog.app_id) : '',
+        is_published: Boolean(currentBlog.is_published),
       });
-      setExistingImages(Array.isArray(blog.images) ? blog.images : []);
+      setExistingImages(Array.isArray(currentBlog.images) ? currentBlog.images : []);
     } else {
       setFormData({
         title: '',
@@ -86,7 +88,7 @@ export default function BlogForm({
     setNewImages([]);
     setError('');
     setSuccessMsg('');
-  }, [blog]);
+  }, [currentBlog]);
 
   // Add pending image to list
   const handleAddNewImage = () => {
@@ -138,7 +140,7 @@ export default function BlogForm({
     };
 
     if (isEditing) {
-      payload.id = blog.id;
+      payload.id = currentBlog.id;
       if (newImages.length > 0) {
         payload.new_images = newImages;
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
+import Link from 'next/link';
 import { Context } from '@/components/helper/Context';
 import {
   BiSearch,
@@ -16,8 +17,8 @@ import {
   BiLayer,
   BiTrendingUp,
   BiLockAlt,
+  BiGridAlt,
 } from 'react-icons/bi';
-import PackageForm from '@/components/developer/forms/PackageForm';
 
 export default function AdminPackagesPage() {
   const { user } = useContext(Context) || {};
@@ -26,8 +27,6 @@ export default function AdminPackagesPage() {
 
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingPackage, setEditingPackage] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [intervalFilter, setIntervalFilter] = useState('ALL');
@@ -53,25 +52,6 @@ export default function AdminPackagesPage() {
   useEffect(() => {
     fetchPackages();
   }, []);
-
-  const handleEditClick = (pkg) => {
-    if (!isAdminUser) {
-      showFeedback('Access Denied: packages permission required to edit packages.');
-      return;
-    }
-    setEditingPackage(pkg);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCreateClick = () => {
-    if (!isAdminUser) {
-      showFeedback('Access Denied: packages permission required to create packages.');
-      return;
-    }
-    setEditingPackage(null);
-    setShowForm((prev) => !prev);
-  };
 
   const handleToggleStatus = async (pkg) => {
     if (!isAdminUser) {
@@ -211,7 +191,7 @@ export default function AdminPackagesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={fetchPackages}
@@ -221,18 +201,14 @@ export default function AdminPackagesPage() {
             <BiRefresh className="text-xl" />
           </button>
           {isAdminUser ? (
-            <button
-              type="button"
-              onClick={handleCreateClick}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-                showForm && !editingPackage
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  : 'bg-secondary hover:bg-secondary-dark text-white'
-              }`}
+            <Link
+              href="/developer/packages/create"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs bg-secondary hover:bg-secondary-dark text-white cursor-pointer"
+              title="Create Package via Full-Page Studio"
             >
-              {showForm && !editingPackage ? <BiMinus className="text-lg" /> : <BiPlus className="text-lg" />}
-              <span>{showForm && !editingPackage ? 'Hide Form' : 'Add Package'}</span>
-            </button>
+              <BiPlus className="text-base" />
+              <span>Create Package</span>
+            </Link>
           ) : (
             <div className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-100 text-slate-500 text-xs font-semibold">
               <BiLockAlt className="text-sm" />
@@ -288,27 +264,6 @@ export default function AdminPackagesPage() {
           <p className="text-[11px] text-slate-400 mt-1">Top tier allowance</p>
         </div>
       </div>
-
-      {/* Package Form (Create or Edit) */}
-      {showForm && isAdminUser && (
-        <PackageForm
-          initialData={editingPackage}
-          onSuccess={(savedPkg) => {
-            showFeedback(
-              editingPackage
-                ? `Package "${savedPkg.name}" updated successfully.`
-                : `Package "${savedPkg.name}" created successfully.`
-            );
-            setShowForm(false);
-            setEditingPackage(null);
-            fetchPackages();
-          }}
-          onCancel={() => {
-            setShowForm(false);
-            setEditingPackage(null);
-          }}
-        />
-      )}
 
       {/* Table Card */}
       <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
@@ -405,7 +360,13 @@ export default function AdminPackagesPage() {
                       <td className="px-5 py-4 font-mono font-bold text-slate-500">#{pkg.id}</td>
 
                       <td className="px-5 py-4">
-                        <div className="font-bold text-slate-900">{pkg.name}</div>
+                        <Link
+                          href={`/developer/packages/${pkg.slug}`}
+                          className="font-bold text-slate-900 hover:text-secondary block truncate"
+                          title="Open Plan Workspace"
+                        >
+                          {pkg.name}
+                        </Link>
                         <div className="font-mono text-[11px] text-slate-400">{pkg.slug}</div>
                         {pkg.description && (
                           <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs mt-0.5">
@@ -504,14 +465,13 @@ export default function AdminPackagesPage() {
                       <td className="px-5 py-4 text-right whitespace-nowrap">
                         {isAdminUser ? (
                           <div className="inline-flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleEditClick(pkg)}
+                            <Link
+                              href={`/developer/packages/${pkg.slug}`}
                               className="p-1.5 text-slate-500 hover:text-secondary hover:bg-secondary/10 rounded-lg transition-colors cursor-pointer"
-                              title="Edit package"
+                              title="Edit Package in Workspace"
                             >
                               <BiEdit className="text-base" />
-                            </button>
+                            </Link>
 
                             <button
                               type="button"
