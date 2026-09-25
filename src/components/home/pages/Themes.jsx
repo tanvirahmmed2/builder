@@ -88,15 +88,12 @@ export default function Themes() {
 
   return (
     <section className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="w-full space-y-12">
         {/* Section Heading */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold uppercase tracking-wider">
-            <BiPalette className="text-purple-500 text-sm" />
-            <span>Curated Theme Showcase</span>
-          </div>
+          
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight leading-snug">
             Award-winning themes engineered for maximum conversion
           </h2>
 
@@ -117,7 +114,7 @@ export default function Themes() {
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   activeCategory === cat.id
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -140,23 +137,23 @@ export default function Themes() {
               <div>
                 <div className={`relative h-48 bg-linear-to-br ${theme.gradient} p-5 flex flex-col justify-between overflow-hidden`}>
                   <div className="flex items-center justify-between z-10">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/25">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/25">
                       {theme.categoryLabel}
                     </span>
                     {theme.isPremium ? (
-                      <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-xs flex items-center gap-1">
+                      <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 font-semibold text-[10px] tracking-wider uppercase shadow-xs flex items-center gap-1">
                         <BiStar className="text-slate-950 fill-current" />
                         <span>PREMIUM</span>
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-[10px] uppercase">
+                      <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white font-semibold text-[10px] uppercase">
                         INCLUDED
                       </span>
                     )}
                   </div>
 
                   <div className="z-10">
-                    <h3 className="text-xl font-black text-white tracking-tight drop-shadow-xs">
+                    <h3 className="text-xl font-semibold text-white tracking-tight drop-shadow-xs">
                       {theme.name}
                     </h3>
                   </div>
@@ -202,7 +199,7 @@ export default function Themes() {
 
                 <Link
                   href="/creator/login"
-                  className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold text-center shadow-xs transition-colors"
+                  className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold text-center shadow-xs transition-colors"
                 >
                   Use in Studio
                 </Link>
@@ -215,7 +212,7 @@ export default function Themes() {
         <div className="text-center pt-4">
           <Link
             href="/themes"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs shadow-lg transition-all"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold text-xs shadow-lg transition-all"
           >
             <span>Browse All Themes &amp; Templates</span>
             <BiRightArrowAlt className="text-base" />
