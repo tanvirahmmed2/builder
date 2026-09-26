@@ -1,5 +1,1 @@
-git add .
-git commit -m " "
-git push
-
-glitch
+v1 progressing
