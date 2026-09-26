@@ -541,7 +541,7 @@ CREATE TABLE IF NOT EXISTS project_images (
 CREATE INDEX IF NOT EXISTS idx_project_images_proj ON project_images (project_id);
 
 -- ============================================================================
--- 11. PURCHASES & PAYMENT
+-- 11. PURCHASES, PAYMENT & PAYMENT_TRANSACTIONS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS purchases (
@@ -549,6 +549,7 @@ CREATE TABLE IF NOT EXISTS purchases (
     creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
     package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
     payment_id INTEGER,
+    price INTEGER NOT NULL DEFAULT 0,
     amount_in_cents INTEGER NOT NULL DEFAULT 0,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
     billing_interval VARCHAR(50) NOT NULL DEFAULT 'MONTHLY',
@@ -576,16 +577,51 @@ CREATE TABLE IF NOT EXISTS payment (
     subscription_id INTEGER,
     amount_in_cents INTEGER NOT NULL DEFAULT 0,
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
-    payment_method VARCHAR(50) NOT NULL DEFAULT 'CARD',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'PAYONEER',
     transaction_id VARCHAR(255) UNIQUE NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'COMPLETED',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    status VARCHAR(50) NOT NULL DEFAULT 'UNPAID', -- 'UNPAID', 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_payment_creator ON payment (creator_id);
 CREATE INDEX IF NOT EXISTS idx_payment_purchase ON payment (purchase_id);
+CREATE INDEX IF NOT EXISTS idx_payment_subscription ON payment (subscription_id);
 CREATE INDEX IF NOT EXISTS idx_payment_txn ON payment (transaction_id);
 
+DROP TRIGGER IF EXISTS trg_payment_updated_at ON payment;
+CREATE TRIGGER trg_payment_updated_at
+BEFORE UPDATE ON payment
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id SERIAL PRIMARY KEY,
+    payment_id INTEGER NOT NULL REFERENCES payment(id) ON DELETE CASCADE,
+    creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+    purchase_id INTEGER REFERENCES purchases(id) ON DELETE SET NULL,
+    transaction_id VARCHAR(255) NOT NULL,
+    gateway VARCHAR(50) NOT NULL DEFAULT 'PAYONEER', -- 'PAYONEER', 'MANUAL', 'CARD'
+    amount_in_cents INTEGER NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REFUNDED'
+    gateway_response JSONB DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_payment ON payment_transactions (payment_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_creator ON payment_transactions (creator_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_purchase ON payment_transactions (purchase_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_txn ON payment_transactions (transaction_id);
+
+DROP TRIGGER IF EXISTS trg_payment_transactions_updated_at ON payment_transactions;
+CREATE TRIGGER trg_payment_transactions_updated_at
+BEFORE UPDATE ON payment_transactions
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
 -- 12. SUBSCRIPTION
@@ -596,7 +632,7 @@ CREATE TABLE IF NOT EXISTS subscription (
     app_id INTEGER REFERENCES apps(id) ON DELETE SET NULL,
     creator_id INTEGER NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
     package_id INTEGER NOT NULL REFERENCES packages(id) ON DELETE RESTRICT,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'OVERDUE'
     current_period_start TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     current_period_end TIMESTAMPTZ NOT NULL,
     cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
@@ -606,6 +642,7 @@ CREATE TABLE IF NOT EXISTS subscription (
 
 CREATE INDEX IF NOT EXISTS idx_subscription_app ON subscription (app_id);
 CREATE INDEX IF NOT EXISTS idx_subscription_creator ON subscription (creator_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_package ON subscription (package_id);
 
 DROP TRIGGER IF EXISTS trg_subscription_updated_at ON subscription;
 CREATE TRIGGER trg_subscription_updated_at

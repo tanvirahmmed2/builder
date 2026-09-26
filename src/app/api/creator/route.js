@@ -50,12 +50,13 @@ export async function GET(request) {
 
     const creatorId = creator.id;
 
-    // Fetch only active subscription, pending/unpaid subscription, and websites
+    // Fetch active subscription, pending/unpaid subscription, websites, and payments
     const [
       activeSubRes,
       pendingSubRes,
       pendingPurchaseRes,
       websitesRes,
+      paymentsRes,
     ] = await Promise.all([
       // 1. Active subscription
       queryDb(
@@ -99,7 +100,7 @@ export async function GET(request) {
                 p.price_in_cents
          FROM purchases pu
          JOIN packages p ON pu.package_id = p.id
-         WHERE pu.user_id = $1 AND pu.status IN ('PENDING', 'UNPAID')
+         WHERE pu.creator_id = $1 AND pu.status IN ('PENDING', 'UNPAID')
          ORDER BY pu.id DESC LIMIT 1`,
         [creatorId]
       ).catch(() => ({ rows: [] })),
@@ -110,6 +111,16 @@ export async function GET(request) {
          FROM websites
          WHERE creator_id = $1
          ORDER BY id DESC LIMIT 20`,
+        [creatorId]
+      ).catch(() => ({ rows: [] })),
+
+      // 5. Creator payments
+      queryDb(
+        `SELECT pay.*, p.name AS package_name, p.slug AS package_slug, p.billing_interval
+         FROM payment pay
+         LEFT JOIN packages p ON pay.package_id = p.id
+         WHERE pay.creator_id = $1
+         ORDER BY pay.id DESC LIMIT 50`,
         [creatorId]
       ).catch(() => ({ rows: [] })),
     ]);
@@ -130,6 +141,7 @@ export async function GET(request) {
         : null);
 
     const websites = websitesRes.rows || [];
+    const payments = paymentsRes?.rows || [];
 
     // Calculate days remaining
     let daysRemaining = 0;
@@ -148,7 +160,7 @@ export async function GET(request) {
       subscription: activeSub,
       subscriptions: activeSub ? [activeSub] : pendingSub ? [pendingSub] : [],
       websites,
-      payments: [],
+      payments,
       purchases: [],
       packages: [],
       tickets: [],

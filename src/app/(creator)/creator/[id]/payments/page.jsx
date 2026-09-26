@@ -10,6 +10,8 @@ import {
   BiCheckCircle,
   BiX,
   BiPrinter,
+  BiDownload,
+  BiFile,
   BiSearch,
   BiRefresh,
   BiLoaderAlt,
@@ -18,6 +20,8 @@ import {
   BiErrorCircle,
   BiWorld,
 } from 'react-icons/bi';
+import { generateInvoiceData, printReceipt, downloadReceiptFile } from '@/lib/invoice';
+
 
 function PaymentsContent() {
   const { creator, payments = [], stats = {}, refetch } = useCreator();
@@ -40,7 +44,10 @@ function PaymentsContent() {
     if (orderPlaced && highlightedPaymentId && payments.length > 0) {
       const match = payments.find((p) => String(p.id) === String(highlightedPaymentId));
       if (match && match.status === 'UNPAID') {
-        setPayModalPayment(match);
+        const timer = setTimeout(() => {
+          setPayModalPayment(match);
+        }, 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [orderPlaced, highlightedPaymentId, payments]);
@@ -91,27 +98,23 @@ function PaymentsContent() {
     <div className="space-y-6">
       {/* Order Placed Notice Banner */}
       {orderPlaced && (
-        <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-5 rounded-2xl bg-secondary/10 border border-secondary/20 text-slate-900 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping" />
-              <h3 className="font-bold text-sm">Order Created Successfully!</h3>
+              <span className="w-2.5 h-2.5 rounded-full bg-secondary animate-ping" />
+              <h3 className="font-bold text-sm text-slate-900">Order Created Successfully!</h3>
             </div>
-            <p className="text-xs text-indigo-700">
-              Your unpaid package invoice is listed below. Click <strong className="font-semibold">"Pay Now"</strong> to complete payment via Payoneer and activate your subscription.
+            <p className="text-xs text-slate-600">
+              Your unpaid package invoice is listed below. Click <strong className="font-semibold text-secondary">&quot;Pay Now&quot;</strong> to complete payment via Payoneer and activate your subscription.
             </p>
           </div>
           {highlightedPaymentId && (
-            <button
-              type="button"
-              onClick={() => {
-                const match = payments.find((p) => String(p.id) === String(highlightedPaymentId));
-                if (match) setPayModalPayment(match);
-              }}
-              className="py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+            <Link
+              href={`/creator/${creator.id}/payments/${highlightedPaymentId}`}
+              className="py-2 px-4 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-sm transition-all whitespace-nowrap cursor-pointer text-center"
             >
-              Pay Now via Payoneer →
-            </button>
+              View Invoice & Pay &rarr;
+            </Link>
           )}
         </div>
       )}
@@ -169,10 +172,10 @@ function PaymentsContent() {
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Payment Gateway</span>
           <div className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">P</span>
-            <span>Payoneer Global</span>
+            <span className="w-5 h-5 rounded-full bg-[#E2136E] text-white flex items-center justify-center text-[10px] font-black">৳</span>
+            <span>bKash & Payoneer</span>
           </div>
-          <p className="text-[11px] text-slate-500">Fast, verified payment processing</p>
+          <p className="text-[11px] text-slate-500">BDT Mobile Banking & Global Card</p>
         </div>
       </div>
 
@@ -255,24 +258,33 @@ function PaymentsContent() {
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                         {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
                       </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
+                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-1.5">
                         {isUnpaid && (
-                          <button
-                            type="button"
-                            onClick={() => setPayModalPayment(p)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] shadow-xs transition-all cursor-pointer"
+                          <Link
+                            href={`/creator/${creator.id}/payments/${p.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-secondary hover:bg-secondary-dark text-white font-bold text-[11px] shadow-xs transition-all cursor-pointer"
                           >
-                            <span>Pay Now</span>
+                            <span>View & Pay</span>
                             <BiRightArrowAlt className="text-sm" />
-                          </button>
+                          </Link>
                         )}
                         <button
                           type="button"
                           onClick={() => setSelectedInvoice(p)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                          title="View Receipt"
                         >
-                          <BiReceipt className="text-slate-400 text-xs" />
+                          <BiReceipt className="text-slate-500 text-xs" />
                           <span>Receipt</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => printReceipt(p, creator)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                          title="Download / Print PDF Receipt"
+                        >
+                          <BiDownload className="text-slate-600 text-xs" />
+                          <span>PDF</span>
                         </button>
                       </td>
                     </tr>
@@ -392,28 +404,17 @@ function PaymentsContent() {
                     <span>Payoneer Checkout Integration</span>
                   </div>
                   <p>
-                    Clicking "Pay with Payoneer" will authorize and execute payment for this invoice, immediately activating your package subscription quota.
+                    Clicking &quot;Pay with Payoneer&quot; will authorize and execute payment for this invoice, immediately activating your package subscription quota.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handlePayNow(payModalPayment)}
-                  disabled={paying}
-                  className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                <Link
+                  href={`/creator/${creator.id}/payments/${payModalPayment.id}`}
+                  className="w-full py-3.5 rounded-2xl bg-secondary hover:bg-secondary-dark active:scale-[0.98] text-white text-xs font-bold shadow-lg shadow-secondary/30 transition-all flex items-center justify-center gap-2 text-center"
                 >
-                  {paying ? (
-                    <>
-                      <BiLoaderAlt className="animate-spin text-base" />
-                      <span>Processing Payoneer Transaction...</span>
-                    </>
-                  ) : (
-                    <>
-                      <BiCreditCard className="text-base" />
-                      <span>Pay with Payoneer (${(Number(payModalPayment.amount_in_cents || 0) / 100).toFixed(2)}) →</span>
-                    </>
-                  )}
-                </button>
+                  <BiCreditCard className="text-base" />
+                  <span>View Invoice & Settle Payment &rarr;</span>
+                </Link>
               </div>
             )}
           </div>
@@ -421,100 +422,186 @@ function PaymentsContent() {
       )}
 
       {/* Invoice Receipt Modal */}
-      {selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2">
-                <BiReceipt className="text-2xl text-slate-800" />
-                <h3 className="text-base font-bold text-slate-900">Official Invoice Receipt</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedInvoice(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <BiX className="text-xl" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-slate-500 font-medium">Invoice Reference</span>
-                <span className="font-mono font-bold text-slate-800">{selectedInvoice.transaction_id}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Date</span>
-                  <div className="text-slate-800 font-medium mt-0.5">
-                    {selectedInvoice.created_at ? new Date(selectedInvoice.created_at).toLocaleDateString() : '—'}
+      {selectedInvoice && (() => {
+        const invData = generateInvoiceData(selectedInvoice, creator);
+        const isPaid = selectedInvoice.status === 'COMPLETED' || selectedInvoice.isPaid;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden p-6 space-y-5 max-h-[92vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 no-print">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center">
+                    <BiReceipt className="text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Official Invoice Receipt</h3>
+                    <p className="text-[11px] text-slate-500 font-mono">Invoice #{invData.invoiceNumber}</p>
                   </div>
                 </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Status</span>
-                  <div className="mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoice(null)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <BiX className="text-xl" />
+                </button>
+              </div>
+
+              {/* Printable receipt card */}
+              <div id="printable-receipt-modal" className="border border-slate-200 rounded-2xl p-6 bg-white space-y-6">
+                {/* 1. Company Data (Top) */}
+                <div className="flex justify-between items-start pb-5 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">{invData.issuer.name}</h2>
+                    <p className="text-xs text-slate-500 mt-1">{invData.issuer.email} &bull; {invData.issuer.phone}</p>
+                    <p className="text-xs text-slate-400">{invData.issuer.address}</p>
+                  </div>
+                  <div className="text-right space-y-1">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        selectedInvoice.status === 'COMPLETED'
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isPaid
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
-                      {selectedInvoice.status}
+                      {isPaid ? 'PAID' : 'UNPAID'}
                     </span>
+                    <div className="text-[10px] font-mono text-slate-400">Official Receipt</div>
+                  </div>
+                </div>
+
+                {/* 2. Invoice Data & 3. Creator Data */}
+                <div className="grid grid-cols-2 gap-6 text-xs pb-5 border-b border-slate-100">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Invoice Information
+                    </span>
+                    <div className="flex gap-2">
+                      <span className="text-slate-400 w-20">Number:</span>
+                      <span className="font-mono font-bold text-slate-800">{invData.invoiceNumber}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-slate-400 w-20">Date:</span>
+                      <span className="font-semibold text-slate-800">{invData.date}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Creator Information
+                    </span>
+                    <div className="font-bold text-slate-900">{invData.customer.name}</div>
+                    <div className="text-slate-500">{invData.customer.email}</div>
+                    {invData.customer.id && (
+                      <div className="text-slate-400 text-[11px]">Creator ID: #{invData.customer.id}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Package Data */}
+                <div className="space-y-2 pb-5 border-b border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Package & Plan Details
+                  </span>
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                        <th className="pb-2">Package</th>
+                        <th className="pb-2 text-center">Interval</th>
+                        <th className="pb-2 text-right">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="py-2.5">
+                          <div className="font-bold text-slate-900">{invData.item.packageName}</div>
+                          <div className="text-[11px] text-slate-500">{invData.item.description}</div>
+                        </td>
+                        <td className="py-2.5 text-center capitalize text-slate-600 font-medium">
+                          {invData.item.billingInterval.toLowerCase()}
+                        </td>
+                        <td className="py-2.5 text-right font-mono font-bold text-slate-900">
+                          ${invData.pricing.totalUsd} {invData.pricing.currency}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 5. Payment Data & Summary Total */}
+                <div className="flex justify-between items-start text-xs pt-1">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Payment Information
+                    </span>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-slate-400">Method:</span>
+                      <span className="font-semibold text-slate-800 font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100">
+                        {invData.paymentMethod}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-slate-400">Status:</span>
+                      <span className={`font-bold ${isPaid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {invData.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right space-y-1">
+                    <span className="text-slate-400 text-xs">Total Amount:</span>
+                    <div className="text-2xl font-black text-slate-900 font-mono">
+                      ${invData.pricing.totalUsd} <span className="text-xs font-normal text-slate-400">{invData.pricing.currency}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-b border-slate-100 py-3 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-700 font-semibold">{selectedInvoice.package_name || 'Portfolio Package'}</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    ${(Number(selectedInvoice.amount_in_cents || 0) / 100).toFixed(2)}
-                  </span>
+              {/* Modal Buttons */}
+              <div className="space-y-2 pt-1 no-print">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => printReceipt(selectedInvoice, creator)}
+                    className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <BiDownload className="text-base" />
+                    <span>Download / Print PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadReceiptFile(selectedInvoice, creator)}
+                    className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <BiFile className="text-base text-slate-500" />
+                    <span>Save HTML Receipt</span>
+                  </button>
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-400">
-                  <span>Payment Method: {selectedInvoice.payment_method}</span>
-                  <span>Currency: {selectedInvoice.currency || 'USD'}</span>
+
+                <div className="flex gap-2">
+                  {!isPaid ? (
+                    <Link
+                      href={`/creator/${creator.id}/payments/${selectedInvoice.id}`}
+                      onClick={() => setSelectedInvoice(null)}
+                      className="flex-1 py-2.5 rounded-xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm text-center"
+                    >
+                      <span>View Invoice & Pay with bKash / Card &rarr;</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/creator/${creator.id}/payments/${selectedInvoice.id}`}
+                      onClick={() => setSelectedInvoice(null)}
+                      className="flex-1 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold text-center transition-colors"
+                    >
+                      View Full Invoice Page &rarr;
+                    </Link>
+                  )}
                 </div>
               </div>
-
-              <div className="flex justify-between items-center text-sm font-bold text-slate-900">
-                <span>Total Amount:</span>
-                <span className="font-mono text-base text-indigo-600">
-                  ${(Number(selectedInvoice.amount_in_cents || 0) / 100).toFixed(2)} {selectedInvoice.currency || 'USD'}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              {(selectedInvoice.status === 'UNPAID' || selectedInvoice.status === 'PENDING') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const inv = selectedInvoice;
-                    setSelectedInvoice(null);
-                    setPayModalPayment(inv);
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <BiCreditCard className="text-sm" />
-                  <span>Pay Now via Payoneer</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <BiPrinter className="text-sm" />
-                <span>Print Invoice</span>
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

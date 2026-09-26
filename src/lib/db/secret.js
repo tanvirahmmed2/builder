@@ -34,6 +34,12 @@ export const PAYOONER_PROGRAM_ID = process.env.PAYOONER_PROGRAM_ID;
 export const PAYOONER_ENV = process.env.PAYOONER_ENV;
 export const PAYOONER_API_BASE_URL = process.env.PAYOONER_API_BASE_URL;
 
+export const BKASH_APP_KEY = process.env.BKASH_APP_KEY;
+export const BKASH_APP_SECRET = process.env.BKASH_APP_SECRET;
+export const BKASH_USERNAME = process.env.BKASH_USERNAME;
+export const BKASH_PASSWORD = process.env.BKASH_PASSWORD;
+export const BKASH_BASE_URL = process.env.BKASH_BASE_URL || 'https://tokenized.sandbox.bka.sh/v1.2.0-beta';
+
 export const META_APP_ID = process.env.META_APP_ID;
 export const META_APP_SECRET = process.env.META_APP_SECRET;
 export const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN;
@@ -43,6 +49,6 @@ export const META_WHATSAPP_TOKEN = process.env.META_WHATSAPP_TOKEN;
 export const META_WHATSAPP_PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
 export const META_WHATSAPP_BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
 export const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
-export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION
+export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION;
 
 

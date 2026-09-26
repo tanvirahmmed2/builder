@@ -4,26 +4,31 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  BiCreditCard,
-  BiCheckCircle,
   BiCube,
+  BiCheckCircle,
   BiLoaderAlt,
-  BiLockAlt,
   BiShieldQuarter,
   BiArrowBack,
   BiUser,
+  BiLayer,
+  BiPackage,
+  BiCreditCard,
+  BiStar,
 } from 'react-icons/bi';
 
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPkgId = searchParams.get('packageId');
+  const initialInterval = (searchParams.get('interval') || 'monthly').toUpperCase();
 
   const [creator, setCreator] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [packages, setPackages] = useState([]);
+  const [loadingPackages, setLoadingPackages] = useState(true);
   const [selectedPkgId, setSelectedPkgId] = useState(initialPkgId ? Number(initialPkgId) : null);
-  const [paymentMethod, setPaymentMethod] = useState('PAYONEER');
+  const [billingCycle, setBillingCycle] = useState(initialInterval === 'YEARLY' ? 'YEARLY' : 'MONTHLY');
+  const [paymentMethod, setPaymentMethod] = useState('BKASH'); // 'BKASH' | 'PAYONEER'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -59,21 +64,38 @@ function CheckoutContent() {
       .then((data) => {
         const list = data.packages || [];
         setPackages(list);
-        if (!selectedPkgId && list.length > 0) {
-          const matched = initialPkgId ? list.find((p) => p.id === Number(initialPkgId)) : list[0];
-          setSelectedPkgId(matched ? matched.id : list[0].id);
+        if (initialPkgId && list.some((p) => p.id === Number(initialPkgId))) {
+          setSelectedPkgId(Number(initialPkgId));
         }
       })
-      .catch(console.error);
-  }, [initialPkgId, selectedPkgId]);
+      .catch(console.error)
+      .finally(() => setLoadingPackages(false));
+  }, [initialPkgId]);
 
-  const selectedPkg = packages.find((p) => p.id === selectedPkgId) || packages[0];
-  const price = selectedPkg ? (Number(selectedPkg.price_in_cents || 0) / 100).toFixed(2) : '0.00';
+  const selectedPkg = packages.find((p) => p.id === selectedPkgId) || null;
 
+  // Pricing calculations
+  const isYearly = billingCycle === 'YEARLY';
+  const monthlyUsd = Number(selectedPkg?.monthly_price_usd ?? (selectedPkg ? (selectedPkg.price_in_cents || 0) / 100 : 0));
+  const yearlyUsd = Number(selectedPkg?.yearly_price_usd ?? Math.round(monthlyUsd * 10));
+  const displayPrice = isYearly ? yearlyUsd.toFixed(2) : monthlyUsd.toFixed(2);
+
+  const features = Array.isArray(selectedPkg?.features) && selectedPkg.features.length > 0
+    ? selectedPkg.features.map((f) => f.name || f.description || f)
+    : Array.isArray(selectedPkg?.allowed_modules) && selectedPkg.allowed_modules.length > 0
+    ? selectedPkg.allowed_modules.map((m) => `Includes ${m} Module`)
+    : ['Standard Website Provisioning', 'Creator Drag-and-Drop Studio', 'Full SSL & Custom Subdomain'];
+
+  // Handle Order Placement
   const handleConfirmOrder = async (e) => {
     e.preventDefault();
     if (!creator) {
-      router.push(`/creator/login?redirect=/creator/checkout?packageId=${selectedPkgId}`);
+      router.push(`/creator/login?redirect=${encodeURIComponent(`/creator/checkout?packageId=${selectedPkgId || ''}`)}`);
+      return;
+    }
+
+    if (!selectedPkg) {
+      setError('Please select a subscription package before continuing.');
       return;
     }
 
@@ -88,16 +110,16 @@ function CheckoutContent() {
         body: JSON.stringify({
           action: 'create_order',
           creatorId: creator.id,
-          packageId: selectedPkgId || selectedPkg?.id,
-          billingInterval: selectedPkg?.billing_interval || 'MONTHLY',
-          paymentMethod: paymentMethod || 'PAYONEER',
+          packageId: selectedPkg.id,
+          billingInterval: billingCycle,
+          paymentMethod: paymentMethod,
         }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        // Redirect to creator payments page to view unpaid invoice and pay now via Payoneer
-        router.push(`/creator/${creator.id}/payments?orderPlaced=true&paymentId=${data.payment?.id}`);
+      if (data.success && data.payment?.id) {
+        // Redirect to /creator/[creatorId]/payments/[paymentId] invoice page
+        router.push(`/creator/${creator.id}/payments/${data.payment.id}`);
       } else {
         setError(data.error || 'Failed to generate order invoice. Please try again.');
       }
@@ -109,38 +131,38 @@ function CheckoutContent() {
     }
   };
 
-  if (checkingAuth) {
+  if (checkingAuth || loadingPackages) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <BiLoaderAlt className="animate-spin text-3xl text-indigo-600" />
-        <p className="text-xs text-slate-500 font-medium">Verifying creator authentication...</p>
+        <BiLoaderAlt className="animate-spin text-3xl text-secondary" />
+        <p className="text-xs text-slate-500 font-medium">Loading checkout details...</p>
       </div>
     );
   }
 
-  // If not logged in as a creator, prompt to login
+  // If not logged in as a creator
   if (!creator) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center space-y-6">
-        <div className="w-16 h-16 rounded-3xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-3xl shadow-sm">
+        <div className="w-16 h-16 rounded-3xl bg-secondary/10 border border-secondary/20 text-secondary flex items-center justify-center mx-auto text-3xl shadow-sm">
           <BiUser />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Creator Login Required</h1>
-          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Creator Login Required</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             You must be logged in with your creator account to purchase a platform package and create your website subscription.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Link
-            href={`/creator/login?redirect=${encodeURIComponent(`/creator/checkout?packageId=${selectedPkgId || 1}`)}`}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition-all text-center"
+            href={`/creator/login?redirect=${encodeURIComponent(`/creator/checkout?packageId=${selectedPkgId || ''}`)}`}
+            className="flex-1 py-3 px-4 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-md shadow-secondary/25 transition-all text-center cursor-pointer"
           >
-            Log In as Creator →
+            Log In as Creator &rarr;
           </Link>
           <Link
             href="/creator/register"
-            className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all text-center"
+            className="flex-1 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all text-center cursor-pointer"
           >
             Register Account
           </Link>
@@ -150,28 +172,30 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
-      {/* Header */}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+      {/* Navigation and Security Header */}
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+        <Link
+          href="/packages"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-secondary transition-colors"
         >
           <BiArrowBack className="text-base" />
           <span>Back to Packages</span>
-        </button>
+        </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-semibold">
-          <BiLockAlt className="text-slate-500" />
-          <span>Secure Checkout Gateway</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-slate-800 dark:text-primary-light text-[11px] font-bold">
+          <BiShieldQuarter className="text-secondary" />
+          <span>Secure Platform Checkout</span>
         </div>
       </div>
 
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Order Package & Subscription</h1>
-        <p className="text-xs text-slate-500 max-w-md mx-auto">
-          Review your selected plan. Confirming will generate your unpaid invoice for payment via Payoneer.
+      {/* Main Title */}
+      <div className="text-center space-y-2 max-w-xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          Review & Complete Order
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          Confirm your package plan. An unpaid invoice will be created for Payoneer payment settlement and immediate subscription activation.
         </p>
       </div>
 
@@ -181,138 +205,248 @@ function CheckoutContent() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        {/* Package Selector & Details */}
-        <div className="md:col-span-7 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <BiCube className="text-indigo-600 text-base" />
-              <span>Select Your Package</span>
-            </h2>
-
-            <div className="grid grid-cols-1 gap-3">
-              {packages.map((pkg) => {
-                const isSelected = pkg.id === selectedPkgId;
-                const pkgPrice = (Number(pkg.price_in_cents || 0) / 100).toFixed(2);
-                return (
-                  <div
-                    key={pkg.id}
-                    onClick={() => setSelectedPkgId(pkg.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-indigo-600 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{pkg.name}</span>
-                        {pkg.badge && (
-                          <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-extrabold uppercase">
-                            {pkg.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 line-clamp-1">{pkg.description || 'Complete portfolio system'}</p>
-                      <div className="text-[11px] text-slate-400">
-                        Up to <strong className="text-slate-700">{pkg.max_websites ?? pkg.max_portfolios ?? 1} website(s)</strong> • {pkg.billing_interval || 'Monthly'}
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-slate-900 font-mono">${pkgPrice}</div>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">{pkg.currency || 'USD'}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* State A: If NO package is selected */}
+      {!selectedPkg ? (
+        <div className="max-w-xl mx-auto text-center space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-12 shadow-sm">
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary text-3xl">
+            <BiPackage />
           </div>
 
-          {/* Payment Method Option */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <BiCreditCard className="text-indigo-600 text-base" />
-              <span>Payment Gateway</span>
-            </h2>
-
-            <div className="p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-                  P
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-900">Payoneer Global Payment</div>
-                  <p className="text-[11px] text-slate-500">Pay securely via Payoneer balance, bank transfer, or card.</p>
-                </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold">
-                Recommended
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Summary & Checkout Card */}
-        <div className="md:col-span-5 space-y-6">
-          <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl space-y-5 border border-slate-800">
-            <div className="border-b border-slate-800 pb-4">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Order Summary</span>
-              <h3 className="text-xl font-bold text-white mt-1">{selectedPkg?.name || 'Selected Package'}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Creator: {creator.name} ({creator.email})</p>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between text-slate-400">
-                <span>Billing Interval:</span>
-                <span className="text-white font-semibold capitalize">{selectedPkg?.billing_interval || 'Monthly'}</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Included Websites:</span>
-                <span className="text-white font-semibold">{selectedPkg?.max_websites ?? selectedPkg?.max_portfolios ?? 1} Website(s)</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Setup & Activation:</span>
-                <span className="text-emerald-400 font-semibold">Complimentary ($0)</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Initial Status:</span>
-                <span className="text-amber-400 font-semibold">Unpaid (Awaiting Payment)</span>
-              </div>
-
-              <div className="border-t border-slate-800 pt-3 flex justify-between items-baseline">
-                <span className="text-sm font-bold text-white">Total Due:</span>
-                <div className="text-2xl font-black text-white font-mono">
-                  ${price} <span className="text-xs text-slate-400 font-normal">{selectedPkg?.currency || 'USD'}</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleConfirmOrder}
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <BiLoaderAlt className="animate-spin text-base" />
-                  <span>Generating Unpaid Order...</span>
-                </>
-              ) : (
-                <>
-                  <BiShieldQuarter className="text-base" />
-                  <span>Confirm Order & Proceed to Invoices →</span>
-                </>
-              )}
-            </button>
-
-            <p className="text-[10px] text-slate-400 text-center leading-normal">
-              Clicking confirm will record your unpaid order in your creator billing portal where you can review your invoice and pay instantly via Payoneer.
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">No Package Selected</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              You haven&apos;t selected a subscription package yet. Browse all available ecosystem packages to select the tier that fits your website goals.
             </p>
           </div>
+
+          <div className="pt-2">
+            <Link
+              href="/packages"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-lg shadow-secondary/25 transition-all cursor-pointer"
+            >
+              <BiCube className="text-base" />
+              <span>Select a Package Now &rarr;</span>
+            </Link>
+          </div>
+
+          {/* Quick Selection List */}
+          {packages.length > 0 && (
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-left space-y-3">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block text-center">
+                Or select directly below:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {packages.map((pkg) => (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    onClick={() => setSelectedPkgId(pkg.id)}
+                    className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-secondary/50 dark:hover:border-secondary/50 bg-slate-50/50 dark:bg-slate-800/40 text-left transition-all cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-secondary transition-colors">
+                          {pkg.name}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
+                          ${Number(pkg.monthly_price_usd ?? (pkg.price_in_cents || 0) / 100).toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                        {pkg.description || 'Full website system'}
+                      </p>
+                    </div>
+                    <div className="mt-3 text-[10px] font-bold text-secondary flex items-center gap-1">
+                      <span>Choose this plan</span>
+                      <span>&rarr;</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        /* State B: When a package IS selected */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Package Card following Home Component styling */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="relative rounded-3xl p-7 sm:p-8 border bg-white dark:bg-slate-900 border-secondary/40 shadow-xl shadow-secondary/5 ring-1 ring-secondary/20 space-y-6">
+              {/* Header with App badge */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  {selectedPkg.app_title && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-slate-800 dark:text-primary-light border border-primary/30">
+                      <BiLayer className="text-xs text-secondary" />
+                      <span>{selectedPkg.app_title}</span>
+                    </span>
+                  )}
+                  <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    {selectedPkg.name}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
+                    {selectedPkg.description || 'Complete digital portfolio and creator website system.'}
+                  </p>
+                </div>
+
+                <Link
+                  href="/packages"
+                  className="text-xs font-semibold text-secondary hover:underline whitespace-nowrap cursor-pointer"
+                >
+                  Change Plan
+                </Link>
+              </div>
+
+              {/* Billing Cycle Switcher */}
+              <div className="p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 inline-flex items-center gap-1.5 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('MONTHLY')}
+                  className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+                    billingCycle === 'MONTHLY'
+                      ? 'bg-secondary text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Monthly Plan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle('YEARLY')}
+                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    billingCycle === 'YEARLY'
+                      ? 'bg-secondary text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>Annual Plan</span>
+                  <span className="text-[10px] bg-primary/25 text-slate-900 dark:text-primary-light border border-primary/40 px-1.5 py-0.5 rounded-md font-bold">
+                    SAVE 20%
+                  </span>
+                </button>
+              </div>
+
+              {/* Pricing Display */}
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white font-mono">
+                  ${displayPrice}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {isYearly ? '/ year' : '/ month'}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-slate-400">
+                  {selectedPkg.currency || 'USD'}
+                </span>
+              </div>
+
+              {/* Quota Badge */}
+              <div className="text-xs text-secondary dark:text-secondary-light bg-secondary/10 px-3.5 py-1.5 rounded-xl border border-secondary/20 w-fit font-semibold">
+                {selectedPkg.max_websites ?? selectedPkg.max_portfolios ?? 1}{' '}
+                {(selectedPkg.max_websites ?? selectedPkg.max_portfolios ?? 1) === 1 ? 'Website' : 'Websites'} Included
+              </div>
+
+              {/* Included Features */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  What is included in this tier:
+                </span>
+                <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
+                  {features.map((feat, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 leading-relaxed">
+                      <BiCheckCircle className="text-base text-secondary shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Order Summary & Checkout Action */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-6 border border-slate-800">
+              <div className="border-b border-slate-800 pb-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Summary</span>
+                <h3 className="text-xl font-bold text-white mt-1">{selectedPkg.name}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {creator.name} ({creator.email})
+                </p>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between text-slate-400">
+                  <span>Billing Interval:</span>
+                  <span className="text-white font-semibold capitalize">{billingCycle.toLowerCase()}</span>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Payment Gateway</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('BKASH')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        paymentMethod === 'BKASH'
+                          ? 'bg-[#E2136E] text-white border-[#E2136E] shadow-sm'
+                          : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white" />
+                      <span>bKash (বিকাশ)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('PAYONEER')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        paymentMethod === 'PAYONEER'
+                          ? 'bg-secondary text-white border-secondary shadow-sm'
+                          : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
+                      }`}
+                    >
+                      <span>Payoneer Card</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-800 pt-4 flex justify-between items-baseline">
+                  <span className="text-sm font-bold text-white">Total:</span>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-white font-mono">
+                      ${displayPrice} <span className="text-xs text-slate-400 font-normal">USD</span>
+                    </div>
+                    {paymentMethod === 'BKASH' && (
+                      <span className="text-xs font-semibold text-[#E2136E]">
+                        ≈ ৳{Math.round(Number(displayPrice) * 120)} BDT
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConfirmOrder}
+                disabled={loading}
+                className={`w-full py-3.5 rounded-2xl active:scale-[0.98] text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${
+                  paymentMethod === 'BKASH'
+                    ? 'bg-[#E2136E] hover:bg-[#c2105e] shadow-lg shadow-[#E2136E]/30'
+                    : 'bg-secondary hover:bg-secondary-dark shadow-lg shadow-secondary/30'
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <BiLoaderAlt className="animate-spin text-base" />
+                    <span>Creating Order...</span>
+                  </>
+                ) : (
+                  <span>Continue to {paymentMethod === 'BKASH' ? 'bKash' : 'Payoneer'} Payment &rarr;</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -322,7 +456,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <div className="min-h-[60vh] flex items-center justify-center">
-          <BiLoaderAlt className="animate-spin text-3xl text-indigo-600" />
+          <BiLoaderAlt className="animate-spin text-3xl text-secondary" />
         </div>
       }
     >

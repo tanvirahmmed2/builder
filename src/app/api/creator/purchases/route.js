@@ -35,11 +35,11 @@ export async function GET(request) {
                 pay.status AS payment_status, 
                 pay.transaction_id,
                 pay.payment_method,
-                pay.paid AS payment_amount
+                pay.amount_in_cents AS payment_amount
          FROM purchases pu
          LEFT JOIN packages p ON pu.package_id = p.id
-         LEFT JOIN payments pay ON pay.purchase_id = pu.id
-         WHERE pu.id = $1 AND pu.user_id = $2
+         LEFT JOIN payment pay ON pay.purchase_id = pu.id
+         WHERE pu.id = $1 AND pu.creator_id = $2
          LIMIT 1`,
         [Number(purchaseIdParam), creatorId]
       );
@@ -64,8 +64,8 @@ export async function GET(request) {
               pay.created_at AS payment_date
        FROM purchases pu
        LEFT JOIN packages p ON pu.package_id = p.id
-       LEFT JOIN payments pay ON pay.purchase_id = pu.id
-       WHERE pu.user_id = $1
+       LEFT JOIN payment pay ON pay.purchase_id = pu.id
+       WHERE pu.creator_id = $1
        ORDER BY pu.id DESC`,
       [creatorId]
     );
@@ -109,8 +109,14 @@ export async function handlePurchasesAction(body, sessionCreator) {
     }
 
     const interval = billingInterval || pkg.billing_interval || 'MONTHLY';
-    const priceInCents = Number(pkg.price_in_cents || 0);
+    let priceInCents = Number(pkg.price_in_cents || 0);
+    if (interval === 'YEARLY' && pkg.yearly_price_usd) {
+      priceInCents = Math.round(Number(pkg.yearly_price_usd) * 100);
+    } else if (pkg.monthly_price_usd) {
+      priceInCents = Math.round(Number(pkg.monthly_price_usd) * 100);
+    }
     const currency = pkg.currency || 'USD';
+    const priceWhole = Math.round(priceInCents / 100);
 
     // Generate unique transaction identifier
     const txnId = 'ORD_' + Date.now().toString(36).toUpperCase() + '_' + Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -134,20 +140,39 @@ export async function handlePurchasesAction(body, sessionCreator) {
 
     // Create UNPAID purchase record linked to payment
     const puRes = await queryDb(
-      `INSERT INTO purchases (creator_id, package_id, payment_id, amount_in_cents, currency, billing_interval, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, 'UNPAID', $7)
+      `INSERT INTO purchases (creator_id, package_id, payment_id, price, amount_in_cents, currency, billing_interval, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'UNPAID', $8)
        RETURNING *`,
-      [creatorId, packageId, payment.id, priceInCents, currency, interval, purchaseNotes]
+      [creatorId, packageId, payment.id, priceWhole, priceInCents, currency, interval, purchaseNotes]
     );
     const purchase = puRes.rows[0];
 
     // Link payment back to purchase
     await queryDb('UPDATE payment SET purchase_id = $1 WHERE id = $2', [purchase.id, payment.id]);
 
+    // Create initial transaction tracking entry
+    await queryDb(
+      `INSERT INTO payment_transactions (payment_id, creator_id, purchase_id, transaction_id, gateway, amount_in_cents, currency, status, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8)`,
+      [
+        payment.id,
+        creatorId,
+        purchase.id,
+        txnId,
+        paymentMethod,
+        priceInCents,
+        currency,
+        JSON.stringify({ order_created_at: new Date().toISOString(), package_name: pkg.name }),
+      ]
+    ).catch((err) => console.warn('Payment transaction log warning:', err.message));
+
     return NextResponse.json({
       success: true,
       message: 'Order created successfully. Ready for payment.',
-      purchase,
+      purchase: {
+        ...purchase,
+        payment_id: payment.id,
+      },
       payment: {
         ...payment,
         purchase_id: purchase.id,
