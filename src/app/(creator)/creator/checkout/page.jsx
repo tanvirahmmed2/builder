@@ -215,7 +215,7 @@ function CheckoutContent() {
                       </div>
                       <p className="text-xs text-slate-500 line-clamp-1">{pkg.description || 'Complete portfolio system'}</p>
                       <div className="text-[11px] text-slate-400">
-                        Up to <strong className="text-slate-700">{pkg.max_portfolios || 1} website(s)</strong> • {pkg.billing_interval || 'Monthly'}
+                        Up to <strong className="text-slate-700">{pkg.max_websites ?? pkg.max_portfolios ?? 1} website(s)</strong> • {pkg.billing_interval || 'Monthly'}
                       </div>
                     </div>
 
@@ -269,7 +269,7 @@ function CheckoutContent() {
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Included Websites:</span>
-                <span className="text-white font-semibold">{selectedPkg?.max_portfolios || 1} Site(s)</span>
+                <span className="text-white font-semibold">{selectedPkg?.max_websites ?? selectedPkg?.max_portfolios ?? 1} Website(s)</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Setup & Activation:</span>

@@ -128,7 +128,8 @@ export default function CreatorPurchasesPage() {
                   <span>
                     Allowed Websites:{' '}
                     <strong className="text-slate-900 font-mono">
-                      {activeSubscription.max_portfolios} sites
+                      {activeSubscription.max_websites ?? activeSubscription.max_portfolios ?? 1}{' '}
+                      {(activeSubscription.max_websites ?? activeSubscription.max_portfolios ?? 1) === 1 ? 'website' : 'websites'}
                     </strong>
                   </span>
                 </div>
@@ -238,7 +239,7 @@ export default function CreatorPurchasesPage() {
                   <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700">
                     <div className="flex items-center gap-2">
                       <BiCheck className="text-emerald-600 text-base" />
-                      <span>Host up to {pkg.max_portfolios} portfolio website(s)</span>
+                      <span>Host up to {pkg.max_websites ?? pkg.max_portfolios ?? 1} website(s)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <BiCheck className="text-emerald-600 text-base" />

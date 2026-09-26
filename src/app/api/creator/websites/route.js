@@ -99,7 +99,7 @@ export async function handleWebsitesAction(body, sessionCreator, request = null)
 
     // Check active package subscription and quotas
     const activeSub = await queryDb(
-      `SELECT s.*, p.max_portfolios 
+      `SELECT s.*, COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites, p.max_portfolios 
        FROM subscription s 
        JOIN packages p ON s.package_id = p.id 
        WHERE s.creator_id = $1 AND s.status = 'ACTIVE' AND s.current_period_end > CURRENT_TIMESTAMP
@@ -114,7 +114,7 @@ export async function handleWebsitesAction(body, sessionCreator, request = null)
       }, { status: 403 });
     }
 
-    const maxLimit = activeSub.rows[0].max_portfolios || 1;
+    const maxLimit = Number(activeSub.rows[0].max_websites ?? activeSub.rows[0].max_portfolios ?? 1);
     const countRes = await queryDb('SELECT COUNT(*)::int AS count FROM websites WHERE creator_id = $1', [creatorId]);
     const currentCount = countRes.rows[0].count;
 

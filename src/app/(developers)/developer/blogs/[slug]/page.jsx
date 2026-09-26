@@ -48,7 +48,38 @@ export default function BlogDetailPage({ params }) {
   };
 
   useEffect(() => {
-    fetchBlog();
+    let active = true;
+    if (!slug) return;
+
+    fetch(`/api/developer/blogs/${encodeURIComponent(slug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        if (data.success && data.record) {
+          setBlog(data.record);
+        } else {
+          setError(data.error || 'Blog article not found');
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message || 'Failed to load article');
+        setLoading(false);
+      });
+
+    fetch('/api/developer/apps')
+      .then((res) => res.json())
+      .then((appsData) => {
+        if (!active) return;
+        if (appsData.apps) setApps(appsData.apps);
+        else if (appsData.records) setApps(appsData.records);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
   }, [slug]);
 
   const handleDelete = async () => {
@@ -122,7 +153,7 @@ export default function BlogDetailPage({ params }) {
             <span>/</span>
             <Link href="/developer/blogs" className="hover:text-secondary">Blogs</Link>
             <span>/</span>
-            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{blog.slug}</span>
+            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{blog.title || 'Article'}</span>
           </div>
 
           <div className="flex items-center gap-2.5">

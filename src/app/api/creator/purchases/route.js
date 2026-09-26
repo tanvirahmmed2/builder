@@ -30,6 +30,7 @@ export async function GET(request) {
                 p.name AS package_name, 
                 p.slug AS package_slug, 
                 p.description AS package_description,
+                COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
                 p.max_portfolios,
                 pay.status AS payment_status, 
                 pay.transaction_id,
@@ -44,7 +45,7 @@ export async function GET(request) {
       );
 
       if (singleRes.rows.length === 0) {
-        return NextResponse.json({ success: false, error: 'Purchase not found' }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'Purchase not found.' }, { status: 404 });
       }
 
       return NextResponse.json({ success: true, purchase: singleRes.rows[0] });
@@ -55,6 +56,8 @@ export async function GET(request) {
       `SELECT pu.*, 
               p.name AS package_name, 
               p.slug AS package_slug, 
+              COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
+              p.max_portfolios,
               pay.status AS payment_status, 
               pay.transaction_id,
               pay.payment_method,

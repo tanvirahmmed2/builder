@@ -66,6 +66,7 @@ export async function GET(request) {
                 p.price_in_cents, 
                 p.currency, 
                 p.billing_interval, 
+                COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
                 p.max_portfolios
          FROM subscription s
          JOIN packages p ON s.package_id = p.id
@@ -156,7 +157,7 @@ export async function GET(request) {
       creators: [],
       stats: {
         totalWebsites: websites.length,
-        maxWebsites: activeSub?.max_portfolios || 0,
+        maxWebsites: activeSub?.max_websites ?? activeSub?.max_portfolios ?? 0,
         daysRemaining,
         hasActivePackage: Boolean(activeSub && activeSub.status === 'ACTIVE' && daysRemaining > 0),
         hasPendingSubscription: Boolean(pendingSub),

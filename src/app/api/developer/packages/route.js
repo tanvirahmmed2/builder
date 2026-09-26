@@ -53,13 +53,22 @@ async function fetchDatabaseModules() {
   }
 }
 
-function generateSlug(text) {
-  return (text || '')
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+import slugify from 'slugify';
+
+async function generateUniqueSlug(name, excludeId = null) {
+  const baseSlug = slugify(name || 'package', { lower: true, strict: true, trim: true }) || 'package';
+  let slug = baseSlug;
+  let counter = 1;
+  while (true) {
+    const params = excludeId ? [slug, Number(excludeId)] : [slug];
+    const query = excludeId
+      ? 'SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1'
+      : 'SELECT id FROM packages WHERE slug = $1 LIMIT 1';
+    const check = await queryDb(query, params);
+    if (check.rows.length === 0) return slug;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
+  }
 }
 
 export async function GET(request) {
@@ -107,7 +116,7 @@ export async function GET(request) {
               ) AS allowed_modules
        FROM packages p
        LEFT JOIN apps a ON p.app_id = a.id
-       ORDER BY p.id ASC`
+       ORDER BY COALESCE(p.monthly_price_usd, p.price_in_cents / 100.0, 0) ASC, p.id ASC`
     ).catch(() => ({ rows: [] }));
 
     return NextResponse.json({
@@ -133,49 +142,89 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-
-    // CREATE PACKAGE
     const data = body.data || body;
     const name = (data.name || '').trim() || 'Untitled Package';
 
-    const baseSlug = generateSlug(name) || 'package';
-    let slug = baseSlug;
+    let appId = data.app_id ? Number(data.app_id) : null;
+    const isQuickCreate = Boolean(data.is_quick_create || name === 'Untitled Package');
 
-    // Check if slug already taken, append suffix if so
-    const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 LIMIT 1', [slug]);
-    if (slugCheck.rows.length > 0) {
-      slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!appId) {
+      if (isQuickCreate) {
+        // Auto-assign first available app if provisioning default package
+        const defaultApp = await queryDb('SELECT id FROM apps ORDER BY id ASC LIMIT 1');
+        if (defaultApp.rows.length > 0) {
+          appId = defaultApp.rows[0].id;
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'A linked application (app_id) is required.' },
+          { status: 400 }
+        );
+      }
     }
 
+    const slug = await generateUniqueSlug(name);
     const description = data.description || '';
-    const priceInCents = data.price_in_cents !== undefined
-      ? Number(data.price_in_cents)
-      : (data.price !== undefined ? Math.round(Number(data.price) * 100) : 0);
+    const monthlyPriceUsd = Math.max(
+      0,
+      Number(
+        data.monthly_price_usd !== undefined
+          ? data.monthly_price_usd
+          : (data.price !== undefined ? data.price : (data.price_in_cents ? Number(data.price_in_cents) / 100 : 0))
+      ) || 0
+    );
+    const yearlyPriceUsd = Math.max(0, Number(data.yearly_price_usd !== undefined ? data.yearly_price_usd : 0) || 0);
+    const monthlyPriceBdt = Math.max(0, Number(data.monthly_price_bdt !== undefined ? data.monthly_price_bdt : 0) || 0);
+    const yearlyPriceBdt = Math.max(0, Number(data.yearly_price_bdt !== undefined ? data.yearly_price_bdt : 0) || 0);
+    const priceInCents = Math.round(monthlyPriceUsd * 100);
     const currency = (data.currency || 'USD').toUpperCase();
     const billingInterval = (data.billing_interval || data.billingInterval || 'MONTHLY').toUpperCase();
-    const maxPortfolios = data.max_portfolios !== undefined ? Math.max(1, Number(data.max_portfolios)) : 1;
+    const maxWebsites = data.max_websites !== undefined
+      ? Math.max(1, Number(data.max_websites))
+      : (data.max_portfolios !== undefined ? Math.max(1, Number(data.max_portfolios)) : 1);
     const isActive = data.is_active !== undefined ? Boolean(data.is_active) : true;
-    const appId = data.app_id ? Number(data.app_id) : null;
 
     const res = await queryDb(
       `INSERT INTO packages (
-        name, slug, description, price_in_cents, currency, billing_interval, max_portfolios, is_active, app_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        name, slug, description, price_in_cents, currency, billing_interval,
+        monthly_price_usd, yearly_price_usd, monthly_price_bdt, yearly_price_bdt,
+        max_websites, max_portfolios, is_active, app_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
-      [name, slug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId]
+      [
+        name, slug, description, priceInCents, currency, billingInterval,
+        monthlyPriceUsd, yearlyPriceUsd, monthlyPriceBdt, yearlyPriceBdt,
+        maxWebsites, maxWebsites, isActive, appId
+      ]
     );
 
     const newPackage = res.rows[0];
 
     // Handle allowed_modules selection dynamically
-    const dbModules = await fetchDatabaseModules();
-    const modulesToSave = Array.isArray(data.allowed_modules)
+    let modulesToSave = Array.isArray(data.allowed_modules)
       ? data.allowed_modules
-      : (Array.isArray(data.modules) ? data.modules : dbModules);
+      : (Array.isArray(data.modules) ? data.modules : null);
 
-    if (modulesToSave && modulesToSave.length > 0) {
-      for (const modTitle of modulesToSave) {
-        const cleanTitle = String(modTitle || '').trim();
+    // If no modules provided during quick creation, inherit linked app's modules
+    if (!modulesToSave && appId) {
+      const appMods = await queryDb(
+        `SELECT wm.name 
+         FROM app_modules am 
+         JOIN website_modules wm ON am.website_module_id = wm.id 
+         WHERE am.app_id = $1 
+         ORDER BY wm.id ASC`,
+        [appId]
+      ).catch(() => ({ rows: [] }));
+      modulesToSave = appMods.rows.map((r) => r.name);
+    }
+
+    if (Array.isArray(modulesToSave) && modulesToSave.length > 0) {
+      for (const modItem of modulesToSave) {
+        const cleanTitle = String(
+          typeof modItem === 'object' && modItem !== null
+            ? (modItem.name || modItem.title || modItem.slug || '')
+            : (modItem || '')
+        ).trim();
         if (cleanTitle) {
           await queryDb(
             `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -196,6 +245,7 @@ export async function POST(request) {
       success: true,
       message: 'Package created successfully',
       record: newPackage,
+      package: newPackage,
     }, { status: 201 });
   } catch (error) {
     console.error('Error processing package POST request:', error);
@@ -233,29 +283,40 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, error: 'Package name cannot be empty' }, { status: 400 });
     }
 
+    const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
+    if (!appId) {
+      return NextResponse.json({ success: false, error: 'A linked application (app_id) is required' }, { status: 400 });
+    }
+
     let slug = current.slug;
     if (name && name !== current.name) {
-      const baseSlug = generateSlug(name) || 'package';
-      slug = baseSlug;
-      const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1', [slug, Number(id)]);
-      if (slugCheck.rows.length > 0) {
-        slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
-      }
+      slug = await generateUniqueSlug(name, Number(id));
     }
 
     const description = data.description !== undefined ? data.description : current.description;
-    const priceInCents = data.price_in_cents !== undefined
-      ? Number(data.price_in_cents)
-      : (data.price !== undefined ? Math.round(Number(data.price) * 100) : current.price_in_cents);
+    const monthlyPriceUsd = data.monthly_price_usd !== undefined
+      ? Math.max(0, Number(data.monthly_price_usd) || 0)
+      : Number(current.monthly_price_usd !== undefined ? current.monthly_price_usd : 0);
+    const yearlyPriceUsd = data.yearly_price_usd !== undefined
+      ? Math.max(0, Number(data.yearly_price_usd) || 0)
+      : Number(current.yearly_price_usd !== undefined ? current.yearly_price_usd : 0);
+    const monthlyPriceBdt = data.monthly_price_bdt !== undefined
+      ? Math.max(0, Number(data.monthly_price_bdt) || 0)
+      : Number(current.monthly_price_bdt !== undefined ? current.monthly_price_bdt : 0);
+    const yearlyPriceBdt = data.yearly_price_bdt !== undefined
+      ? Math.max(0, Number(data.yearly_price_bdt) || 0)
+      : Number(current.yearly_price_bdt !== undefined ? current.yearly_price_bdt : 0);
+    const priceInCents = Math.round(monthlyPriceUsd * 100);
     const currency = data.currency !== undefined ? (data.currency || 'USD').toUpperCase() : current.currency;
     const billingInterval = (data.billing_interval || data.billingInterval) !== undefined
       ? (data.billing_interval || data.billingInterval || 'MONTHLY').toUpperCase()
       : current.billing_interval;
-    const maxPortfolios = data.max_portfolios !== undefined
-      ? Math.max(1, Number(data.max_portfolios))
-      : current.max_portfolios;
+    const maxWebsites = data.max_websites !== undefined
+      ? Math.max(1, Number(data.max_websites))
+      : (data.max_portfolios !== undefined
+          ? Math.max(1, Number(data.max_portfolios))
+          : (current.max_websites !== undefined ? current.max_websites : (current.max_portfolios || 1)));
     const isActive = data.is_active !== undefined ? Boolean(data.is_active) : current.is_active;
-    const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
 
     const res = await queryDb(
       `UPDATE packages
@@ -265,13 +326,22 @@ export async function PUT(request) {
            price_in_cents = $4,
            currency = $5,
            billing_interval = $6,
-           max_portfolios = $7,
-           is_active = $8,
-           app_id = $9,
+           monthly_price_usd = $7,
+           yearly_price_usd = $8,
+           monthly_price_bdt = $9,
+           yearly_price_bdt = $10,
+           max_websites = $11,
+           max_portfolios = $12,
+           is_active = $13,
+           app_id = $14,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+       WHERE id = $15
        RETURNING *`,
-      [name, slug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId, Number(id)]
+      [
+        name, slug, description, priceInCents, currency, billingInterval,
+        monthlyPriceUsd, yearlyPriceUsd, monthlyPriceBdt, yearlyPriceBdt,
+        maxWebsites, maxWebsites, isActive, appId, Number(id)
+      ]
     );
 
     const updatedPackage = res.rows[0];
@@ -282,10 +352,13 @@ export async function PUT(request) {
       : (Array.isArray(data.modules) ? data.modules : null);
 
     if (modulesToSave !== null) {
-      // Replace existing allowed modules with new selection
       await queryDb('DELETE FROM allowed_modules WHERE package_id = $1', [Number(id)]);
-      for (const modTitle of modulesToSave) {
-        const cleanTitle = String(modTitle || '').trim();
+      for (const modItem of modulesToSave) {
+        const cleanTitle = String(
+          typeof modItem === 'object' && modItem !== null
+            ? (modItem.name || modItem.title || modItem.slug || '')
+            : (modItem || '')
+        ).trim();
         if (cleanTitle) {
           await queryDb(
             `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
@@ -306,6 +379,7 @@ export async function PUT(request) {
       success: true,
       message: 'Package updated successfully',
       record: updatedPackage,
+      package: updatedPackage,
     });
   } catch (error) {
     console.error('Error updating package PUT:', error);

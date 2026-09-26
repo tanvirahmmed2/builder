@@ -11,6 +11,7 @@ import {
   BiLoaderAlt,
   BiCheckCircle,
 } from 'react-icons/bi';
+import TiptapEditor from '@/components/ui/TiptapEditor';
 
 export default function UpdateDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -25,36 +26,37 @@ export default function UpdateDetailPage({ params }) {
 
   const [editForm, setEditForm] = useState({
     title: '',
-    slug: '',
     description: '',
   });
 
-  const fetchUpdate = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const res = await fetch(`/api/developer/updates/${encodeURIComponent(slug)}`);
-      const data = await res.json();
-      if (data.success && data.record) {
-        setUpdate(data.record);
-        setEditForm({
-          title: data.record.title || '',
-          slug: data.record.slug || '',
-          description: data.record.description || '',
-        });
-      } else {
-        setError(data.error || 'Update not found');
-      }
-    } catch (err) {
-      console.error('Error fetching update:', err);
-      setError(err.message || 'Failed to load update');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUpdate();
+    let isMounted = true;
+    fetch(`/api/developer/updates/${encodeURIComponent(slug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && data.record) {
+          setUpdate(data.record);
+          setEditForm({
+            title: data.record.title || '',
+            description: data.record.description || '',
+          });
+        } else {
+          setError(data.error || 'Update not found');
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('Error fetching update:', err);
+        setError(err.message || 'Failed to load update');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
   const handleSaveEdit = async (e) => {
@@ -73,9 +75,10 @@ export default function UpdateDetailPage({ params }) {
       const data = await res.json();
       if (data.success) {
         if (data.record?.slug && data.record.slug !== slug) {
-          router.push(`/developer/updates/${data.record.slug}`);
+          router.replace(`/developer/updates/${data.record.slug}`);
         } else {
-          fetchUpdate();
+          setUpdate(data.record);
+          alert('Update saved successfully');
         }
       } else {
         alert(data.error || 'Failed to update record');
@@ -127,7 +130,7 @@ export default function UpdateDetailPage({ params }) {
         </div>
         <h2 className="text-lg font-bold text-slate-900 dark:text-white">Update Not Found</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          {error || `No product update matching slug "${slug}" exists.`}
+          {error || `No product update found.`}
         </p>
         <Link
           href="/developer/updates"
@@ -150,7 +153,7 @@ export default function UpdateDetailPage({ params }) {
             <span>/</span>
             <Link href="/developer/updates" className="hover:text-secondary">Updates</Link>
             <span>/</span>
-            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{update.slug}</span>
+            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{update.title || 'Untitled'}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -205,35 +208,28 @@ export default function UpdateDetailPage({ params }) {
       {/* Direct Update Form */}
       <form onSubmit={handleSaveEdit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Title</label>
-            {editForm.title && (
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
-                slug: /{editForm.slug || 'auto'}
-              </span>
-            )}
-          </div>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Update Title
+          </label>
           <input
             type="text"
             required
             value={editForm.title}
-            onChange={(e) => {
-              const newTitle = e.target.value;
-              const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-              setEditForm((prev) => ({ ...prev, title: newTitle, slug: autoSlug || prev.slug }));
-            }}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="e.g. Version 2.4 - New Analytics Dashboard & Fast Checkout"
             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-secondary font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Description &amp; Changelog</label>
-          <textarea
-            required
-            rows={12}
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Description &amp; Changelog (TipTap Rich Editor)
+          </label>
+          <TiptapEditor
             value={editForm.description}
-            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-secondary font-medium leading-relaxed"
+            onChange={(val) => setEditForm((prev) => ({ ...prev, description: val }))}
+            placeholder="Write detailed changelog, feature highlights, bug fixes, and upgrade notes..."
+            minHeight="260px"
           />
         </div>
 

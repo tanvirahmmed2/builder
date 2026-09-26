@@ -43,14 +43,14 @@ export async function GET(request) {
       params.push(Number(id));
     } else if (appId && appId !== 'ALL' && appId !== 'all') {
       if (!isNaN(appId)) {
-        query += ` AND p.app_id = $1 GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
+        query += ` AND p.app_id = $1 GROUP BY p.id, a.id ORDER BY COALESCE(p.monthly_price_usd, p.price_in_cents / 100.0, 0) ASC, p.id ASC`;
         params.push(Number(appId));
       } else {
-        query += ` AND LOWER(a.slug) = $1 GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
+        query += ` AND LOWER(a.slug) = $1 GROUP BY p.id, a.id ORDER BY COALESCE(p.monthly_price_usd, p.price_in_cents / 100.0, 0) ASC, p.id ASC`;
         params.push(appId.toLowerCase());
       }
     } else {
-      query += ` GROUP BY p.id, a.id ORDER BY p.price_in_cents ASC`;
+      query += ` GROUP BY p.id, a.id ORDER BY COALESCE(p.monthly_price_usd, p.price_in_cents / 100.0, 0) ASC, p.id ASC`;
     }
 
     const appsQuery = `
@@ -82,12 +82,34 @@ export async function GET(request) {
       if (res.rows.length === 0) {
         return NextResponse.json({ success: false, error: 'Package not found.' }, { status: 404 });
       }
-      return NextResponse.json({ success: true, package: res.rows[0] });
+      const record = res.rows[0];
+      return NextResponse.json({
+        success: true,
+        package: {
+          ...record,
+          max_websites: Number(record.max_websites ?? record.max_portfolios ?? 1),
+          max_portfolios: Number(record.max_websites ?? record.max_portfolios ?? 1),
+          monthly_price_usd: Number(record.monthly_price_usd ?? ((record.price_in_cents || 0) / 100)),
+          yearly_price_usd: Number(record.yearly_price_usd ?? 0),
+          monthly_price_bdt: Number(record.monthly_price_bdt ?? 0),
+          yearly_price_bdt: Number(record.yearly_price_bdt ?? 0),
+        },
+      });
     }
+
+    const formattedPackages = (res.rows || []).map((p) => ({
+      ...p,
+      max_websites: Number(p.max_websites ?? p.max_portfolios ?? 1),
+      max_portfolios: Number(p.max_websites ?? p.max_portfolios ?? 1),
+      monthly_price_usd: Number(p.monthly_price_usd ?? ((p.price_in_cents || 0) / 100)),
+      yearly_price_usd: Number(p.yearly_price_usd ?? 0),
+      monthly_price_bdt: Number(p.monthly_price_bdt ?? 0),
+      yearly_price_bdt: Number(p.yearly_price_bdt ?? 0),
+    }));
 
     return NextResponse.json({
       success: true,
-      packages: res.rows || [],
+      packages: formattedPackages,
       apps: appsRes.rows || [],
     });
   } catch (error) {

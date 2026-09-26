@@ -19,27 +19,39 @@ export async function GET(request) {
         b.slug,
         b.summary,
         b.content,
-        b.cover_image,
         b.published_at,
         b.created_at,
         d.name AS author_name,
         a.title AS app_title,
         a.slug AS app_slug,
         COALESCE(
-          json_agg(
-            json_build_object(
-              'id', bi.id,
-              'image_url', bi.image_url,
-              'alt_text', bi.alt_text,
-              'caption', bi.caption
-            ) ORDER BY bi.id ASC
-          ) FILTER (WHERE bi.id IS NOT NULL),
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', bi.id,
+                'image_url', bi.image_url,
+                'image', COALESCE(bi.image, bi.image_url),
+                'image_id', bi.image_id,
+                'title', bi.title,
+                'alt_text', bi.alt_text,
+                'caption', bi.caption
+              ) ORDER BY bi.id ASC
+            )
+            FROM blogs_image bi
+            WHERE bi.blog_id = b.id
+          ),
           '[]'::json
-        ) AS images
+        ) AS images,
+        (
+          SELECT bi.image_url
+          FROM blogs_image bi
+          WHERE bi.blog_id = b.id
+          ORDER BY bi.id ASC
+          LIMIT 1
+        ) AS cover_image
       FROM blogs b
       LEFT JOIN developers d ON b.author_id = d.id
       LEFT JOIN apps a ON b.app_id = a.id
-      LEFT JOIN blogs_image bi ON b.id = bi.blog_id
       WHERE b.is_published = TRUE
     `;
 
@@ -60,7 +72,7 @@ export async function GET(request) {
       idx++;
     }
 
-    query += ` GROUP BY b.id, d.name, a.title, a.slug ORDER BY b.published_at DESC, b.id DESC`;
+    query += ` ORDER BY b.published_at DESC, b.id DESC`;
 
     const res = await queryDb(query, params);
 
@@ -69,10 +81,10 @@ export async function GET(request) {
       if (!blog) {
         return NextResponse.json({ success: false, error: 'Article not found.' }, { status: 404 });
       }
-      return NextResponse.json({ success: true, blog });
+      return NextResponse.json({ success: true, blog, record: blog });
     }
 
-    return NextResponse.json({ success: true, blogs: res.rows });
+    return NextResponse.json({ success: true, blogs: res.rows, records: res.rows });
   } catch (error) {
     console.error('Public blogs GET error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

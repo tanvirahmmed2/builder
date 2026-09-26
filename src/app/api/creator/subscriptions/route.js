@@ -32,6 +32,7 @@ export async function GET(request) {
                 p.price_in_cents, 
                 p.currency, 
                 p.billing_interval, 
+                COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
                 p.max_portfolios
          FROM subscription s
          JOIN packages p ON s.package_id = p.id
@@ -43,7 +44,9 @@ export async function GET(request) {
         `SELECT s.*, 
                 p.name AS package_name, 
                 p.price_in_cents, 
-                p.billing_interval
+                p.billing_interval,
+                COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
+                p.max_portfolios
          FROM subscription s
          JOIN packages p ON s.package_id = p.id
          WHERE s.creator_id = $1

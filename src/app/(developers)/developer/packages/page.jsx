@@ -39,8 +39,13 @@ export default function AdminPackagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Untitled Package',
-          price: 0,
+          is_quick_create: true,
+          monthly_price_usd: 0,
+          yearly_price_usd: 0,
+          monthly_price_bdt: 0,
+          yearly_price_bdt: 0,
           billing_interval: 'MONTHLY',
+          max_websites: 1,
           max_portfolios: 1,
           is_active: false,
           description: '',
@@ -50,11 +55,11 @@ export default function AdminPackagesPage() {
       if (data.success && data.record?.slug) {
         router.push(`/developer/packages/${data.record.slug}`);
       } else {
-        setFeedback({ type: 'error', message: data.error || 'Failed to create package.' });
+        setFeedback(data.error || 'Failed to create package.');
         setCreating(false);
       }
     } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Error creating package.' });
+      setFeedback(err.message || 'Error creating package.');
       setCreating(false);
     }
   };
@@ -64,6 +69,7 @@ export default function AdminPackagesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [intervalFilter, setIntervalFilter] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('PRICE_ASC');
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -84,7 +90,25 @@ export default function AdminPackagesPage() {
   };
 
   useEffect(() => {
-    fetchPackages();
+    let isMounted = true;
+    fetch('/api/developer/packages')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success) {
+          setPackages(data.records || []);
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to fetch packages:', e);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleToggleStatus = async (pkg) => {
@@ -133,10 +157,6 @@ export default function AdminPackagesPage() {
       const data = await res.json();
       if (data.success) {
         setPackages((prev) => prev.filter((pkg) => pkg.id !== id));
-        if (editingPackage?.id === id) {
-          setEditingPackage(null);
-          setShowForm(false);
-        }
         showFeedback(`Package "${name}" was successfully deleted.`);
       } else {
         alert(data.error || 'Failed to delete package');
@@ -154,28 +174,53 @@ export default function AdminPackagesPage() {
   };
 
   const filtered = useMemo(() => {
-    return packages.filter((pkg) => {
-      const matchesSearch =
-        !searchTerm.trim() ||
-        pkg.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.slug?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.app_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (Array.isArray(pkg.allowed_modules) &&
-          pkg.allowed_modules.some((m) => m.toLowerCase().includes(searchTerm.toLowerCase())));
+    return packages
+      .filter((pkg) => {
+        const matchesSearch =
+          !searchTerm.trim() ||
+          pkg.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pkg.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          pkg.app_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (Array.isArray(pkg.allowed_modules) &&
+            pkg.allowed_modules.some((m) => m.toLowerCase().includes(searchTerm.toLowerCase())));
 
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        (statusFilter === 'ACTIVE' && pkg.is_active !== false) ||
-        (statusFilter === 'DISABLED' && pkg.is_active === false);
+        const matchesStatus =
+          statusFilter === 'ALL' ||
+          (statusFilter === 'ACTIVE' && pkg.is_active !== false) ||
+          (statusFilter === 'DISABLED' && pkg.is_active === false);
 
-      const matchesInterval =
-        intervalFilter === 'ALL' ||
-        (pkg.billing_interval || 'MONTHLY').toUpperCase() === intervalFilter;
+        const matchesInterval =
+          intervalFilter === 'ALL' ||
+          (pkg.billing_interval || 'MONTHLY').toUpperCase() === intervalFilter;
 
-      return matchesSearch && matchesStatus && matchesInterval;
-    });
-  }, [packages, searchTerm, statusFilter, intervalFilter]);
+        return matchesSearch && matchesStatus && matchesInterval;
+      })
+      .sort((a, b) => {
+        const getMonthlyPrice = (item) =>
+          Number(
+            item.monthly_price_usd !== undefined
+              ? item.monthly_price_usd
+              : item.price_in_cents
+              ? item.price_in_cents / 100
+              : 0
+          ) || 0;
+
+        if (sortOrder === 'PRICE_DESC') {
+          const diff = getMonthlyPrice(b) - getMonthlyPrice(a);
+          return diff !== 0 ? diff : (Number(b.id) || 0) - (Number(a.id) || 0);
+        }
+        if (sortOrder === 'NEWEST') {
+          return (Number(b.id) || 0) - (Number(a.id) || 0);
+        }
+        if (sortOrder === 'NAME_ASC') {
+          return (a.name || '').localeCompare(b.name || '');
+        }
+
+        // Default: PRICE_ASC (lower to higher price)
+        const diff = getMonthlyPrice(a) - getMonthlyPrice(b);
+        return diff !== 0 ? diff : (Number(a.id) || 0) - (Number(b.id) || 0);
+      });
+  }, [packages, searchTerm, statusFilter, intervalFilter, sortOrder]);
 
   // Statistics calculation
   const totalPackages = packages.length;
@@ -183,13 +228,22 @@ export default function AdminPackagesPage() {
   const avgMonthlyPrice =
     packages.length > 0
       ? (
-          packages.reduce((acc, p) => acc + (p.price_in_cents || 0), 0) /
-          packages.length /
-          100
+          packages.reduce(
+            (acc, p) =>
+              acc +
+              Number(
+                p.monthly_price_usd !== undefined
+                  ? p.monthly_price_usd
+                  : p.price_in_cents
+                  ? p.price_in_cents / 100
+                  : 0
+              ),
+            0
+          ) / packages.length
         ).toFixed(2)
       : '0.00';
-  const highestMaxPortfolios = packages.reduce(
-    (max, p) => Math.max(max, p.max_portfolios || 1),
+  const highestMaxWebsites = packages.reduce(
+    (max, p) => Math.max(max, p.max_websites ?? p.max_portfolios ?? 1),
     1
   );
 
@@ -281,22 +335,22 @@ export default function AdminPackagesPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Avg Base Price</span>
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+            <div className="p-2 rounded-xl bg-primary/20 text-primary-dark">
               <BiDollarCircle className="text-xl" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-indigo-600">${avgMonthlyPrice}</div>
+          <div className="text-2xl font-bold text-slate-900">${avgMonthlyPrice}</div>
           <p className="text-[11px] text-slate-400 mt-1">Average per package</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Max Portfolios</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Max Websites</span>
             <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
               <BiLayer className="text-xl" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-purple-600">{highestMaxPortfolios} Sites</div>
+          <div className="text-2xl font-bold text-purple-600">{highestMaxWebsites} {highestMaxWebsites === 1 ? 'Site' : 'Sites'}</div>
           <p className="text-[11px] text-slate-400 mt-1">Top tier allowance</p>
         </div>
       </div>
@@ -340,6 +394,19 @@ export default function AdminPackagesPage() {
               <option value="LIFETIME">Lifetime</option>
             </select>
 
+            {/* Sort Filter */}
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-secondary cursor-pointer"
+              title="Sort packages order"
+            >
+              <option value="PRICE_ASC">Price: Low to High</option>
+              <option value="PRICE_DESC">Price: High to Low</option>
+              <option value="NAME_ASC">Name (A-Z)</option>
+              <option value="NEWEST">Newest First</option>
+            </select>
+
             <div className="text-xs text-slate-500 font-medium pl-2 hidden sm:block">
               <span className="font-bold text-slate-800">{filtered.length}</span> of {packages.length}
             </div>
@@ -353,9 +420,9 @@ export default function AdminPackagesPage() {
               <tr className="border-b border-slate-100 bg-slate-50/80 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="px-5 py-3.5 whitespace-nowrap">ID</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Package Tier</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Price &amp; Currency</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Interval</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Max Portfolios</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">USD Pricing ($)</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">BDT Pricing (৳)</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Max Websites</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Allowed Modules</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Ecosystem App</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
@@ -386,12 +453,15 @@ export default function AdminPackagesPage() {
                 filtered.map((pkg) => {
                   const isRowActive = pkg.is_active !== false;
                   const modulesList = Array.isArray(pkg.allowed_modules) ? pkg.allowed_modules : [];
+                  const monthlyUsd = Number(pkg.monthly_price_usd !== undefined ? pkg.monthly_price_usd : (pkg.price_in_cents ? pkg.price_in_cents / 100 : 0)) || 0;
+                  const yearlyUsd = Number(pkg.yearly_price_usd) || 0;
+                  const monthlyBdt = Number(pkg.monthly_price_bdt) || 0;
+                  const yearlyBdt = Number(pkg.yearly_price_bdt) || 0;
+
                   return (
                     <tr
                       key={pkg.id}
-                      className={`hover:bg-slate-50/70 transition-colors ${
-                        editingPackage?.id === pkg.id ? 'bg-secondary/5' : ''
-                      }`}
+                      className="hover:bg-slate-50/70 transition-colors"
                     >
                       <td className="px-5 py-4 font-mono font-bold text-slate-500">#{pkg.id}</td>
 
@@ -403,7 +473,6 @@ export default function AdminPackagesPage() {
                         >
                           {pkg.name}
                         </Link>
-                        <div className="font-mono text-[11px] text-slate-400">{pkg.slug}</div>
                         {pkg.description && (
                           <div className="text-[11px] text-slate-500 line-clamp-1 max-w-xs mt-0.5">
                             {pkg.description}
@@ -413,22 +482,25 @@ export default function AdminPackagesPage() {
 
                       <td className="px-5 py-4">
                         <div className="font-mono font-bold text-slate-900 text-sm">
-                          ${((pkg.price_in_cents || 0) / 100).toFixed(2)}
+                          ${monthlyUsd.toFixed(2)}<span className="text-[10px] text-slate-400 font-normal">/mo</span>
                         </div>
-                        <div className="text-[10px] font-semibold text-slate-400 uppercase">
-                          {pkg.currency || 'USD'}
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          ${yearlyUsd.toFixed(2)}<span className="text-[9px] text-slate-400 font-normal">/yr</span>
                         </div>
                       </td>
 
                       <td className="px-5 py-4">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 tracking-wider uppercase">
-                          {pkg.billing_interval || 'MONTHLY'}
-                        </span>
+                        <div className="font-mono font-bold text-slate-900 text-sm">
+                          ৳{monthlyBdt.toFixed(2)}<span className="text-[10px] text-slate-400 font-normal">/mo</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          ৳{yearlyBdt.toFixed(2)}<span className="text-[9px] text-slate-400 font-normal">/yr</span>
+                        </div>
                       </td>
 
                       <td className="px-5 py-4">
                         <div className="font-semibold text-slate-800">
-                          {pkg.max_portfolios} {pkg.max_portfolios === 1 ? 'Site' : 'Sites'}
+                          {pkg.max_websites ?? pkg.max_portfolios ?? 1} {(pkg.max_websites ?? pkg.max_portfolios ?? 1) === 1 ? 'Site' : 'Sites'}
                         </div>
                         <div className="text-[10px] text-slate-400">Allowed limit</div>
                       </td>

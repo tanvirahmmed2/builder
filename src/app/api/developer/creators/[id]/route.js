@@ -42,6 +42,7 @@ export async function GET(request, { params }) {
                 p.price_in_cents, 
                 p.currency, 
                 p.billing_interval, 
+                COALESCE(p.max_websites, p.max_portfolios, 1) AS max_websites,
                 p.max_portfolios
          FROM subscription s
          JOIN packages p ON s.package_id = p.id
@@ -108,7 +109,7 @@ export async function GET(request, { params }) {
       tickets,
       stats: {
         totalWebsites: websites.length,
-        maxWebsites: activeSubscription?.max_portfolios || 0,
+        maxWebsites: activeSubscription?.max_websites ?? activeSubscription?.max_portfolios ?? 0,
         totalStorageMb,
         totalSpentCents,
         daysRemaining,

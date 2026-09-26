@@ -62,22 +62,22 @@ function WebsitesContent() {
   const [updateErr, setUpdateErr] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
-  const [hostDomain, setHostDomain] = useState('localhost:3000');
-
-  useEffect(() => {
+  const [hostDomain, setHostDomain] = useState(() => {
     if (typeof window !== 'undefined') {
       const host = window.location.host;
-      setHostDomain(host.includes(':') ? host.split(':')[0] : host);
+      return host.includes(':') ? host.split(':')[0] : host;
     }
-  }, []);
+    return 'localhost:3000';
+  });
 
   useEffect(() => {
     if (setupParam === 'true') {
-      setShowSetupModal(true);
+      const timer = setTimeout(() => setShowSetupModal(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [setupParam]);
 
-  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_portfolios || 1;
+  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_websites || activeSubscription?.max_portfolios || 1;
   const hasActivePackage = Boolean(activeSubscription && stats?.daysRemaining > 0);
 
   const handleOpenEdit = (w) => {
@@ -347,7 +347,7 @@ function WebsitesContent() {
                   </div>
 
                   {w.tagline && (
-                    <p className="text-xs text-slate-500 italic line-clamp-1">"{w.tagline}"</p>
+                    <p className="text-xs text-slate-500 italic line-clamp-1">&ldquo;{w.tagline}&rdquo;</p>
                   )}
 
                   <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-2 gap-3 text-xs">

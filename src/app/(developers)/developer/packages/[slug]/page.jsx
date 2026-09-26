@@ -41,7 +41,29 @@ export default function PackageDetailPage({ params }) {
   };
 
   useEffect(() => {
-    fetchPackage();
+    let isMounted = true;
+    fetch(`/api/developer/packages/${encodeURIComponent(slug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.success && data.record) {
+          setPkg(data.record);
+        } else {
+          setError(data.error || 'Package plan not found');
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('Error fetching package details:', err);
+        setError(err.message || 'Failed to load package');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [slug]);
 
   const handleDelete = async () => {
@@ -106,7 +128,7 @@ export default function PackageDetailPage({ params }) {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header and Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div>
@@ -115,7 +137,7 @@ export default function PackageDetailPage({ params }) {
             <span>/</span>
             <Link href="/developer/packages" className="hover:text-secondary">Packages</Link>
             <span>/</span>
-            <span className="text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{pkg.slug}</span>
+            <span className="text-slate-800 dark:text-slate-200 truncate max-w-50">{pkg.name || 'Package'}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -156,7 +178,7 @@ export default function PackageDetailPage({ params }) {
       </div>
 
       {/* Direct Update Form */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs w-full">
         <PackageForm
           initialData={pkg}
           onSuccess={handleUpdateSuccess}

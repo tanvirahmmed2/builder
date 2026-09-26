@@ -2,14 +2,22 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
 import { hasModulePermission } from '@/lib/middleware/developer';
 
-function generateSlug(text) {
-  return (text || '')
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-');
+import slugify from 'slugify';
+
+async function generateUniqueSlug(name, excludeId = null) {
+  const baseSlug = slugify(name || 'package', { lower: true, strict: true, trim: true }) || 'package';
+  let slug = baseSlug;
+  let counter = 1;
+  while (true) {
+    const params = excludeId ? [slug, Number(excludeId)] : [slug];
+    const query = excludeId
+      ? 'SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1'
+      : 'SELECT id FROM packages WHERE slug = $1 LIMIT 1';
+    const check = await queryDb(query, params);
+    if (check.rows.length === 0) return slug;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
+  }
 }
 
 export async function GET(request, { params }) {
@@ -86,39 +94,70 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     const data = body.data || body;
 
-    const name = data.name !== undefined ? data.name.trim() : current.name;
+    const name = data.name !== undefined ? (data.name || '').trim() : current.name;
+    if (!name) {
+      return NextResponse.json({ success: false, error: 'Package name cannot be empty' }, { status: 400 });
+    }
+
+    const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
+    if (!appId) {
+      return NextResponse.json({ success: false, error: 'A linked application (app_id) is required.' }, { status: 400 });
+    }
+
     let newSlug = current.slug;
     if (name && name !== current.name) {
-      const baseSlug = generateSlug(name) || 'package';
-      newSlug = baseSlug;
-      const slugCheck = await queryDb('SELECT id FROM packages WHERE slug = $1 AND id != $2 LIMIT 1', [newSlug, current.id]);
-      if (slugCheck.rows.length > 0) {
-        newSlug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
-      }
+      newSlug = await generateUniqueSlug(name, current.id);
     }
 
     const description = data.description !== undefined ? data.description : current.description;
-    const priceInCents = data.price_in_cents !== undefined
-      ? Number(data.price_in_cents)
-      : (data.price !== undefined ? Math.round(Number(data.price) * 100) : current.price_in_cents);
+    const monthlyPriceUsd = data.monthly_price_usd !== undefined
+      ? Math.max(0, Number(data.monthly_price_usd) || 0)
+      : Number(current.monthly_price_usd !== undefined ? current.monthly_price_usd : 0);
+    const yearlyPriceUsd = data.yearly_price_usd !== undefined
+      ? Math.max(0, Number(data.yearly_price_usd) || 0)
+      : Number(current.yearly_price_usd !== undefined ? current.yearly_price_usd : 0);
+    const monthlyPriceBdt = data.monthly_price_bdt !== undefined
+      ? Math.max(0, Number(data.monthly_price_bdt) || 0)
+      : Number(current.monthly_price_bdt !== undefined ? current.monthly_price_bdt : 0);
+    const yearlyPriceBdt = data.yearly_price_bdt !== undefined
+      ? Math.max(0, Number(data.yearly_price_bdt) || 0)
+      : Number(current.yearly_price_bdt !== undefined ? current.yearly_price_bdt : 0);
+    const priceInCents = Math.round(monthlyPriceUsd * 100);
     const currency = data.currency !== undefined ? (data.currency || 'USD').toUpperCase() : current.currency;
     const billingInterval = (data.billing_interval || data.billingInterval) !== undefined
       ? (data.billing_interval || data.billingInterval || 'MONTHLY').toUpperCase()
       : current.billing_interval;
-    const maxPortfolios = data.max_portfolios !== undefined
-      ? Math.max(1, Number(data.max_portfolios))
-      : current.max_portfolios;
+    const maxWebsites = data.max_websites !== undefined
+      ? Math.max(1, Number(data.max_websites))
+      : (data.max_portfolios !== undefined
+          ? Math.max(1, Number(data.max_portfolios))
+          : (current.max_websites !== undefined ? current.max_websites : (current.max_portfolios || 1)));
     const isActive = data.is_active !== undefined ? Boolean(data.is_active) : current.is_active;
-    const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
 
     const res = await queryDb(
       `UPDATE packages
-       SET name = $1, slug = $2, description = $3, price_in_cents = $4,
-           currency = $5, billing_interval = $6, max_portfolios = $7,
-           is_active = $8, app_id = $9, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+       SET name = $1,
+           slug = $2,
+           description = $3,
+           price_in_cents = $4,
+           currency = $5,
+           billing_interval = $6,
+           monthly_price_usd = $7,
+           yearly_price_usd = $8,
+           monthly_price_bdt = $9,
+           yearly_price_bdt = $10,
+           max_websites = $11,
+           max_portfolios = $12,
+           is_active = $13,
+           app_id = $14,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $15
        RETURNING *`,
-      [name, newSlug, description, priceInCents, currency, billingInterval, maxPortfolios, isActive, appId, current.id]
+      [
+        name, newSlug, description, priceInCents, currency, billingInterval,
+        monthlyPriceUsd, yearlyPriceUsd, monthlyPriceBdt, yearlyPriceBdt,
+        maxWebsites, maxWebsites, isActive, appId, current.id
+      ]
     );
 
     const updatedPackage = res.rows[0];
@@ -130,8 +169,12 @@ export async function PUT(request, { params }) {
 
     if (modulesToSave !== null) {
       await queryDb('DELETE FROM allowed_modules WHERE package_id = $1', [current.id]);
-      for (const modTitle of modulesToSave) {
-        const cleanTitle = String(modTitle || '').trim();
+      for (const modItem of modulesToSave) {
+        const cleanTitle = String(
+          typeof modItem === 'object' && modItem !== null
+            ? (modItem.name || modItem.title || modItem.slug || '')
+            : (modItem || '')
+        ).trim();
         if (cleanTitle) {
           await queryDb(
             `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,

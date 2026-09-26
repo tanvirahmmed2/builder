@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import {
   BiFile,
   BiCheck,
@@ -8,10 +9,13 @@ import {
   BiImage,
   BiPlus,
   BiTrash,
-  BiLinkExternal,
   BiLoaderAlt,
   BiGlobe,
   BiTimeFive,
+  BiUpload,
+  BiCloudUpload,
+  BiImages,
+  BiCheckCircle,
 } from 'react-icons/bi';
 
 export default function BlogForm({
@@ -30,147 +34,295 @@ export default function BlogForm({
     slug: '',
     summary: '',
     content: '',
-    cover_image: '',
     app_id: '',
-    is_published: true,
+    is_published: false,
   });
 
-  // Attached blogs_image
-  const [existingImages, setExistingImages] = useState([]);
-  const [newImages, setNewImages] = useState([]);
-  const [newImgInput, setNewImgInput] = useState({ image_url: '', alt_text: '', caption: '' });
-
-  const [availableApps, setAvailableApps] = useState(apps);
-  const [loading, setLoading] = useState(false);
+  // Saved images from blogs_image
+  const [images, setImages] = useState([]);
+  // Local pending file uploads
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState(null);
+
+  // Cloudinary Asset Picker Modal state
+  const [showCloudinaryLibrary, setShowCloudinaryLibrary] = useState(false);
+  const [cloudinaryAssets, setCloudinaryAssets] = useState([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [attachingAssetId, setAttachingAssetId] = useState(null);
+
+  const [fetchedApps, setFetchedApps] = useState([]);
+  const availableApps = apps && apps.length > 0 ? apps : fetchedApps;
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Fetch apps if not passed in
+  const fileInputRef = useRef(null);
+
+  // Fetch available apps if not provided
   useEffect(() => {
-    if (apps && apps.length > 0) {
-      setAvailableApps(apps);
-    } else {
-      fetch('/api/developer/blogs')
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.apps) setAvailableApps(data.apps);
+    if (!apps || apps.length === 0) {
+      let active = true;
+      axios
+        .get(apiEndpoint)
+        .then((res) => {
+          if (active && res.data?.apps) setFetchedApps(res.data.apps);
         })
         .catch(() => {});
+      return () => {
+        active = false;
+      };
     }
-  }, [apps]);
+  }, [apps, apiEndpoint]);
 
-  // Initialize form data when blog prop changes
-  useEffect(() => {
+  // Sync state with incoming blog data when currentBlog changes
+  const [prevBlogId, setPrevBlogId] = useState(currentBlog?.id);
+  if (currentBlog?.id !== prevBlogId) {
+    setPrevBlogId(currentBlog?.id);
     if (currentBlog) {
       setFormData({
         title: currentBlog.title || '',
         slug: currentBlog.slug || '',
         summary: currentBlog.summary || '',
         content: currentBlog.content || '',
-        cover_image: currentBlog.cover_image || '',
         app_id: currentBlog.app_id ? String(currentBlog.app_id) : '',
         is_published: Boolean(currentBlog.is_published),
       });
-      setExistingImages(Array.isArray(currentBlog.images) ? currentBlog.images : []);
+      setImages(Array.isArray(currentBlog.images) ? currentBlog.images : []);
     } else {
       setFormData({
         title: '',
         slug: '',
         summary: '',
         content: '',
-        cover_image: '',
         app_id: '',
-        is_published: true,
+        is_published: false,
       });
-      setExistingImages([]);
+      setImages([]);
     }
-    setNewImages([]);
+  }
+
+  // Load existing Cloudinary account assets
+  const loadCloudinaryLibrary = async () => {
+    setShowCloudinaryLibrary(true);
+    setLoadingAssets(true);
     setError('');
-    setSuccessMsg('');
-  }, [currentBlog]);
 
-  // Add pending image to list
-  const handleAddNewImage = () => {
-    if (!newImgInput.image_url.trim()) return;
-    setNewImages((prev) => [
-      ...prev,
-      {
-        image_url: newImgInput.image_url.trim(),
-        alt_text: newImgInput.alt_text.trim() || null,
-        caption: newImgInput.caption.trim() || null,
-      },
-    ]);
-    setNewImgInput({ image_url: '', alt_text: '', caption: '' });
-  };
-
-  const removePendingImage = (index) => {
-    setNewImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Delete already saved image from DB
-  const handleDeleteExistingImage = async (imageId) => {
-    if (!confirm('Are you sure you want to delete this gallery image?')) return;
-    setDeletingImageId(imageId);
-    setError('');
     try {
-      const res = await fetch(`${apiEndpoint}?image_id=${imageId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+      const res = await axios.get(`${apiEndpoint}?cloudinary_assets=true`);
+      if (res.data?.success && res.data?.assets) {
+        setCloudinaryAssets(res.data.assets);
       } else {
-        setError(data.error || 'Failed to delete gallery image.');
+        setError(res.data?.error || 'Failed to load Cloudinary library.');
       }
     } catch (err) {
-      setError(err.message || 'Error deleting image.');
+      setError(err.response?.data?.error || err.message || 'Error fetching Cloudinary assets.');
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
+
+  // Attach an existing Cloudinary asset to this blog
+  const handleAttachExistingAsset = async (asset) => {
+    if (!currentBlog?.id) {
+      setError('Please save the blog draft first before attaching gallery assets.');
+      return;
+    }
+
+    setAttachingAssetId(asset.public_id);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const res = await axios.put(apiEndpoint, {
+        id: currentBlog.id,
+        public_id: asset.public_id,
+        asset_id: asset.asset_id,
+        secure_url: asset.secure_url,
+        image_title: formData.title || 'Blog Image',
+      });
+
+      if (res.data?.success && res.data?.images) {
+        setImages(res.data.images);
+        setSuccessMsg(`Attached "${asset.public_id}" from Cloudinary.`);
+      } else {
+        setError(res.data?.error || 'Failed to attach Cloudinary asset.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Error attaching asset.');
+    } finally {
+      setAttachingAssetId(null);
+    }
+  };
+
+  // Handle local file selection
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setSelectedFiles((prev) => [...prev, ...files]);
+
+    const newPreviews = files.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + ' KB',
+    }));
+
+    setFilePreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removeSelectedFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setFilePreviews((prev) => {
+      const removed = prev[index];
+      if (removed?.url) URL.revokeObjectURL(removed.url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  // Upload selected files directly to Cloudinary via backend
+  const handleUploadFilesToCloudinary = async () => {
+    if (selectedFiles.length === 0) return;
+    if (!currentBlog?.id) {
+      setError('Please save the article first before uploading standalone images.');
+      return;
+    }
+
+    setUploadingImages(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('id', String(currentBlog.id));
+
+      selectedFiles.forEach((file) => {
+        uploadFormData.append('images', file);
+      });
+
+      const res = await axios.put(apiEndpoint, uploadFormData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data?.success && res.data?.images) {
+        setImages(res.data.images);
+        setSelectedFiles([]);
+        setFilePreviews([]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setSuccessMsg('Images uploaded to Cloudinary and saved to blogs_image.');
+      } else {
+        setError(res.data?.error || 'Failed to upload images to Cloudinary.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Error uploading images.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  // Delete an image from Cloudinary & blogs_image
+  const handleDeleteImage = async (imageId) => {
+    if (!confirm('Are you sure you want to permanently delete this image from Cloudinary?')) return;
+    setDeletingImageId(imageId);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const res = await axios.delete(`${apiEndpoint}?image_id=${imageId}`);
+      if (res.data?.success) {
+        setImages((prev) => prev.filter((img) => img.id !== imageId));
+        setSuccessMsg('Image deleted from Cloudinary and database.');
+      } else {
+        setError(res.data?.error || 'Failed to delete image.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Error deleting image.');
     } finally {
       setDeletingImageId(null);
     }
   };
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+  // Form Submission
+  const handleSubmit = async (e, publishOverride) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
     setLoading(true);
     setError('');
     setSuccessMsg('');
 
-    const payload = {
-      ...formData,
-      app_id: formData.app_id ? Number(formData.app_id) : null,
-    };
-    delete payload.slug;
-
-    if (isEditing) {
-      payload.id = currentBlog.id;
-      if (newImages.length > 0) {
-        payload.new_images = newImages;
-      }
-    } else {
-      if (newImages.length > 0) {
-        payload.images = newImages;
-      }
-    }
+    const targetPublished =
+      publishOverride !== undefined ? publishOverride : formData.is_published;
 
     try {
-      const res = await fetch(apiEndpoint, {
-        method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      // 1. If we have pending files and we are editing, upload them via multipart
+      if (selectedFiles.length > 0 && isEditing) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('id', String(currentBlog.id));
+        uploadFormData.append('title', formData.title);
+        uploadFormData.append('summary', formData.summary);
+        uploadFormData.append('content', formData.content);
+        uploadFormData.append('is_published', String(targetPublished));
+        if (formData.app_id) uploadFormData.append('app_id', String(formData.app_id));
 
-      if (data.success) {
-        setSuccessMsg(isEditing ? 'Blog updated successfully!' : 'Blog post published successfully!');
-        setNewImages([]);
-        if (data.record?.images) {
-          setExistingImages(data.record.images);
+        selectedFiles.forEach((file) => {
+          uploadFormData.append('images', file);
+        });
+
+        const res = await axios.put(apiEndpoint, uploadFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        if (res.data?.success && res.data?.record) {
+          setSelectedFiles([]);
+          setFilePreviews([]);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          if (res.data.record.images) setImages(res.data.record.images);
+          setSuccessMsg(
+            targetPublished
+              ? 'Blog published successfully with uploaded images!'
+              : 'Draft article saved successfully.'
+          );
+          if (onSuccess) onSuccess(res.data.record);
+          return;
+        } else {
+          setError(res.data?.error || 'Failed to update blog.');
+          return;
         }
-        if (onSuccess) onSuccess(data.record);
+      }
+
+      // 2. Standard JSON submission
+      const payload = {
+        title: formData.title,
+        summary: formData.summary,
+        content: formData.content,
+        app_id: formData.app_id ? Number(formData.app_id) : null,
+        is_published: targetPublished,
+      };
+
+      if (isEditing) {
+        payload.id = currentBlog.id;
+      }
+
+      const res = isEditing
+        ? await axios.put(apiEndpoint, payload)
+        : await axios.post(apiEndpoint, payload);
+
+      if (res.data?.success && res.data?.record) {
+        setSuccessMsg(
+          targetPublished
+            ? 'Blog published successfully!'
+            : 'Blog draft saved successfully.'
+        );
+        if (res.data.record.images) {
+          setImages(res.data.record.images);
+        }
+        if (onSuccess) onSuccess(res.data.record);
       } else {
-        setError(data.error || 'Failed to save blog post.');
+        setError(res.data?.error || 'Failed to save blog post.');
       }
     } catch (err) {
-      setError(err.message || 'Network error.');
+      setError(err.response?.data?.error || err.message || 'Network error.');
     } finally {
       setLoading(false);
     }
@@ -185,9 +337,9 @@ export default function BlogForm({
             <BiFile />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-bold text-slate-800">
-                {isEditing ? `Edit Article: ${formData.title || 'Untitled'}` : 'Publish Platform Blog Article'}
+                {isEditing ? `Edit Article: ${formData.title || 'Untitled'}` : 'New Platform Blog Article'}
               </h3>
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
@@ -209,8 +361,8 @@ export default function BlogForm({
             </div>
             <p className="text-xs text-slate-500">
               {isEditing
-                ? 'Update copy, link to platform apps, and manage gallery images.'
-                : 'Create authoritative guides, news, and release notes for creators.'}
+                ? 'Manage article copy, associate ecosystem apps, and upload Cloudinary gallery images.'
+                : 'Initialize an article draft for creators and ecosystem developers.'}
             </p>
           </div>
         </div>
@@ -239,20 +391,16 @@ export default function BlogForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={(e) => handleSubmit(e)} className="space-y-5">
+        {/* Title */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-bold text-slate-700">Article Title *</label>
-            {formData.title && (
-              <span className="text-[10px] font-mono text-slate-400">
-                slug: /{formData.slug || 'auto'}
-              </span>
-            )}
           </div>
           <input
             type="text"
             required
-            placeholder="e.g. 10 Portfolio Trends Dominating 2026"
+            placeholder="e.g. 10 Architecture Patterns Dominating 2026"
             value={formData.title}
             onChange={(e) => {
               const newTitle = e.target.value;
@@ -263,52 +411,44 @@ export default function BlogForm({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Cover Image URL</label>
-            <input
-              type="url"
-              placeholder="https://images.unsplash.com/photo-..."
-              value={formData.cover_image}
-              onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Associated Ecosystem App (Optional)</label>
-            <select
-              value={formData.app_id}
-              onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
-            >
-              <option value="">-- No App Linked (General Platform Article) --</option>
-              {availableApps.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.title} ({a.slug})
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Associated Ecosystem App */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Associated Ecosystem App <span className="text-slate-400 font-normal">(Optional)</span>
+          </label>
+          <select
+            value={formData.app_id}
+            onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
+          >
+            <option value="">-- No App Linked (General Platform Article) --</option>
+            {availableApps.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.title} ({a.slug})
+              </option>
+            ))}
+          </select>
         </div>
 
+        {/* Summary */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">Brief Summary</label>
           <textarea
             rows={2}
-            placeholder="Short hook for card previews, search results, and social snippets..."
+            placeholder="Short overview snippet for card previews, search results, and social feeds..."
             value={formData.summary}
             onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
             className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
           />
         </div>
 
+        {/* Body Content */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">Article Body Content *</label>
           <textarea
-            rows={6}
+            rows={7}
             required
-            placeholder="Write full article content (Markdown supported: # Heading, **bold**, - list items)..."
+            placeholder="Write full article content (HTML or Markdown supported)..."
             value={formData.content}
             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
             className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors font-mono text-xs leading-relaxed"
@@ -316,9 +456,9 @@ export default function BlogForm({
         </div>
 
         {/* Publication Status Toggle */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
           <div>
-            <div className="text-xs font-bold text-slate-800">Live Publication</div>
+            <div className="text-xs font-bold text-slate-800">Publication Status</div>
             <p className="text-[11px] text-slate-500">
               When published, this article will appear publicly in the /blogs directory and RSS feeds.
             </p>
@@ -338,181 +478,343 @@ export default function BlogForm({
           </label>
         </div>
 
-        {/* blogs_image Gallery Management */}
-        <div className="border border-slate-200 rounded-xl p-4 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        {/* ========================================================================= */}
+        {/* Cloudinary Gallery Images (blogs_image table) */}
+        {/* ========================================================================= */}
+        <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <BiImage className="text-primary text-base" />
                 <span>Gallery Images (blogs_image table)</span>
               </h4>
               <p className="text-[11px] text-slate-500">
-                Attach supplementary gallery images with custom alt text and captions.
+                Upload image files to Cloudinary or attach existing assets. The first image serves as the article cover thumbnail.
               </p>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-              {existingImages.length + newImages.length} image(s)
-            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={loadCloudinaryLibrary}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-300 hover:border-slate-400 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <BiImages className="text-sm" />
+                <span>Cloudinary Assets</span>
+              </button>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700">
+                {images.length} saved
+              </span>
+            </div>
           </div>
 
-          {/* Existing Saved Images */}
-          {existingImages.length > 0 && (
+          {/* Saved Cloudinary Gallery Images */}
+          {images.length > 0 ? (
             <div className="space-y-2">
               <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                Saved Gallery Images
+                Saved Images in Cloudinary
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {existingImages.map((img) => (
-                  <div
-                    key={img.id}
-                    className="group relative rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs flex flex-col justify-between"
-                  >
-                    <div className="aspect-video bg-slate-100 overflow-hidden relative">
-                      <img
-                        src={img.image_url}
-                        alt={img.alt_text || 'Blog image'}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            'https://placehold.co/600x400/f1f5f9/94a3b8?text=Image+Unavailable';
-                        }}
-                      />
-                      <button
-                        type="button"
-                        disabled={deletingImageId === img.id}
-                        onClick={() => handleDeleteExistingImage(img.id)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors shadow-xs cursor-pointer"
-                        title="Delete image"
-                      >
-                        {deletingImageId === img.id ? (
-                          <BiLoaderAlt className="animate-spin text-sm" />
-                        ) : (
-                          <BiTrash className="text-sm" />
+                {images.map((img, idx) => {
+                  const imgUrl = img.image_url || img.image;
+                  const isCover = idx === 0;
+
+                  return (
+                    <div
+                      key={img.id || idx}
+                      className="group relative rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden shadow-xs flex flex-col justify-between"
+                    >
+                      <div className="aspect-video bg-slate-100 overflow-hidden relative">
+                        <img
+                          src={imgUrl}
+                          alt={img.alt_text || img.title || 'Blog image'}
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              'https://placehold.co/600x400/f1f5f9/94a3b8?text=Image+Unavailable';
+                          }}
+                        />
+
+                        {isCover && (
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-primary text-slate-900 font-extrabold text-[10px] shadow-xs">
+                            Primary Cover
+                          </div>
                         )}
-                      </button>
-                    </div>
-                    <div className="p-2 text-[11px] space-y-0.5">
-                      {img.alt_text && (
+
+                        <button
+                          type="button"
+                          disabled={deletingImageId === img.id}
+                          onClick={() => handleDeleteImage(img.id)}
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/95 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors shadow-xs cursor-pointer"
+                          title="Delete image from Cloudinary"
+                        >
+                          {deletingImageId === img.id ? (
+                            <BiLoaderAlt className="animate-spin text-sm" />
+                          ) : (
+                            <BiTrash className="text-sm" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="p-2.5 text-[11px] space-y-1">
                         <div className="font-semibold text-slate-800 truncate">
-                          Alt: {img.alt_text}
+                          {img.title || img.alt_text || 'Untitled Image'}
                         </div>
-                      )}
-                      {img.caption && (
-                        <div className="text-slate-500 italic truncate">
-                          &ldquo;{img.caption}&rdquo;
+                        {img.caption && (
+                          <div className="text-slate-500 italic truncate text-[10px]">
+                            &ldquo;{img.caption}&rdquo;
+                          </div>
+                        )}
+                        <div className="font-mono text-[9px] text-slate-400 truncate">
+                          {img.image_id || imgUrl}
                         </div>
-                      )}
-                      <div className="font-mono text-[9px] text-slate-400 truncate">
-                        {img.image_url}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
+              No gallery images saved yet. Upload images below to store them in Cloudinary.
             </div>
           )}
 
-          {/* Pending New Images */}
-          {newImages.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">
-                Pending Images (Will be saved on form submit)
+          {/* Local File Selection Dropzone */}
+          <div className="border border-dashed border-slate-300 hover:border-secondary rounded-xl p-4 bg-slate-50/60 transition-colors text-center space-y-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              id="blog-image-file-input"
+            />
+            <label
+              htmlFor="blog-image-file-input"
+              className="cursor-pointer inline-flex flex-col items-center justify-center gap-1.5 text-slate-600 hover:text-secondary"
+            >
+              <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xl shadow-xs">
+                <BiUpload />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {newImages.map((img, idx) => (
-                  <div
-                    key={idx}
-                    className="relative rounded-xl border border-amber-200 bg-amber-50/40 overflow-hidden shadow-xs flex flex-col justify-between"
-                  >
-                    <div className="aspect-video bg-slate-100 overflow-hidden relative">
+              <span className="text-xs font-bold text-slate-800">
+                Click to browse images or drag files here
+              </span>
+              <span className="text-[11px] text-slate-400">
+                PNG, JPG, WEBP, GIF up to 10MB each
+              </span>
+            </label>
+
+            {/* Selected File Previews */}
+            {filePreviews.length > 0 && (
+              <div className="space-y-3 pt-3 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">
+                    Selected Files to Upload ({filePreviews.length}):
+                  </span>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      disabled={uploadingImages}
+                      onClick={handleUploadFilesToCloudinary}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-white text-xs font-bold hover:bg-secondary-dark transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {uploadingImages ? (
+                        <>
+                          <BiLoaderAlt className="animate-spin text-sm" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <BiCloudUpload className="text-base" />
+                          <span>Upload Now to Cloudinary</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {filePreviews.map((prev, idx) => (
+                    <div
+                      key={idx}
+                      className="relative rounded-xl border border-amber-200 bg-amber-50/50 p-2 flex items-center gap-3"
+                    >
                       <img
-                        src={img.image_url}
-                        alt={img.alt_text || 'Pending blog image'}
-                        className="w-full h-full object-cover"
+                        src={prev.url}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded-lg border border-amber-200 shrink-0"
                       />
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="text-xs font-semibold text-slate-800 truncate">
+                          {prev.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500">{prev.size}</div>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => removePendingImage(idx)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 hover:bg-rose-600 hover:text-white text-rose-600 transition-colors shadow-xs cursor-pointer"
-                        title="Remove pending image"
+                        onClick={() => removeSelectedFile(idx)}
+                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-white transition-colors"
+                        title="Remove file"
                       >
-                        <BiX className="text-base" />
+                        <BiX className="text-lg" />
                       </button>
                     </div>
-                    <div className="p-2 text-[11px] space-y-0.5">
-                      {img.alt_text && <div className="font-semibold text-slate-800 truncate">Alt: {img.alt_text}</div>}
-                      {img.caption && <div className="text-slate-500 italic truncate">&ldquo;{img.caption}&rdquo;</div>}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Add Image Input Fields */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
-            <div className="text-xs font-bold text-slate-700">Attach Gallery Image</div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className="sm:col-span-1">
-                <input
-                  type="url"
-                  placeholder="Image URL (https://...)"
-                  value={newImgInput.image_url}
-                  onChange={(e) => setNewImgInput({ ...newImgInput, image_url: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-secondary"
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Alt text (e.g. Dashboard preview)"
-                  value={newImgInput.alt_text}
-                  onChange={(e) => setNewImgInput({ ...newImgInput, alt_text: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-secondary"
-                />
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Caption"
-                  value={newImgInput.caption}
-                  onChange={(e) => setNewImgInput({ ...newImgInput, caption: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-secondary"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddNewImage}
-                  disabled={!newImgInput.image_url.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-secondary text-white text-xs font-bold hover:bg-secondary-dark transition-colors cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1"
-                >
-                  <BiPlus className="text-sm" /> Add
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Form Actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          {onCancel && (
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500">Quick Actions:</span>
             <button
               type="button"
-              onClick={onCancel}
-              className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+              disabled={loading}
+              onClick={(e) => handleSubmit(e, true)}
+              className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer"
             >
-              Cancel
+              Save &amp; Publish Live
             </button>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-slate-900 text-xs font-bold shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
-          >
-            {loading ? <BiLoaderAlt className="animate-spin text-base" /> : <BiCheck className="text-base" />}
-            <span>{loading ? 'Saving...' : isEditing ? 'Update Blog Post' : 'Save & Publish'}</span>
-          </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={(e) => handleSubmit(e, false)}
+              className="px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Save as Draft
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={loading}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary hover:bg-primary-dark text-slate-900 text-xs font-bold shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <BiLoaderAlt className="animate-spin text-base" />
+                  <span>Saving Article...</span>
+                </>
+              ) : (
+                <>
+                  <BiCheck className="text-base" />
+                  <span>{isEditing ? 'Save Changes' : 'Initialize Article'}</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* ========================================================================= */}
+      {/* Cloudinary Asset Library Modal */}
+      {/* ========================================================================= */}
+      {showCloudinaryLibrary && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center text-xl">
+                  <BiImages />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Cloudinary Media Library</h3>
+                  <p className="text-[11px] text-slate-500">
+                    Select an existing uploaded asset to attach to this blog gallery.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloudinaryLibrary(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              >
+                <BiX className="text-xl" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto flex-1">
+              {loadingAssets ? (
+                <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+                  <BiLoaderAlt className="animate-spin text-3xl text-secondary" />
+                  <span className="text-xs">Loading Cloudinary media assets...</span>
+                </div>
+              ) : cloudinaryAssets.length === 0 ? (
+                <div className="py-16 text-center text-slate-400 text-xs">
+                  No assets found in your Cloudinary account upload folder.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {cloudinaryAssets.map((asset) => {
+                    const isAttaching = attachingAssetId === asset.public_id;
+                    return (
+                      <div
+                        key={asset.public_id}
+                        className="group relative rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:border-secondary transition-all flex flex-col justify-between"
+                      >
+                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                          <img
+                            src={asset.secure_url}
+                            alt={asset.public_id}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-2 space-y-1">
+                          <div className="font-mono text-[9px] text-slate-500 truncate" title={asset.public_id}>
+                            {asset.public_id}
+                          </div>
+                          <button
+                            type="button"
+                            disabled={isAttaching}
+                            onClick={() => handleAttachExistingAsset(asset)}
+                            className="w-full py-1 rounded-lg bg-slate-100 hover:bg-secondary hover:text-white text-slate-700 text-[10px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+                          >
+                            {isAttaching ? (
+                              <BiLoaderAlt className="animate-spin" />
+                            ) : (
+                              <BiPlus />
+                            )}
+                            <span>{isAttaching ? 'Attaching...' : 'Attach Image'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 flex items-center justify-end bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowCloudinaryLibrary(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

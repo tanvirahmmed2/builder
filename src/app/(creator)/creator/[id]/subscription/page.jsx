@@ -65,13 +65,36 @@ function SubscriptionContent() {
     if (targetWebsiteId && websites.length > 0) {
       const matched = websites.find((w) => String(w.id) === String(targetWebsiteId));
       if (matched) {
-        handleOpenSettings(matched);
+        setTimeout(() => {
+          setSelectedWebsiteForSettings(matched);
+          setLoadingSettings(true);
+          fetch(`/api/creator/website-settings?websiteId=${matched.id}`)
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.success && data.settings) {
+                setSiteSettings(data.settings);
+              } else {
+                setSiteSettings({
+                  site_title: matched.name || '',
+                  tagline: matched.tagline || '',
+                  contact_email: matched.contact_email || creator?.email || '',
+                  contact_phone: matched.contact_phone || creator?.phone || '',
+                  primary_color: matched.primary_color || '#6366f1',
+                  secondary_color: matched.secondary_color || '#4f46e5',
+                  font_family: matched.font_family || 'Inter',
+                  currency: matched.setting_currency || 'USD',
+                });
+              }
+            })
+            .catch(() => setSettingsErr('Failed to load website settings.'))
+            .finally(() => setLoadingSettings(false));
+        }, 0);
       }
     }
-  }, [targetWebsiteId, websites]);
+  }, [targetWebsiteId, websites, creator]);
 
   const daysRemaining = stats?.daysRemaining ?? (activeSubscription?.current_period_end ? 30 : 0);
-  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_portfolios || 1;
+  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_websites || activeSubscription?.max_portfolios || 1;
   const isSubActive = Boolean(activeSubscription && stats?.hasActivePackage);
 
   // Open & Fetch Website Settings
@@ -400,7 +423,7 @@ function SubscriptionContent() {
                       </span>
                     </div>
 
-                    {w.tagline && <p className="text-xs text-slate-500 italic line-clamp-1">"{w.tagline}"</p>}
+                    {w.tagline && <p className="text-xs text-slate-500 italic line-clamp-1">&ldquo;{w.tagline}&rdquo;</p>}
                   </div>
 
                   <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">

@@ -34,7 +34,7 @@ export default function CreatorOverviewPage() {
 
   const daysRemaining = stats?.daysRemaining || 0;
   const hasActivePackage = stats?.hasActivePackage ?? Boolean(activeSubscription);
-  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_portfolios || 1;
+  const maxWebsites = stats?.maxWebsites || activeSubscription?.max_websites || activeSubscription?.max_portfolios || 1;
 
   // Folder link cards representing each module of the creator panel
   const folderCards = [

@@ -66,7 +66,7 @@ export default function SingleAppPage({ params }) {
     return (
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xs text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center mx-auto text-2xl">
             <BiGridAlt />
           </div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Application Unavailable</h2>
@@ -97,9 +97,9 @@ export default function SingleAppPage({ params }) {
 
 
         {app.short_description && (
-          <section className="bg-primary-light dark:bg-primary-dark border border-slate-200/90 dark:border-slate-800  p-6 sm:p-8 shadow-xs space-y-3">
+          <section className="bg-primary-light dark:bg-primary-dark border border-primary/20 dark:border-primary-dark/30 p-6 sm:p-8 shadow-xs space-y-3">
 
-            <p className="text-lg text-center sm:text-2xl font-semibold py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-slate-800 dark:text-slate-200 leading-relaxed tracking-tight">
+            <p className="text-lg text-center sm:text-2xl font-semibold py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-slate-900 dark:text-dark leading-relaxed tracking-tight">
               {app.short_description}
             </p>
           </section>
@@ -243,9 +243,9 @@ export default function SingleAppPage({ params }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Go to Themes Card */}
-              <div className="bg-linear-to-br from-purple-900/10 via-white dark:via-slate-900 to-indigo-900/10 border border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
+              <div className="bg-linear-to-br from-primary/10 via-white dark:via-slate-900 to-primary-dark/10 border border-primary/20 dark:border-primary/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
                 <div className="space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center text-2xl font-semibold">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary-dark dark:text-primary-light border border-primary/20 flex items-center justify-center text-2xl font-semibold">
                     <BiPalette />
                   </div>
                   <div>
@@ -259,7 +259,7 @@ export default function SingleAppPage({ params }) {
 
                   {themes.length > 0 ? (
                     <div className="pt-2 flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary-dark dark:text-primary-light border border-primary/20">
                         {themes.length} Theme{themes.length !== 1 ? 's' : ''} available
                       </span>
                       {themes.slice(0, 3).map((t) => (
@@ -277,7 +277,7 @@ export default function SingleAppPage({ params }) {
 
                 <Link
                   href={`/themes?app=${app.slug}`}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs sm:text-sm shadow-md transition-all group-hover:gap-3 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-primary hover:bg-primary-dark text-slate-950 dark:text-white font-semibold text-xs sm:text-sm shadow-md transition-all group-hover:gap-3 cursor-pointer"
                 >
                   <span>Go to Themes</span>
                   <BiRightArrowAlt className="text-lg" />
@@ -285,7 +285,7 @@ export default function SingleAppPage({ params }) {
               </div>
 
               {/* Go to Packages Card */}
-              <div className="bg-linear-to-br from-secondary/10 via-white dark:via-slate-900 to-rose-900/10 border border-secondary/20 dark:border-secondary/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
+              <div className="bg-linear-to-br from-secondary/10 via-white dark:via-slate-900 to-secondary-dark/10 border border-secondary/20 dark:border-secondary/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-xs hover:shadow-lg transition-all group">
                 <div className="space-y-3">
                   <div className="w-12 h-12 rounded-2xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center text-2xl font-semibold">
                     <BiPackage />

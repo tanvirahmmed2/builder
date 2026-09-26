@@ -62,7 +62,7 @@ export default function CreatorSidebar({
 
   const basePath = `/creator/${creatorId}`;
   const daysRemaining = stats?.daysRemaining ?? (activeSubscription?.current_period_end ? 30 : 0);
-  const maxWebsites = stats?.maxWebsites ?? activeSubscription?.max_portfolios ?? 1;
+  const maxWebsites = stats?.maxWebsites ?? activeSubscription?.max_websites ?? activeSubscription?.max_portfolios ?? 1;
   const websitesCount = websites.length;
 
   const isLinkActive = (link) => {
