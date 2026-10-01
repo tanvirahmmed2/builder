@@ -31,7 +31,12 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
   const [bkashNumber, setBkashNumber] = useState('');
   const [bkashOtp, setBkashOtp] = useState('');
   const [bkashPin, setBkashPin] = useState('');
-  const [otpTimer, setOtpTimer] = useState(30);
+  const [otpTimer, setOtpTimer] = useState(60);
+  const [bkashPaymentId, setBkashPaymentId] = useState('');
+  const [bkashURL, setBkashURL] = useState('');
+  const [bkashOperator, setBkashOperator] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   // Card details (never saved to database)
   const [cardHolder, setCardHolder] = useState('');
@@ -125,8 +130,20 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
     }
   };
 
+  // Helper to detect Bangladeshi telecom operator
+  const detectBkashOperator = (numberStr) => {
+    const clean = String(numberStr || '').replace(/\D/g, '');
+    const prefix = clean.startsWith('880') ? clean.slice(2, 5) : clean.slice(0, 3);
+    if (prefix === '017' || prefix === '013') return 'Grameenphone';
+    if (prefix === '019' || prefix === '014') return 'Banglalink';
+    if (prefix === '018') return 'Robi';
+    if (prefix === '016') return 'Airtel';
+    if (prefix === '015') return 'Teletalk';
+    return '';
+  };
+
   // --- BKASH GATEWAY FLOW ---
-  const handleBkashAccountProceed = (e) => {
+  const handleBkashAccountProceed = async (e) => {
     e.preventDefault();
     setError('');
     const clean = bkashNumber.replace(/\D/g, '');
@@ -134,26 +151,108 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
       setError('Please enter a valid 11-digit Bangladeshi mobile number starting with 013-019.');
       return;
     }
-    setOtpTimer(30);
-    setBkashStep('OTP');
+
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch('/api/creator/payments/bkash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_otp',
+          creatorId: Number(creatorId),
+          paymentId: Number(paymentId),
+          bkashNumber: clean,
+          bkashPaymentId: bkashPaymentId || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        if (data.bkashPaymentId) setBkashPaymentId(data.bkashPaymentId);
+        if (data.bkashURL) setBkashURL(data.bkashURL);
+        if (data.operator) setBkashOperator(data.operator);
+        setOtpTimer(60);
+        setBkashStep('OTP');
+      } else {
+        setError(data.error || 'Failed to initiate bKash payment verification.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Connection error with bKash gateway. Please check your network and try again.');
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
-  const handleBkashOtpProceed = (e) => {
+  const handleResendBkashOtp = async () => {
+    setError('');
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch('/api/creator/payments/bkash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_otp',
+          creatorId: Number(creatorId),
+          paymentId: Number(paymentId),
+          bkashNumber: bkashNumber.replace(/\D/g, ''),
+          bkashPaymentId: bkashPaymentId || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setOtpTimer(60);
+      } else {
+        setError(data.error || 'Failed to resend bKash verification code.');
+      }
+    } catch {
+      setError('Network error resending bKash verification code.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleBkashOtpProceed = async (e) => {
     e.preventDefault();
     setError('');
     const cleanOtp = bkashOtp.trim();
-    if (cleanOtp.length !== 6) {
+    if (!/^\d{6}$/.test(cleanOtp)) {
       setError('Please enter the 6-digit bKash verification code.');
       return;
     }
-    setBkashStep('PIN');
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetch('/api/creator/payments/bkash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify_otp',
+          creatorId: Number(creatorId),
+          paymentId: Number(paymentId),
+          bkashOtp: cleanOtp,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setBkashStep('PIN');
+      } else {
+        setError(data.error || 'Invalid verification code. Please check your SMS and try again.');
+      }
+    } catch {
+      setError('Network error verifying bKash code. Please try again.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const handleBkashPinSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const cleanPin = bkashPin.trim();
-    if (cleanPin.length !== 5) {
+    if (!/^\d{5}$/.test(cleanPin)) {
       setError('Please enter your 5-digit bKash PIN.');
       return;
     }
@@ -162,14 +261,14 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
     setPaying(true);
 
     try {
-      const res = await fetch('/api/creator/payments', {
+      const res = await fetch('/api/creator/payments/bkash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'pay_invoice',
+          action: 'execute',
           creatorId: Number(creatorId),
           paymentId: Number(paymentId),
-          paymentMethod: 'BKASH',
+          bkashPaymentId: bkashPaymentId || undefined,
           bkashNumber: bkashNumber.replace(/\D/g, ''),
           bkashOtp: bkashOtp.trim(),
           bkashPin: cleanPin,
@@ -183,7 +282,7 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
         if (data.payment) setPayment(data.payment);
       } else {
         setBkashStep('PIN');
-        setError(data.error || 'bKash transaction declined. Please verify your PIN.');
+        setError(data.error || 'bKash transaction declined. Please check your PIN and balance.');
       }
     } catch (err) {
       console.error(err);
@@ -470,9 +569,17 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
               {bkashStep === 'ACCOUNT' && (
                 <form onSubmit={handleBkashAccountProceed} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Your bKash Account Number
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Your bKash Account Number
+                      </label>
+                      {detectBkashOperator(bkashNumber) && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 dark:bg-pink-950/50 text-[#E2136E] border border-pink-200 dark:border-pink-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#E2136E] animate-pulse" />
+                          {detectBkashOperator(bkashNumber)}
+                        </span>
+                      )}
+                    </div>
                     <div className="relative">
                       <input
                         type="tel"
@@ -487,9 +594,25 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                       <BiMobileAlt className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
                     </div>
                     <span className="text-[11px] text-slate-400 mt-1 block">
-                      Enter your 11-digit Bangladeshi mobile number registered with bKash
+                      Enter your 11-digit Bangladeshi mobile number registered with bKash (013-019)
                     </span>
                   </div>
+
+                  {bkashURL && (
+                    <div className="p-3 rounded-xl bg-pink-50/60 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-900 text-center">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mb-2">
+                        Official bKash Hosted Payment Gateway is available for this transaction.
+                      </p>
+                      <a
+                        href={bkashURL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E2136E] text-white text-[11px] font-bold shadow-xs hover:bg-[#c2105e] transition-colors"
+                      >
+                        <span>Open bKash Hosted Page &rarr;</span>
+                      </a>
+                    </div>
+                  )}
 
                   <p className="text-[10px] text-slate-400 leading-relaxed text-center">
                     By clicking on <strong>Proceed</strong>, you agree to the bKash payment terms & conditions.
@@ -504,10 +627,17 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                     </Link>
                     <button
                       type="submit"
-                      disabled={bkashNumber.length !== 11}
-                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20"
+                      disabled={bkashNumber.length !== 11 || isSendingOtp}
+                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20 flex items-center justify-center gap-1.5"
                     >
-                      PROCEED &rarr;
+                      {isSendingOtp ? (
+                        <>
+                          <BiLoaderAlt className="animate-spin text-sm" />
+                          <span>SENDING OTP...</span>
+                        </>
+                      ) : (
+                        <span>PROCEED &rarr;</span>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -523,6 +653,11 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                     <p className="text-[11px] text-slate-500">
                       Enter the 6-digit verification code sent via SMS to <strong className="font-mono text-slate-700 dark:text-slate-300">{bkashNumber}</strong>
                     </p>
+                    {bkashOperator && (
+                      <span className="inline-block text-[10px] font-semibold text-[#E2136E]">
+                        Operator: {bkashOperator}
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -543,10 +678,11 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                         ) : (
                           <button
                             type="button"
-                            onClick={() => setOtpTimer(30)}
-                            className="text-[#E2136E] hover:underline font-bold"
+                            onClick={handleResendBkashOtp}
+                            disabled={isSendingOtp}
+                            className="text-[#E2136E] hover:underline font-bold cursor-pointer"
                           >
-                            Resend Code
+                            {isSendingOtp ? 'Resending...' : 'Resend Code'}
                           </button>
                         )}
                       </span>
@@ -564,10 +700,17 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                     </button>
                     <button
                       type="submit"
-                      disabled={bkashOtp.length !== 6}
-                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20"
+                      disabled={bkashOtp.length !== 6 || isVerifyingOtp}
+                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20 flex items-center justify-center gap-1.5"
                     >
-                      PROCEED &rarr;
+                      {isVerifyingOtp ? (
+                        <>
+                          <BiLoaderAlt className="animate-spin text-sm" />
+                          <span>VERIFYING...</span>
+                        </>
+                      ) : (
+                        <span>PROCEED &rarr;</span>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -615,9 +758,16 @@ export default function PaymentGatewayCheckout({ creatorId, paymentId, initialGa
                     <button
                       type="submit"
                       disabled={bkashPin.length !== 5 || paying}
-                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20"
+                      className="py-3 px-4 rounded-xl bg-[#E2136E] hover:bg-[#c2105e] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-[#E2136E]/20 flex items-center justify-center gap-1.5"
                     >
-                      CONFIRM ৳{bdtPrice}
+                      {paying ? (
+                        <>
+                          <BiLoaderAlt className="animate-spin text-sm" />
+                          <span>CONFIRMING...</span>
+                        </>
+                      ) : (
+                        <span>CONFIRM ৳{bdtPrice}</span>
+                      )}
                     </button>
                   </div>
                 </form>

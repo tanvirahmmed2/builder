@@ -63,10 +63,10 @@ function AppPackageRow({ app, packages, billingCycle, currency }) {
             <div className="w-8 h-8 rounded-xl bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center text-lg shrink-0">
               <BiLayer />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">
               {app.title}
             </h2>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/20 text-slate-800 dark:text-primary-light border border-primary/30">
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-primary/20 text-slate-800 dark:text-primary-light border border-primary/30">
               {sortedPackages.length} {sortedPackages.length === 1 ? 'Tier' : 'Tiers'}
             </span>
           </div>
@@ -81,7 +81,7 @@ function AppPackageRow({ app, packages, billingCycle, currency }) {
           {app.slug && app.slug !== 'global' && (
             <Link
               href={`/apps/${app.slug}`}
-              className="text-xs font-bold text-secondary hover:text-secondary-dark flex items-center gap-1 hover:underline"
+              className="text-xs font-semibold text-secondary hover:text-secondary-dark flex items-center gap-1 hover:underline"
             >
               <span>Explore App</span>
               <span>&rarr;</span>
@@ -401,7 +401,7 @@ export default function PackagesPage() {
       <div className="text-center max-w-7xl mx-auto space-y-4">
         
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-4xl sm:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight">
           Invest in Your Digital Identity
         </h1>
 
@@ -453,7 +453,7 @@ export default function PackagesPage() {
             <button
               type="button"
               onClick={() => setCurrency('USD')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-bold ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-semibold ${
                 currency === 'USD'
                   ? 'bg-secondary text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -464,7 +464,7 @@ export default function PackagesPage() {
             <button
               type="button"
               onClick={() => setCurrency('BDT')}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-bold ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-semibold ${
                 currency === 'BDT'
                   ? 'bg-secondary text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -497,7 +497,7 @@ export default function PackagesPage() {
               }`}
             >
               <span>Annual Billing</span>
-              <span className="text-[10px] bg-primary/25 text-slate-900 dark:text-primary-light border border-primary/40 px-1.5 py-0.5 rounded-md font-bold">
+              <span className="text-[10px] bg-primary/25 text-slate-900 dark:text-primary-light border border-primary/40 px-1.5 py-0.5 rounded-md font-semibold">
                 SAVE 20%
               </span>
             </button>
@@ -518,7 +518,7 @@ export default function PackagesPage() {
           <div className="w-14 h-14 mx-auto rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary text-2xl border border-secondary/20">
             <BiPackage />
           </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
             No Packages Found
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -567,7 +567,7 @@ export default function PackagesPage() {
 
       {/* Guarantee Banner */}
       <div className="p-6 rounded-3xl bg-primary/10 dark:bg-slate-900/60 border border-primary/20 text-center space-y-2 max-w-3xl mx-auto shadow-xs">
-        <h4 className="font-bold text-slate-900 dark:text-white text-base">
+        <h4 className="font-semibold text-slate-900 dark:text-white text-base">
           All packages include instant website provisioning
         </h4>
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">

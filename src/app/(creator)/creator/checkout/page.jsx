@@ -148,7 +148,7 @@ function CheckoutContent() {
           <BiUser />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Creator Login Required</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">Creator Login Required</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             You must be logged in with your creator account to purchase a platform package and create your website subscription.
           </p>
@@ -156,7 +156,7 @@ function CheckoutContent() {
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Link
             href={`/creator/login?redirect=${encodeURIComponent(`/creator/checkout?packageId=${selectedPkgId || ''}`)}`}
-            className="flex-1 py-3 px-4 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-md shadow-secondary/25 transition-all text-center cursor-pointer"
+            className="flex-1 py-3 px-4 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold shadow-md shadow-secondary/25 transition-all text-center cursor-pointer"
           >
             Log In as Creator &rarr;
           </Link>
@@ -183,7 +183,7 @@ function CheckoutContent() {
           <span>Back to Packages</span>
         </Link>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-slate-800 dark:text-primary-light text-[11px] font-bold">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-slate-800 dark:text-primary-light text-[11px] font-semibold">
           <BiShieldQuarter className="text-secondary" />
           <span>Secure Platform Checkout</span>
         </div>
@@ -191,7 +191,7 @@ function CheckoutContent() {
 
       {/* Main Title */}
       <div className="text-center space-y-2 max-w-xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 dark:text-white tracking-tight">
           Review & Complete Order
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
@@ -213,7 +213,7 @@ function CheckoutContent() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">No Package Selected</h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">No Package Selected</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
               You haven&apos;t selected a subscription package yet. Browse all available ecosystem packages to select the tier that fits your website goals.
             </p>
@@ -222,7 +222,7 @@ function CheckoutContent() {
           <div className="pt-2">
             <Link
               href="/packages"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-bold shadow-lg shadow-secondary/25 transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-secondary hover:bg-secondary-dark text-white text-xs font-semibold shadow-lg shadow-secondary/25 transition-all cursor-pointer"
             >
               <BiCube className="text-base" />
               <span>Select a Package Now &rarr;</span>
@@ -232,7 +232,7 @@ function CheckoutContent() {
           {/* Quick Selection List */}
           {packages.length > 0 && (
             <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-left space-y-3">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block text-center">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block text-center">
                 Or select directly below:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -245,10 +245,10 @@ function CheckoutContent() {
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-secondary transition-colors">
+                        <span className="text-xs font-semibold text-slate-900 dark:text-white group-hover:text-secondary transition-colors">
                           {pkg.name}
                         </span>
-                        <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
+                        <span className="text-xs font-mono font-semibold text-slate-900 dark:text-white">
                           ${Number(pkg.monthly_price_usd ?? (pkg.price_in_cents || 0) / 100).toFixed(2)}
                         </span>
                       </div>
@@ -256,7 +256,7 @@ function CheckoutContent() {
                         {pkg.description || 'Full website system'}
                       </p>
                     </div>
-                    <div className="mt-3 text-[10px] font-bold text-secondary flex items-center gap-1">
+                    <div className="mt-3 text-[10px] font-semibold text-secondary flex items-center gap-1">
                       <span>Choose this plan</span>
                       <span>&rarr;</span>
                     </div>
@@ -276,12 +276,12 @@ function CheckoutContent() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   {selectedPkg.app_title && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-slate-800 dark:text-primary-light border border-primary/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-primary/20 text-slate-800 dark:text-primary-light border border-primary/30">
                       <BiLayer className="text-xs text-secondary" />
                       <span>{selectedPkg.app_title}</span>
                     </span>
                   )}
-                  <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">
                     {selectedPkg.name}
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
@@ -304,7 +304,7 @@ function CheckoutContent() {
                   onClick={() => setBillingCycle('MONTHLY')}
                   className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
                     billingCycle === 'MONTHLY'
-                      ? 'bg-secondary text-white shadow-xs font-bold'
+                      ? 'bg-secondary text-white shadow-xs font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -315,12 +315,12 @@ function CheckoutContent() {
                   onClick={() => setBillingCycle('YEARLY')}
                   className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                     billingCycle === 'YEARLY'
-                      ? 'bg-secondary text-white shadow-xs font-bold'
+                      ? 'bg-secondary text-white shadow-xs font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <span>Annual Plan</span>
-                  <span className="text-[10px] bg-primary/25 text-slate-900 dark:text-primary-light border border-primary/40 px-1.5 py-0.5 rounded-md font-bold">
+                  <span className="text-[10px] bg-primary/25 text-slate-900 dark:text-primary-light border border-primary/40 px-1.5 py-0.5 rounded-md font-semibold">
                     SAVE 20%
                   </span>
                 </button>
@@ -347,7 +347,7 @@ function CheckoutContent() {
 
               {/* Included Features */}
               <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
                   What is included in this tier:
                 </span>
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
@@ -367,8 +367,8 @@ function CheckoutContent() {
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl space-y-6 border border-slate-800">
               <div className="border-b border-slate-800 pb-4">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Summary</span>
-                <h3 className="text-xl font-bold text-white mt-1">{selectedPkg.name}</h3>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Order Summary</span>
+                <h3 className="text-xl font-semibold text-white mt-1">{selectedPkg.name}</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {creator.name} ({creator.email})
                 </p>
@@ -381,12 +381,12 @@ function CheckoutContent() {
                 </div>
 
                 <div className="pt-2 border-t border-slate-800 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Payment Gateway</span>
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Payment Gateway</span>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('BKASH')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         paymentMethod === 'BKASH'
                           ? 'bg-[#E2136E] text-white border-[#E2136E] shadow-sm'
                           : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
@@ -398,7 +398,7 @@ function CheckoutContent() {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('PAYONEER')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         paymentMethod === 'PAYONEER'
                           ? 'bg-secondary text-white border-secondary shadow-sm'
                           : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
@@ -410,7 +410,7 @@ function CheckoutContent() {
                 </div>
 
                 <div className="border-t border-slate-800 pt-4 flex justify-between items-baseline">
-                  <span className="text-sm font-bold text-white">Total:</span>
+                  <span className="text-sm font-semibold text-white">Total:</span>
                   <div className="text-right">
                     <div className="text-2xl font-black text-white font-mono">
                       ${displayPrice} <span className="text-xs text-slate-400 font-normal">USD</span>
@@ -428,7 +428,7 @@ function CheckoutContent() {
                 type="button"
                 onClick={handleConfirmOrder}
                 disabled={loading}
-                className={`w-full py-3.5 rounded-2xl active:scale-[0.98] text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${
+                className={`w-full py-3.5 rounded-2xl active:scale-[0.98] text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${
                   paymentMethod === 'BKASH'
                     ? 'bg-[#E2136E] hover:bg-[#c2105e] shadow-lg shadow-[#E2136E]/30'
                     : 'bg-secondary hover:bg-secondary-dark shadow-lg shadow-secondary/30'

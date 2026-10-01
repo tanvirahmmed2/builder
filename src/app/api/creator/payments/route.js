@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
 import { getCreatorSession } from '@/lib/middleware/creator';
 import { createPaymentSession } from '@/lib/db/payooner';
-import { executeBkashPayment, usdToBdt } from '@/lib/db/bkash';
+import { executeBkashPayment, usdToBdt, validateBangladeshiMobile, validateBkashOtp, validateBkashPin } from '@/lib/db/bkash';
 
 function isValidLuhn(cardNumber) {
   const digits = String(cardNumber || '').replace(/\D/g, '');
@@ -194,24 +194,22 @@ export async function handlePaymentsAction(body, sessionCreator, request = null)
       finalCurrency = 'BDT';
       finalAmountCents = Math.round(packageBdtPrice * 100);
 
-      const cleanBkash = (body.bkashNumber || '').replace(/\D/g, '');
-      if (!/^01[3-9]\d{8}$/.test(cleanBkash)) {
+      const mobileCheck = validateBangladeshiMobile(body.bkashNumber);
+      if (!mobileCheck.isValid) {
         return NextResponse.json({
           success: false,
           error: 'Invalid bKash Account Number. Please enter a valid 11-digit Bangladeshi mobile number starting with 013-019.',
         }, { status: 400 });
       }
 
-      const bkashPin = String(body.bkashPin || '').trim();
-      if (!/^\d{5}$/.test(bkashPin)) {
+      if (!validateBkashPin(body.bkashPin)) {
         return NextResponse.json({
           success: false,
           error: 'Invalid bKash PIN. Please enter your 5-digit bKash PIN.',
         }, { status: 400 });
       }
 
-      const bkashOtp = String(body.bkashOtp || '').trim();
-      if (!bkashOtp || bkashOtp.length !== 6) {
+      if (!validateBkashOtp(body.bkashOtp)) {
         return NextResponse.json({
           success: false,
           error: 'Invalid bKash Verification Code (OTP). A 6-digit OTP code is required to authorize payment.',
@@ -220,13 +218,17 @@ export async function handlePaymentsAction(body, sessionCreator, request = null)
 
       // Execute via bKash Tokenized Checkout API or verified PGW simulator
       try {
-        const bkResult = await executeBkashPayment(body.bkashPaymentId || `BK_PAY_${payment.id}`);
+        const bkResult = await executeBkashPayment(body.bkashPaymentId || `BK_PAY_${payment.id}`, {
+          expectedAmount: packageBdtPrice,
+          customerMsisdn: mobileCheck.number,
+          invoiceNumber: `INV_${payment.id}`,
+        });
         gatewayResponse = bkResult;
         finalTxnId = body.bkashTrxId || bkResult.trxID || `BK${Date.now().toString(36).toUpperCase()}`;
       } catch (bkErr) {
         console.warn('bKash gateway execute notice:', bkErr.message);
         finalTxnId = body.bkashTrxId || `BK${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        gatewayResponse = { mode: 'bkash_direct_pgw', bkashNumber: cleanBkash };
+        gatewayResponse = { mode: 'bkash_direct_pgw', bkashNumber: mobileCheck.number };
       }
     } else {
       // International Card / Payoneer Gateway
