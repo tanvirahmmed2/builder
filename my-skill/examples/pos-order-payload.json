@@ -1,0 +1,61 @@
+{
+  "client_order_token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "shift_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "branch_id": "c2a3b4d5-e6f7-8901-abcd-ef2345678901",
+  "order_type": "dine_in",
+  "table_id": "f3a4b5c6-d7e8-9012-bcde-f34567890123",
+  "table_number": "T-04",
+  "cashier_id": "8a7b6c5d-4e3f-2109-fedc-ba9876543210",
+  "customer_name": "Walk-in Guest",
+  "customer_phone": "+1-555-0192",
+  "items": [
+    {
+      "menu_item_id": "d4e5f6a7-b8c9-0123-cdef-456789012345",
+      "name": "Artisan Truffle Wagyu Burger",
+      "quantity": 2,
+      "unit_price": 16.50,
+      "total_price": 38.00,
+      "kitchen_notes": "Well done, cut in half",
+      "selected_modifiers": [
+        {
+          "group_id": "e5f6a7b8-c9d0-1234-defa-567890123456",
+          "group_name": "Extra Toppings",
+          "option_id": "f6a7b8c9-d0e1-2345-efab-678901234567",
+          "option_name": "Crispy Bacon",
+          "extra_price": 2.50
+        }
+      ]
+    },
+    {
+      "menu_item_id": "1a2b3c4d-5e6f-7890-abcd-1234567890ab",
+      "name": "Fresh Mango Passion Smoothie",
+      "quantity": 1,
+      "unit_price": 6.50,
+      "total_price": 6.50,
+      "kitchen_notes": "Less ice",
+      "selected_modifiers": []
+    }
+  ],
+  "subtotal": 44.50,
+  "discount_amount": 4.50,
+  "discount_code": "HAPPYHOUR10",
+  "tax_amount": 3.20,
+  "tip_amount": 5.00,
+  "total_amount": 48.20,
+  "payment_method": "split",
+  "split_payment_details": [
+    {
+      "method": "cash",
+      "amount": 20.00,
+      "tendered": 20.00,
+      "change": 0.00
+    },
+    {
+      "method": "card",
+      "amount": 28.20,
+      "card_last_four": "4242",
+      "auth_code": "AUTH-89310"
+    }
+  ],
+  "print_receipt": true
+}

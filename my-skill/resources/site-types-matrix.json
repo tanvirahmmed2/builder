@@ -1,0 +1,126 @@
+{
+  "site_types": {
+    "portfolio": {
+      "display_name": "Portfolio & Creative Agency",
+      "description": "Showcase projects, case studies, client testimonials, and capture client leads.",
+      "default_theme_accent": "#8b5cf6",
+      "modules": {
+        "projects_showcase": true,
+        "services_catalog": true,
+        "testimonials": true,
+        "lead_inquiries": true,
+        "ecommerce": false,
+        "pos_terminal": false,
+        "kitchen_display": false,
+        "careers_portal": false
+      },
+      "default_routes": [
+        "/",
+        "/projects",
+        "/projects/[slug]",
+        "/services",
+        "/contact"
+      ]
+    },
+    "ecommerce": {
+      "display_name": "Multi-Store E-Commerce",
+      "description": "Multi-location inventory, variant matrix, online cart, coupons, and order processing.",
+      "default_theme_accent": "#10b981",
+      "modules": {
+        "projects_showcase": false,
+        "services_catalog": false,
+        "testimonials": true,
+        "lead_inquiries": false,
+        "ecommerce": true,
+        "multistore_inventory": true,
+        "coupons_discounts": true,
+        "pos_terminal": false,
+        "kitchen_display": false,
+        "careers_portal": false
+      },
+      "default_routes": [
+        "/",
+        "/products",
+        "/products/[slug]",
+        "/categories/[slug]",
+        "/cart",
+        "/checkout",
+        "/orders/track"
+      ]
+    },
+    "restaurant_pos": {
+      "display_name": "Restaurant, Cafe & Cloud POS",
+      "description": "Digital food menus, modifier groups, QR table ordering, live touch POS, and KDS tickets.",
+      "default_theme_accent": "#f59e0b",
+      "modules": {
+        "projects_showcase": false,
+        "services_catalog": false,
+        "testimonials": true,
+        "lead_inquiries": false,
+        "ecommerce": false,
+        "pos_terminal": true,
+        "kitchen_display": true,
+        "table_management": true,
+        "qr_ordering": true,
+        "careers_portal": false
+      },
+      "default_routes": [
+        "/",
+        "/menu",
+        "/book-table",
+        "/table/[tableNumber]/order",
+        "/panel/[tenantId]/pos",
+        "/panel/[tenantId]/kds"
+      ]
+    },
+    "organization": {
+      "display_name": "Organization & Team Management",
+      "description": "Staff directory, department tree, corporate announcements, and job careers portal.",
+      "default_theme_accent": "#06b6d4",
+      "modules": {
+        "projects_showcase": false,
+        "services_catalog": false,
+        "testimonials": false,
+        "lead_inquiries": true,
+        "ecommerce": false,
+        "pos_terminal": false,
+        "kitchen_display": false,
+        "team_directory": true,
+        "announcements": true,
+        "careers_portal": true
+      },
+      "default_routes": [
+        "/",
+        "/team",
+        "/departments",
+        "/announcements",
+        "/careers",
+        "/careers/[slug]/apply"
+      ]
+    },
+    "enterprise_all": {
+      "display_name": "Enterprise All-In-One",
+      "description": "Full access to all 4 website builder engines with custom domain routing and RBAC.",
+      "default_theme_accent": "#6366f1",
+      "modules": {
+        "projects_showcase": true,
+        "services_catalog": true,
+        "testimonials": true,
+        "lead_inquiries": true,
+        "ecommerce": true,
+        "multistore_inventory": true,
+        "coupons_discounts": true,
+        "pos_terminal": true,
+        "kitchen_display": true,
+        "table_management": true,
+        "qr_ordering": true,
+        "team_directory": true,
+        "announcements": true,
+        "careers_portal": true
+      },
+      "default_routes": [
+        "/*"
+      ]
+    }
+  }
+}

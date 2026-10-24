@@ -1,0 +1,87 @@
+{
+  "platform_roles": {
+    "superadmin": {
+      "description": "Full unconstrained administrative authority across the SaaS platform.",
+      "permissions": [
+        "saas:view_analytics",
+        "saas:manage_tenants",
+        "saas:suspend_tenants",
+        "saas:manage_plans",
+        "saas:manage_domains",
+        "saas:view_audit_logs",
+        "saas:configure_gateways"
+      ]
+    },
+    "support_agent": {
+      "description": "Platform support personnel with read-only inspection access.",
+      "permissions": [
+        "saas:view_analytics",
+        "saas:inspect_tenants",
+        "saas:view_audit_logs"
+      ]
+    }
+  },
+  "tenant_roles": {
+    "owner": {
+      "description": "Tenant organization owner with full control over the tenant subscription and modules.",
+      "permissions": [
+        "tenant:manage_settings",
+        "tenant:manage_domain",
+        "tenant:manage_billing",
+        "tenant:manage_staff",
+        "tenant:manage_branches",
+        "portfolio:*",
+        "store:*",
+        "pos:*",
+        "kds:*",
+        "org:*"
+      ]
+    },
+    "store_manager": {
+      "description": "Oversees store inventory, restaurant menu, products, and customer orders.",
+      "permissions": [
+        "store:manage_catalog",
+        "store:manage_inventory",
+        "store:view_orders",
+        "store:fulfill_orders",
+        "pos:open_shifts",
+        "pos:view_reports"
+      ]
+    },
+    "cashier": {
+      "description": "Operates the Point of Sale terminal and processes customer transactions.",
+      "permissions": [
+        "pos:access_terminal",
+        "pos:create_orders",
+        "pos:process_payment",
+        "pos:print_receipt",
+        "pos:manage_own_shift"
+      ]
+    },
+    "kitchen_staff": {
+      "description": "Monitors order preparation on the Kitchen Display System (KDS).",
+      "permissions": [
+        "kds:access_screen",
+        "kds:update_item_status",
+        "kds:mark_order_ready"
+      ]
+    },
+    "hr_manager": {
+      "description": "Manages employee directory, departments, and recruitment applicant pipeline.",
+      "permissions": [
+        "org:manage_departments",
+        "org:manage_members",
+        "org:post_jobs",
+        "org:review_applications"
+      ]
+    },
+    "editor": {
+      "description": "Content creator for portfolio case studies and announcements.",
+      "permissions": [
+        "portfolio:edit_projects",
+        "portfolio:edit_services",
+        "org:post_announcements"
+      ]
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "tenant_id": "00000000-0000-0000-0000-000000000001",
+  "multistore_enabled": true,
+  "default_currency": "USD",
+  "branches": [
+    {
+      "id": "c2a3b4d5-e6f7-8901-abcd-ef2345678901",
+      "code": "SF-DOWNTOWN",
+      "name": "San Francisco Flagship Store",
+      "address": "450 Market Street, San Francisco, CA 94105",
+      "phone": "+1 (415) 555-0143",
+      "is_fulfillment_hub": true,
+      "allow_pickup": true,
+      "priority": 1,
+      "pos_terminals_count": 3
+    },
+    {
+      "id": "d3b4c5e6-f7a8-9012-bcde-fa3456789012",
+      "code": "NYC-SOHO",
+      "name": "New York Soho Showroom",
+      "address": "120 Prince Street, New York, NY 10012",
+      "phone": "+1 (212) 555-0188",
+      "is_fulfillment_hub": true,
+      "allow_pickup": true,
+      "priority": 2,
+      "pos_terminals_count": 2
+    },
+    {
+      "id": "e4c5d6f7-a8b9-0123-cdef-ab4567890123",
+      "code": "WH-CENTRAL-TEXAS",
+      "name": "Central Texas Fulfillment Warehouse",
+      "address": "880 Logistics Parkway, Austin, TX 78701",
+      "phone": "+1 (512) 555-0177",
+      "is_fulfillment_hub": true,
+      "allow_pickup": false,
+      "priority": 3,
+      "pos_terminals_count": 0
+    }
+  ],
+  "inventory_routing_rules": {
+    "default_strategy": "nearest_geolocation",
+    "fallback_strategy": "highest_stock_hub",
+    "allow_split_shipments": true,
+    "low_stock_threshold_alert": 5
+  },
+  "tax_and_shipping_zones": [
+    {
+      "zone_name": "Domestic West Coast",
+      "states": ["CA", "OR", "WA", "NV"],
+      "tax_rate_percent": 8.25,
+      "standard_shipping_rate": 5.99,
+      "free_shipping_threshold": 75.00
+    },
+    {
+      "zone_name": "Domestic East Coast",
+      "states": ["NY", "NJ", "MA", "PA"],
+      "tax_rate_percent": 8.875,
+      "standard_shipping_rate": 7.99,
+      "free_shipping_threshold": 75.00
+    }
+  ]
+}
