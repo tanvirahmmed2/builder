@@ -1,148 +1,197 @@
-# PANEL_STYLE.md - Dashboard, Admin Panel & POS Design System
+# PANEL_STYLE.md - Tenant Management Panel & POS Design System
 
-This document outlines the UI/UX design specifications, tokens, components, and layout systems for both the **Tenant Management Dashboard** and the **Cashier POS / Kitchen Display System (KDS)**.
+This document outlines the UI/UX architecture, layout specifications, design tokens, role permissions, and component standards for the **Tenant Management Dashboard and POS Terminal** located under `src/app/[domain]/(panel)/panel/control/`.
 
 ---
 
-## 1. Design Philosophy
+## 1. Design Philosophy & Architectural Standard
 
-The admin and tenant management experience must be:
-1. **High-Density & Information-Rich**: Quick scanning of tables, metrics, and orders without unnecessary whitespace bloating.
-2. **Context-Aware Theming**: Visual styling shifts subtly based on the active website module:
-   - **SaaS Platform Admin**: Slate & Indigo (Command center)
-   - **Portfolio Manager**: Zinc & Violet (Creative showcase)
-   - **E-Commerce Store Manager**: Emerald & Slate (Commerce, inventory, revenue)
-   - **Restaurant & POS**: Amber, Orange & Dark Charcoal (High speed, kitchen-friendly, contrast)
-   - **Organization Portal**: Cyan & Blue (Corporate, team, structure)
-3. **Ultra-Fast & Touch-Optimized POS**: Point-of-Sale interface must work seamlessly on touch screens, tablets, and desktop with zero input lag and instant keyboard shortcuts.
+The tenant control console provides a high-density, lightning-fast operating system for multi-store retail, inventory, restaurant POS, and business administration:
+
+1. **High-Density Information Architecture**: Compact padding (`py-2 px-3`), clear table borders (`divide-y divide-slate-100`), tabular monospace numbers (`font-mono`), and quick-scanning metric cards.
+2. **Multi-Tenant Domain Scoping**: Every staff session is scoped to a specific tenant domain (`/[domain]/panel/control`). All client requests automatically map `/api/...` calls to `/api/${domain}/panel/control/...` via a built-in request interceptor in `layout.jsx`.
+3. **Strict RBAC Enforcement**: Role-governed viewports with automated permission gating for `admin`, `manager`, `sales`, and `staff`.
+4. **Touch & Scanner-Optimized POS**: A dedicated two-column cashier POS terminal supporting barcode hardware scanners, item variant selection, real-time change calculation, and automated 80mm thermal receipt printing.
 
 ---
 
 ## 2. Color Palette & Semantic Tokens
 
-### Core Neutral Surfaces
-- **Background Root**: `#090d16` (Deep Obsidian Dark) / `#f8fafc` (Clean Light)
-- **Card / Surface**: `#0f172a` (Surface 1) / `#1e293b` (Surface 2) / `#334155` (Surface 3)
-- **Border Default**: `rgba(255, 255, 255, 0.08)` (Dark) / `rgba(0, 0, 0, 0.08)` (Light)
-- **Border Active / Focus**: `rgba(99, 102, 241, 0.5)` (Indigo Ring)
+The panel uses clean slate neutrals paired with the SaaS platform's primary olive accent and clear semantic feedback colors:
 
-### Module Primary Accent Colors
-| Module | Accent Color | Tailored Gradient | Semantic Meaning |
-| :--- | :--- | :--- | :--- |
-| **SaaS SuperAdmin** | `#6366f1` (Indigo 500) | `linear-gradient(135deg, #6366f1, #4f46e5)` | Platform metrics, subscriptions |
-| **Portfolio Manager** | `#8b5cf6` (Purple 500) | `linear-gradient(135deg, #a855f7, #7c3aed)` | Creative projects, media, case studies |
-| **E-Commerce Manager** | `#10b981` (Emerald 500) | `linear-gradient(135deg, #10b981, #059669)` | Revenue, stock, customer orders |
-| **Restaurant & POS** | `#f59e0b` (Amber 500) | `linear-gradient(135deg, #f59e0b, #d97706)` | Fast food orders, kitchen tickets, tables |
-| **Organization Portal** | `#06b6d4` (Cyan 500) | `linear-gradient(135deg, #06b6d4, #0891b2)` | Teams, HR, roles, internal notices |
+### Core Surfaces & Borders
+- **Background Root**: `bg-slate-50` (Light) / `dark:bg-slate-950` (Dark)
+- **Primary Card Surface**: `bg-white` (Light) / `dark:bg-slate-900` (Dark)
+- **Secondary Surface / Inputs**: `bg-slate-50` / `dark:bg-slate-800`
+- **Border Default**: `border-slate-200` (Light) / `dark:border-slate-800` (Dark)
+- **Divider Color**: `divide-slate-100` / `dark:divide-slate-800`
 
-### State Colors
-- **Success**: `#22c55e` (Emerald) - Paid, Delivered, Active
-- **Warning**: `#eab308` (Amber) - Pending, Cooking, Low Stock
-- **Danger**: `#ef4444` (Rose) - Cancelled, Refunded, Out of Stock, Error
-- **Info**: `#38bdf8` (Sky) - Hold, Draft, In Transit
+### Brand & Interactive Accents
+- **Primary Accent (`--primary`)**: `#A2AB73` — Used for active icons, key CTAs, and user avatar badges.
+- **Primary Dark (`--primary-dark`)**: `#a1b34c` — Hover state for primary buttons.
+- **Secondary Action (`--secondary`)**: `#CC3A63` — High-priority triggers, alerts, and badges.
 
----
+### Status Badge Palette
+Implemented via `getStatusBadge(status)` across all dashboard tables:
 
-## 3. Typography & Hierarchy
-
-- **Primary Font Family**: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
-- **Monospace Font (SKUs, IDs, POS totals)**: `'JetBrains Mono', 'Fira Code', monospace`
-- **Scale**:
-  - `Page Title`: `text-2xl font-bold tracking-tight text-white`
-  - `Section Header`: `text-lg font-semibold text-slate-100`
-  - `Card Header`: `text-sm font-medium text-slate-400 uppercase tracking-wider`
-  - `Body / Cell Text`: `text-sm text-slate-300 font-normal`
-  - `Caption / Meta`: `text-xs text-slate-400`
-  - `POS Big Price`: `text-3xl font-extrabold font-mono text-emerald-400`
+| Status Group | Examples | Tailwind Classes |
+| :--- | :--- | :--- |
+| **Success / Paid / Active** | `completed`, `delivered`, `approved`, `active`, `success`, `paid` | `bg-emerald-50 text-emerald-700 border-emerald-200` |
+| **Pending / In Progress** | `pending`, `partial`, `processing`, `confirmed`, `shipped`, `due` | `bg-amber-50 text-amber-700 border-amber-200` |
+| **Danger / Failed / Return** | `cancelled`, `rejected`, `failed`, `banned`, `returned` | `bg-rose-50 text-rose-700 border-rose-200` |
+| **Neutral / Draft / Archived**| `draft`, `archived`, `closed`, `other` | `bg-slate-50 text-slate-700 border-slate-200` |
 
 ---
 
-## 4. Layout Architecture
+## 3. Typography & Numerical Formatting
 
-### Standard Tenant Dashboard Shell
+- **Font Family**: Standard Sans (`Inter`, system-ui) for labels and navigation.
+- **Monospace Font**: `font-mono` is strictly used for order invoice numbers, barcodes, SKUs, and monetary amounts.
+- **Currency Standards**:
+  - Default Currency: Bangladeshi Taka (`৳`) formatted via `formatMoney(val)`:
+    ```js
+    const formatMoney = (val) => {
+      const num = parseFloat(val || 0);
+      return `৳${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+    ```
+  - Configurable dynamic currencies supported via `website_currencies` table.
+- **Date Format**: Standardized to `DD MMM YYYY` (e.g. `28 Oct 2026`).
+
+---
+
+## 4. Role-Based Access Control (RBAC) Matrix
+
+Defined in [`control/layout.jsx`](file:///d:/code/portfoliobuilder/src/app/[domain]/(panel)/panel/control/layout.jsx):
+
+```javascript
+export const ROLE_PERMISSIONS = {
+  admin: [
+    'modules', 'branches', 'people', 'category', 'brands', 'product', 'price-tag', 'stock',
+    'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
+    'payments', 'return', 'report', 'backup', 'settings', 'sale',
+    'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview',
+    'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawals',
+    'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses',
+    'expense-payments', 'profits', 'balance', 'notices', 'my-salary'
+  ], // All 46 modules
+  manager: [
+    'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
+    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock',
+    'price-tag', 'customers', 'activity-logs', 'login-logs', 'expenses',
+    'expense-payments', 'notices', 'my-salary'
+  ], // 23 operational modules
+  sales: [
+    'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
+    'profile', 'orders', 'price-tag', 'notices', 'activity-logs',
+    'login-logs', 'my-salary'
+  ], // 17 sales & fulfillment modules
+  staff: [
+    'modules', 'profile', 'issue', 'orders', 'price-tag', 'notices',
+    'activity-logs', 'login-logs', 'my-salary'
+  ] // 9 self-service & task modules
+};
 ```
-+----------------------------------------------------------------------------------+
-| Topbar: [Tenant Logo/Name] [Module Switcher] [Search (Cmd+K)] [Alerts] [User Av] |
-+-------------------+--------------------------------------------------------------+
-| Sidebar (240px)   | Main Content Container (Fluid max-w-7xl)                     |
-| - Overview        |                                                              |
-| - Products/Menu   | [Page Header: Title + Action Buttons]                        |
-| - Orders / POS    |                                                              |
-| - Inventory       | [KPI Stats Grid: 4 Cards]                                    |
-| - Team / Staff    |                                                              |
-| - Settings        | [Data Filter Bar: Search, Status, Date Picker, Export]       |
-|                   |                                                              |
-| [Collapse Toggle] | [Data Table / Grid with Pagination]                          |
-+-------------------+--------------------------------------------------------------+
+
+### Unauthorized Guard View:
+If a user navigates to an unauthorized module URL, the layout intercepts rendering and displays an **Access Restricted** card with `BiShieldX`, role name notification, and a redirect button back to `/overview`.
+
+---
+
+## 5. Layout Shell & Navigation Architecture
+
+The control panel layout uses a fixed top header paired with a collapsible left sidebar:
+
+```
++------------------------------------------------------------------------------------+
+| Fixed Topbar (h-16): [☰ Toggle] [Store Name ↗]               [🛒 POS] [☼/☽] [Avatar ▾] |
++---------------------+--------------------------------------------------------------+
+| Collapsible Sidebar | Main Scrollable Workspace Container                          |
+| (lg:pl-64 / pl-8)   |                                                              |
+|                     | [Staff Header: Avatar, Name, Role Badge, Branch Name]        |
+| 1. Core & POS       | [Module Center Callout Banner]                               |
+| 2. Inventory        |                                                              |
+| 3. Purchases & CRM  | [Quick Admin Shortcuts: 8 Buttons]                           |
+| 4. Finance & Ledger |                                                              |
+| 5. HRM & Payroll    | [KPI Metrics Grid: Revenue, Balance, Stock, Items]           |
+| 6. Operations       |                                                              |
+| 7. System Tools     | [Filter Bar: Search, Category, Date Picker]                  |
+|                     | [High-Density Data Table / Pagination]                       |
++---------------------+--------------------------------------------------------------+
 ```
 
----
+### 5.1 Topbar Navigation ([ControlNavbar.jsx](file:///d:/code/portfoliobuilder/src/components/website/bars/Navbar.jsx))
+- **Height & Sticky**: `h-16 fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800`.
+- **Store Name & Public Link**: Dynamically displays the store title fetched from `/api/settings` with a direct link to the live storefront (`BiExternalLink`).
+- **Quick POS Link**: Dedicated button directly opening the POS Terminal (`/panel/control/sale`).
+- **Profile Dropdown**: Displays staff name, role, email, link to profile, and `Logout` action clearing sessions via `DELETE /api/staff/sessions`.
 
-## 5. Component Library Standards
-
-### 1. Data Tables
-- Sticky header with subtle backdrop blur (`backdrop-blur-md bg-slate-900/80`).
-- Alternating row hover highlight (`hover:bg-slate-800/50 transition-colors`).
-- Checkbox bulk selection toolbar appearing when 1+ rows are checked.
-- Standard column formats:
-  - Thumbnail + Name + Secondary slug
-  - Monospace SKU or Order Reference ID
-  - Status badge (pill with colored dot)
-  - Numeric alignment: Right-aligned with tabular numbers (`font-mono`)
-  - Row actions: Dropdown button or quick icon triggers (`Edit`, `Duplicate`, `Delete`).
-
-### 2. Forms & Inputs
-- Dark surface background: `bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`.
-- Integrated validation message: Displayed directly below the input with red dot and text.
-- Drag-and-Drop Media Dropzone: Multi-file preview with upload progress bar, Cloudinary integration, and aspect ratio crop tool.
-- Rich-Text Tiptap Editor: Sticky formatting toolbar (Bold, Italic, H2, H3, Bullet, Link, Image, CodeBlock).
-
-### 3. Modals & Side Drawers
-- Backdrop: `bg-black/60 backdrop-blur-sm animate-fade-in`.
-- Side Drawer: Used for editing products, order details, and team member profiles without navigating away from the table.
-- Accessible close: `Escape` key closes, outside click closes with unsaved-changes confirmation.
+### 5.2 Sidebar Structure ([ControlSidebar.jsx](file:///d:/code/portfoliobuilder/src/components/website/bars/Sidebar.jsx))
+Organized into 7 functional sections (`NAV_SECTIONS`):
+1. **Core & POS**: Admin Overview, POS Terminal, Pending Sales, Confirmed Sales, Out For Delivery, Completed Sales, Sales History, Returns.
+2. **Inventory & Catalog**: Products Catalog, Categories, Brands, Inventory Stock, Price Tags & Barcodes.
+3. **Purchases & CRM**: Supplier Purchases, Purchase Payments, Suppliers, Customer Directory.
+4. **Finance & Accounts**: Balance & Ledger, Available Balance, Profits & Transfers, Expenses, Expense Payments, Investors, Investments, Equity & Shares, Withdrawals.
+5. **HRM & Payroll**: Staff & People, Salary Structures, Staff Salaries, Salary Payments, My Salary.
+6. **Operations & Helpdesk**: Store Outlets, Customer Reviews, Support Tickets, Contact Inquiries, Issue Tracker, Notice Board.
+7. **System & Tools**: Console Settings, Active Modules, Activity Logs, Login Logs, Database Backup, My Profile.
 
 ---
 
-## 6. Restaurant POS (Point of Sale) Dedicated Interface
+## 6. Cashier POS Terminal Specification (`control/sale/page.jsx`)
 
-The POS terminal requires a dedicated layout optimized for rapid transaction flow:
+The POS interface is optimized for high-speed touch input, barcode scanning, and fast receipts:
 
 ```
 +---------------------------------------------------------------+------------------------+
-| POS Header: [Cashier Name] [Shift #4] [Table: T-12] [Offline/Online Indicator]        |
-+---------------------------------------------------------------+------------------------+
-| Left Panel: Category Pills & Fast Item Grid (70% Width)       | Right Panel: Cart Drawer|
-| [All] [Appetizers] [Burgers] [Beverages] [Desserts]           | [Order #1042 - Dine-in]|
+| POS Search Bar: [ Barcode Hardware Input (Auto-Focus) ]       | Customer Header        |
+| Filter Pills:   [ All ] [ Grocery ] [ Electronics ] [ Apparel ] | Phone:  [+880________] |
++---------------------------------------------------------------+ Name:   [Customer Name]|
+| Item Catalog Grid (Fluid 3 to 5 Columns)                      +------------------------+
+| +-------------------+ +-------------------+ +---------------+ | Cart Items Table       |
+| | [Product Image]   | | [Product Image]   | | [Product Img] | | Img | Name | Qty | Sum |
+| | Smartphone X      | | Cotton T-Shirt    | | Organic Milk  | | [•]   Shirt  2x   ৳900 |
+| | In Stock: 14      | | In Stock: 50      | | In Stock: 8   | | ---------------------- |
+| | ৳ 24,500.00       | | ৳ 450.00          | | ৳ 95.00       | | Subtotal:       ৳900.00|
+| +-------------------+ +-------------------+ +---------------+ | Delivery:         ৳60.00|
+|                                                               | Total:          ৳960.00|
 |                                                               | ---------------------- |
-| +-------------------+ +-------------------+ +---------------+ | 2x Cheeseburger $18.00 |
-| | Cheeseburger      | | Bacon Burger      | | Truffle Fries | |    + Extra Cheese $2.00|
-| | $9.00             | | $11.50            | | $6.00         | | 1x Mango Shake  $5.00  |
-| +-------------------+ +-------------------+ +---------------+ | ---------------------- |
-| +-------------------+ +-------------------+ +---------------+ | Subtotal:       $25.00 |
-| | Sparkling Water   | | Mojito            | | Lava Cake     | | Tax (8%):        $2.00 |
-| | $3.00             | | $7.00             | | $8.50         | | Total:          $27.00 |
-| +-------------------+ +-------------------+ +---------------+ | ---------------------- |
-|                                                               | [Hold Order] [Discount]|
-| [Barcode Scanner Input: Focus Always Accessible]             | [Cash] [Card] [bKash]  |
-|                                                               | [PRINT & PAY (SPACE)]  |
+|                                                               | Payment: [Cash] [Card] |
+|                                                               | Received:      [৳1000] |
+|                                                               | Change:         ৳40.00 |
+|                                                               | ---------------------- |
+|                                                               | [ 🖨️ PAY & PRINT ]     |
 +---------------------------------------------------------------+------------------------+
 ```
 
-### POS Specific Rules:
-- **Touch Button Minimum Size**: All tappable product cards must be at least `88px x 88px` with clear imagery and price.
-- **Modifier Popup**: Clicking an item with modifiers (e.g., Pizza toppings, spice level) opens a lightweight modal to select options before adding to cart.
-- **Offline Resilience Badge**: Visual pill in topbar showing `Online (Synced)` or `Offline (Queued: 4 Orders)`.
-- **Receipt Formats**: Support 80mm thermal receipt printing and 58mm compact format with auto-print capability.
+### Key POS Operational Behaviors:
+- **Direct Barcode Input**: Listening on `barcodeInputRef` for continuous automated barcode scanner input.
+- **Product Variants Modal**: If an item contains variants (Size, Color, Bundle), clicking opens an instant variant picker modal.
+- **In-Memory Cart Calculations**: Dynamic subtotal, delivery fee addition, discount subtraction, and automatic change return math.
+- **Split Payment Methods**: Supports `Cash`, `Card`, `Mobile Banking`, and `Split` billing.
+- **Receipt Dispatcher**: Automatically formats and triggers physical 80mm thermal receipt printing via `printReceipt()` utility.
 
 ---
 
-## 7. Kitchen Display System (KDS) Layout
+## 7. Data Tables, Forms & Management Modules
 
-- High contrast dark UI optimized for kitchen wall screens.
-- Order Cards color-coded by waiting time:
-  - **Green (< 10 mins)**: New ticket
-  - **Yellow (10-20 mins)**: In preparation
-  - **Red (> 20 mins)**: Delayed / Urgent
-- Large item checkoffs: Kitchen staff can touch or strike through individual cooked items.
-- Audio bell notification on incoming orders (using Web Audio API).
+### 7.1 Catalog Table Standard ([product/page.jsx](file:///d:/code/portfoliobuilder/src/app/[domain]/(panel)/panel/control/product/page.jsx))
+- **Toolbar**: Search input (`BiSearch`) with debounced API queries, Category select dropdown, and Brand select dropdown.
+- **Action Group**: Print Price Tags button + "+ Create Product" button (`bg-primary hover:bg-primary-dark`).
+- **Table Density**:
+  - Image thumbnail (`w-8 h-8 rounded-md object-cover`).
+  - Product name + SKU / Barcode + Unit indicator.
+  - Linked category and brand pills.
+  - Numeric right-aligned pricing (`font-mono`).
+  - Quick action buttons (Edit, Delete with double-confirmation).
+
+### 7.2 Console Settings ([settings/page.jsx](file:///d:/code/portfoliobuilder/src/app/[domain]/(panel)/panel/control/settings/page.jsx))
+- **Tabbed Settings Architecture**:
+  1. **Store Identity**: Title, tagline, contact email, phone, physical address, social links.
+  2. **Hero & Banner**: Storefront promotional headings and descriptions.
+  3. **Logo & Assets**: Cloudinary asset uploader with instant image previews.
+  4. **Multi-Currency Manager**: Table of supported currencies, exchange rates, and 1-click active default switch.
+  5. **Tax & Operational Rules**: Exclusive/inclusive tax flags, VAT percentages, and store open/closed toggles.
