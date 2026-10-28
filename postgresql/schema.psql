@@ -1202,19 +1202,3 @@ BEFORE UPDATE ON policies
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-
-CREATE TABLE IF NOT EXISTS website_permissions (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    module_id INTEGER REFERENCES website_modules(id) ON DELETE CASCADE,
-    name VARCHAR(150) NOT NULL,
-    slug VARCHAR(150) NOT NULL, -- e.g. 'products.view', 'products.create', 'products.edit', 'products.delete', 'blogs.publish'
-    action VARCHAR(50) NOT NULL DEFAULT 'manage', -- 'view', 'create', 'edit', 'delete', 'publish', 'manage'
-    description TEXT,
-    is_custom BOOLEAN NOT NULL DEFAULT FALSE, -- Customer can add custom permissions
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_website_permissions_web_slug UNIQUE (website_id, slug)
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_permissions_web ON website_permissions (website_id);
-CREATE INDEX IF NOT EXISTS idx_website_permissions_module ON website_permissions (module_id);
