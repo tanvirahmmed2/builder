@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { BiSearch, BiPlus, BiMinus, BiTrash, BiRefresh } from 'react-icons/bi';
-import ReportForm from '@/components/developer/forms/ReportForm';
+import ReportForm from '@/components/saas/developer/forms/ReportForm';
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState([]);
@@ -14,7 +14,7 @@ export default function AdminReportsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/reports');
+      const res = await fetch('/api/saas/developer/reports');
       const data = await res.json();
       if (data.success) {
         setReports(data.records || []);
@@ -34,7 +34,7 @@ export default function AdminReportsPage() {
     if (!confirm('Are you sure you want to delete this report?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/reports?id=${id}`, {
+      const res = await fetch(`/api/saas/developer/reports?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -101,7 +101,7 @@ export default function AdminReportsPage() {
 
       {showForm && (
         <ReportForm
-          apiEndpoint="/api/developer/reports"
+          apiEndpoint="/api/saas/developer/reports"
           onSuccess={() => {
             setShowForm(false);
             fetchReports();

@@ -1,6 +1,6 @@
-import Navbar from '@/components/home/bar/Navbar';
-import Footer from '@/components/home/bar/Footer';
-import LiveChatPopup from '@/components/home/LiveChatPopup';
+﻿import Navbar from '@/components/saas/home/bar/Navbar';
+import Footer from '@/components/saas/home/bar/Footer';
+import LiveChatPopup from '@/components/saas/home/LiveChatPopup';
 import { SITE_NAME } from '@/lib/db/secret';
 
 export const metadata = {

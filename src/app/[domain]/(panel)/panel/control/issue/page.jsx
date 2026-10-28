@@ -2,8 +2,8 @@
 import React, { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import RichTextEditor from '@/component/helper/RichTextEditor'
+import { Context } from '@/components/helper/Context'
+import RichTextEditor from '@/components/helper/RichTextEditor'
 import { 
   BiMessageSquareDetail, 
   BiSend, 

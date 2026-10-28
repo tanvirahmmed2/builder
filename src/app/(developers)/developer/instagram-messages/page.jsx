@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import MetaMessenger from '@/components/developer/meta/MetaMessenger';
+import MetaMessenger from '@/components/saas/developer/meta/MetaMessenger';
 import { BiLogoInstagram } from 'react-icons/bi';
 
 export default function InstagramMessagesPage() {

@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiStar, 
   BiCheck, 
@@ -25,7 +25,7 @@ export default function ReviewsModerationPage() {
   const fetchReviews = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const res = await axios.get('/api/review?all=true')
+      const res = await axios.get('/api/reviews?all=true')
       setReviews(res.data)
     } catch (err) {
       toast.error('Failed to fetch reviews')
@@ -44,7 +44,7 @@ export default function ReviewsModerationPage() {
   const handleApprove = async (id, approveStatus) => {
     setActionId(id)
     try {
-      await axios.patch(`/api/review/${id}`, {
+      await axios.patch(`/api/reviews/${id}`, {
         is_approved: approveStatus
       })
       toast.success(approveStatus ? 'Review approved successfully!' : 'Review status reverted to pending.')
@@ -63,7 +63,7 @@ export default function ReviewsModerationPage() {
     }
     setActionId(id)
     try {
-      await axios.delete(`/api/review/${id}`)
+      await axios.delete(`/api/reviews/${id}`)
       toast.success('Review deleted successfully')
       setReviews(reviews.filter(r => r.review_id !== id))
     } catch (err) {

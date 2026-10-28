@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
@@ -43,7 +43,7 @@ export default function DeveloperAppsPage() {
     try {
       setCreating(true);
       setActionError('');
-      const res = await axios.post('/api/developer/apps', {
+      const res = await axios.post('/api/saas/developer/apps', {
         title: 'Untitled App',
         is_published: false,
       });
@@ -64,7 +64,7 @@ export default function DeveloperAppsPage() {
     try {
       setLoading(true);
       setActionError('');
-      const res = await axios.get('/api/developer/apps');
+      const res = await axios.get('/api/saas/developer/apps');
       if (res.data?.success) {
         setApps(res.data.records || []);
       } else {
@@ -80,7 +80,7 @@ export default function DeveloperAppsPage() {
   useEffect(() => {
     let active = true;
     axios
-      .get('/api/developer/apps')
+      .get('/api/saas/developer/apps')
       .then((res) => {
         if (!active) return;
         if (res.data?.success) {
@@ -110,7 +110,7 @@ export default function DeveloperAppsPage() {
     setActionError('');
 
     try {
-      const res = await axios.delete(`/api/developer/apps?id=${id}`);
+      const res = await axios.delete(`/api/saas/developer/apps?id=${id}`);
       if (res.data?.success) {
         setApps((prev) => prev.filter((a) => a.id !== id));
       } else {
@@ -131,7 +131,7 @@ export default function DeveloperAppsPage() {
     const newStatus = !app.is_published;
 
     try {
-      const res = await axios.put('/api/developer/apps', {
+      const res = await axios.put('/api/saas/developer/apps', {
         id: app.id,
         is_published: newStatus,
       });

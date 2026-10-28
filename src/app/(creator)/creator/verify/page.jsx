@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BiLoaderAlt, BiCheckCircle, BiErrorCircle, BiEnvelope, BiKey, BiShieldQuarter } from 'react-icons/bi';
-import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
+import CreatorAuthLayout from '@/components/saas/creator/CreatorAuthLayout';
 
 function CreatorVerifyContent() {
   const router = useRouter();
@@ -32,7 +32,7 @@ function CreatorVerifyContent() {
       setVerifyingAuto(true);
       setError('');
       try {
-        const res = await fetch('/api/creator', {
+        const res = await fetch('/api/saas/creator', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -81,7 +81,7 @@ function CreatorVerifyContent() {
     setResendMsg('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,7 +118,7 @@ function CreatorVerifyContent() {
     setError('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

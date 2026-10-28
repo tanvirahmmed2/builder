@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiUser, 
   BiPhone, 
@@ -39,7 +39,7 @@ export default function CustomerProfilePage() {
     if (!customerId) return
     setLoading(true)
     try {
-      const res = await axios.get(`/api/customer/${customerId}`)
+      const res = await axios.get(`/api/customers/${customerId}`)
       setCustomerData(res.data)
     } catch (err) {
       console.error('Failed to load customer profile:', err)

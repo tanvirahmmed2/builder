@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import {
   BiRefresh,
   BiRightArrowAlt,
 } from 'react-icons/bi';
-import HomeBlogCard from '@/components/home/cards/BlogCard';
+import HomeBlogCard from '@/components/saas/home/cards/BlogCard';
 
 export default function BlogsPage() {
   const [blogs, setBlogs] = useState([]);
@@ -20,7 +20,7 @@ export default function BlogsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/blogs');
+      const res = await fetch('/api/saas/home/blogs');
       const data = await res.json();
       if (data?.success && Array.isArray(data?.blogs)) {
         setBlogs(data.blogs);
@@ -36,7 +36,7 @@ export default function BlogsPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/blogs')
+    fetch('/api/saas/home/blogs')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;

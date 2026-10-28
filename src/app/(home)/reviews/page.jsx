@@ -27,7 +27,7 @@ export default function PublicReviewsPage() {
 
   useEffect(() => {
     let ignore = false;
-    fetch('/api/reviews')
+    fetch('/api/saas/home/reviews')
       .then((res) => res.json())
       .then((data) => {
         if (!ignore && data.success) {

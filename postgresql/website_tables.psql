@@ -1,12 +1,24 @@
+-- ============================================================================
+-- WEBSITE TABLES SCHEMA (Business, Store, POS & Management Console)
+-- All tables are partitioned per website using website_id.
+-- Strictly prefixed with website_ (No unwanted tables, zero legacy naming).
+-- ============================================================================
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- . WEBSITE MODULES (Toggleable & configurable feature modules for the website)
+-- 1. WEBSITE MODULES (Feature flags & toggles enabled for this website)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_modules (
     id SERIAL PRIMARY KEY,
-    website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL, -- e.g. 'products', 'blogs', 'appointments', 'support', 'gallery', 'experiences', 'services', 'testimonials', 'contact'
+    slug VARCHAR(100) NOT NULL, -- e.g. 'sale', 'purchase', 'inventory', 'expenses', 'salaries', 'investors', 'support', 'notices', 'branches'
     description TEXT,
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -17,7 +29,6 @@ CREATE TABLE IF NOT EXISTS website_modules (
 );
 
 CREATE INDEX IF NOT EXISTS idx_website_modules_web ON website_modules (website_id);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_website_modules_null_web_slug ON website_modules (slug) WHERE website_id IS NULL;
 
 DROP TRIGGER IF EXISTS trg_website_modules_updated_at ON website_modules;
 CREATE TRIGGER trg_website_modules_updated_at
@@ -26,15 +37,40 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- . WEBSITE ROLES (System roles + Customer-created custom roles)
+-- 2. WEBSITE BRANCHES (Multi-branch / outlet store locations)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_branches (
+    id SERIAL PRIMARY KEY,
+    branch_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    address TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_branches_web ON website_branches (website_id, is_active);
+
+DROP TRIGGER IF EXISTS trg_website_branches_updated_at ON website_branches;
+CREATE TRIGGER trg_website_branches_updated_at
+BEFORE UPDATE ON website_branches
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 3. WEBSITE ROLES & PERMISSIONS
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_roles (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL, -- e.g. 'owner', 'admin', 'editor', 'store-manager', 'support-agent'
+    slug VARCHAR(100) NOT NULL, -- 'admin', 'manager', 'sales', 'staff'
     description TEXT,
-    is_system BOOLEAN NOT NULL DEFAULT FALSE, -- TRUE for default 'owner', 'admin'
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_website_roles_web_slug UNIQUE (website_id, slug)
@@ -48,13 +84,15 @@ BEFORE UPDATE ON website_roles
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
--- ============================================================================
--- . WEBSITE PERMISSIONS (Custom & standard permissions linked to modules)
--- ============================================================================
+CREATE TABLE IF NOT EXISTS website_permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    module VARCHAR(50) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- ============================================================================
--- . WEBSITE ROLE PERMISSIONS (Mapping roles to granted permissions)
--- ============================================================================
 CREATE TABLE IF NOT EXISTS website_role_permissions (
     id SERIAL PRIMARY KEY,
     role_id INTEGER NOT NULL REFERENCES website_roles(id) ON DELETE CASCADE,
@@ -67,19 +105,25 @@ CREATE INDEX IF NOT EXISTS idx_website_role_perm_role ON website_role_permission
 CREATE INDEX IF NOT EXISTS idx_website_role_perm_perm ON website_role_permissions (permission_id);
 
 -- ============================================================================
--- . WEBSITE USERS (End customers, team members, staff on the website website)
+-- 4. WEBSITE USERS (Staff, Managers, Sales Reps, and Clients)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_users (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    branch_id INTEGER REFERENCES website_branches(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     email CITEXT NOT NULL,
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
+    role VARCHAR(50) NOT NULL DEFAULT 'staff', -- 'admin', 'manager', 'sales', 'staff', 'customer'
     avatar_url TEXT,
     bio TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    two_factor_code VARCHAR(20),
+    two_factor_expires_at TIMESTAMPTZ,
     verification_code VARCHAR(255),
     verification_expires_at TIMESTAMPTZ,
     reset_token VARCHAR(255),
@@ -90,13 +134,8 @@ CREATE TABLE IF NOT EXISTS website_users (
     CONSTRAINT uq_website_users_web_email UNIQUE (website_id, email)
 );
 
--- Backwards compatibility migrations if table already exists
-ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(255);
-ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMPTZ;
-ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);
-ALTER TABLE IF EXISTS website_users ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMPTZ;
-
-CREATE INDEX IF NOT EXISTS idx_website_users_web ON website_users (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_users_web ON website_users (website_id, role);
+CREATE INDEX IF NOT EXISTS idx_website_users_branch ON website_users (branch_id);
 CREATE INDEX IF NOT EXISTS idx_website_users_email ON website_users (website_id, email);
 
 DROP TRIGGER IF EXISTS trg_website_users_updated_at ON website_users;
@@ -105,9 +144,6 @@ BEFORE UPDATE ON website_users
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
--- ============================================================================
--- . WEBSITE USER ROLES (Supporting multiple roles per user!)
--- ============================================================================
 CREATE TABLE IF NOT EXISTS website_user_roles (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
@@ -120,25 +156,50 @@ CREATE INDEX IF NOT EXISTS idx_website_user_roles_user ON website_user_roles (us
 CREATE INDEX IF NOT EXISTS idx_website_user_roles_role ON website_user_roles (role_id);
 
 -- ============================================================================
--- . WEBSITE SETTINGS (Theme branding, colors, typography, SEO, social links)
+-- 5. WEBSITE STAFF SESSIONS (Track logged-in devices and active security sessions)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_staff_sessions (
+    id SERIAL PRIMARY KEY,
+    session_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
+    session_token TEXT NOT NULL,
+    device_info VARCHAR(255) DEFAULT 'Desktop / Web Browser',
+    ip_address VARCHAR(100) DEFAULT '127.0.0.1',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_active_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_staff_sessions_user ON website_staff_sessions (user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_website_staff_sessions_web ON website_staff_sessions (website_id);
+
+-- ============================================================================
+-- 6. WEBSITE SETTINGS (Branding, Identity, Taxes, Hero, Social, Flags)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_settings (
     id SERIAL PRIMARY KEY,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE UNIQUE,
-    site_title VARCHAR(255) NOT NULL DEFAULT 'My Portfolio & Store',
-    tagline VARCHAR(255) DEFAULT 'Creator, Developer & Designer',
+    site_title VARCHAR(255) NOT NULL DEFAULT 'Business Management & POS',
+    tagline VARCHAR(255) DEFAULT 'Enterprise POS & Inventory',
     bio TEXT,
     logo_url TEXT,
     favicon_url TEXT,
-    primary_color VARCHAR(50) DEFAULT '#6366f1',
-    secondary_color VARCHAR(50) DEFAULT '#10b981',
+    primary_color VARCHAR(50) DEFAULT '#0f172a',
+    secondary_color VARCHAR(50) DEFAULT '#2563eb',
     font_family VARCHAR(100) DEFAULT 'Inter',
     contact_email CITEXT,
     contact_phone VARCHAR(50),
     address TEXT,
-    currency VARCHAR(10) DEFAULT 'USD',
-    currency_symbol VARCHAR(10) DEFAULT '$',
-    social_links JSONB DEFAULT '{"github": "", "twitter": "", "linkedin": "", "instagram": "", "youtube": ""}'::jsonb,
+    currency VARCHAR(10) DEFAULT 'BDT',
+    currency_symbol VARCHAR(10) DEFAULT '৳',
+    social_links JSONB DEFAULT '{"facebook": "", "twitter": "", "instagram": "", "youtube": ""}'::jsonb,
+    hero_title VARCHAR(255) DEFAULT 'Welcome to our Official Store',
+    hero_subtitle TEXT DEFAULT 'Browse high-quality products and fast checkout solutions.',
+    is_sale_active BOOLEAN NOT NULL DEFAULT TRUE,
+    excluded_tax BOOLEAN NOT NULL DEFAULT FALSE,
+    tax_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    is_share_investment BOOLEAN NOT NULL DEFAULT FALSE,
     seo_config JSONB DEFAULT '{"meta_title": "", "meta_description": "", "keywords": []}'::jsonb,
     custom_domain_verified BOOLEAN DEFAULT FALSE,
     custom_css TEXT,
@@ -155,95 +216,112 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- . WEBSITE CATEGORIES (For organizing Products and Blogs)
+-- 7. WEBSITE CURRENCIES (Configurable multi-currencies with active selection)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_currencies (
+    id SERIAL PRIMARY KEY,
+    currency_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(10) NOT NULL, -- e.g. 'BDT', 'USD', 'EUR', 'GBP'
+    symbol VARCHAR(10) NOT NULL, -- e.g. '৳', '$', '€', '£'
+    exchange_rate NUMERIC(12, 4) NOT NULL DEFAULT 1.0000,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_website_currencies_code UNIQUE (website_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_currencies_web ON website_currencies (website_id);
+
+DROP TRIGGER IF EXISTS trg_website_currencies_updated_at ON website_currencies;
+CREATE TRIGGER trg_website_currencies_updated_at
+BEFORE UPDATE ON website_currencies
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 8. WEBSITE CATEGORIES (Product & catalog categorization)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_categories (
     id SERIAL PRIMARY KEY,
+    category_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL,
-    type VARCHAR(50) NOT NULL DEFAULT 'PRODUCT', -- 'PRODUCT', 'BLOG', 'GALLERY', 'SERVICE'
+    parent_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
+    name VARCHAR(150) NOT NULL,
+    slug VARCHAR(150) NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'PRODUCT',
     description TEXT,
+    image_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_website_categories_web_slug UNIQUE (website_id, type, slug)
 );
 
 CREATE INDEX IF NOT EXISTS idx_website_categories_web ON website_categories (website_id, type);
 
--- ============================================================================
--- . WEBSITE BLOGS & BLOG IMAGES
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_blogs (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    author_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
-    category_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
-    title VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL,
-    excerpt TEXT,
-    content TEXT NOT NULL,
-    cover_image TEXT,
-    tags TEXT[] DEFAULT '{}',
-    is_published BOOLEAN NOT NULL DEFAULT TRUE,
-    published_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    views_count INTEGER NOT NULL DEFAULT 0,
-    seo_title VARCHAR(255),
-    seo_description TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_website_blogs_web_slug UNIQUE (website_id, slug)
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_blogs_web ON website_blogs (website_id, is_published);
-CREATE INDEX IF NOT EXISTS idx_website_blogs_slug ON website_blogs (website_id, slug);
-
-DROP TRIGGER IF EXISTS trg_website_blogs_updated_at ON website_blogs;
-CREATE TRIGGER trg_website_blogs_updated_at
-BEFORE UPDATE ON website_blogs
+DROP TRIGGER IF EXISTS trg_website_categories_updated_at ON website_categories;
+CREATE TRIGGER trg_website_categories_updated_at
+BEFORE UPDATE ON website_categories
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS website_blog_images (
+-- ============================================================================
+-- 9. WEBSITE BRANDS (Product manufacturers and brands)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_brands (
     id SERIAL PRIMARY KEY,
-    blog_id INTEGER NOT NULL REFERENCES website_blogs(id) ON DELETE CASCADE,
+    brand_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    alt_text VARCHAR(255),
-    caption TEXT,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    name VARCHAR(150) NOT NULL,
+    slug VARCHAR(150) NOT NULL,
+    image_url TEXT,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_website_brands_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_website_blog_images_blog ON website_blog_images (blog_id);
+CREATE INDEX IF NOT EXISTS idx_website_brands_web ON website_brands (website_id, is_active);
+
+DROP TRIGGER IF EXISTS trg_website_brands_updated_at ON website_brands;
+CREATE TRIGGER trg_website_brands_updated_at
+BEFORE UPDATE ON website_brands
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- . WEBSITE PRODUCTS & PRODUCT IMAGES (E-Commerce & Digital Goods)
+-- 10. WEBSITE PRODUCTS & PRODUCT IMAGES
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_products (
     id SERIAL PRIMARY KEY,
+    product_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
+    brand_id INTEGER REFERENCES website_brands(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL,
-    description TEXT,
-    short_description TEXT,
-    price_in_cents INTEGER NOT NULL DEFAULT 0,
-    compare_at_price_in_cents INTEGER,
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
     sku VARCHAR(100),
-    stock_quantity INTEGER NOT NULL DEFAULT 100,
-    track_inventory BOOLEAN NOT NULL DEFAULT FALSE,
-    is_digital BOOLEAN NOT NULL DEFAULT FALSE,
-    download_url TEXT,
-    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DRAFT', 'ARCHIVED')),
-    is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+    barcode VARCHAR(100),
+    unit VARCHAR(50) DEFAULT 'pcs',
+    buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    sale_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    discount_price NUMERIC(12, 2) DEFAULT 0,
+    stock INTEGER NOT NULL DEFAULT 0,
+    description TEXT,
+    image TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    variants JSONB DEFAULT '[]'::jsonb, -- Array of [{ id, name, sku, barcode, additional_price, stock }]
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_website_products_web_slug UNIQUE (website_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_website_products_web ON website_products (website_id, status);
-CREATE INDEX IF NOT EXISTS idx_website_products_slug ON website_products (website_id, slug);
+CREATE INDEX IF NOT EXISTS idx_website_products_web ON website_products (website_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_website_products_cat ON website_products (category_id);
+CREATE INDEX IF NOT EXISTS idx_website_products_brand ON website_products (brand_id);
+CREATE INDEX IF NOT EXISTS idx_website_products_barcode ON website_products (website_id, barcode);
 
 DROP TRIGGER IF EXISTS trg_website_products_updated_at ON website_products;
 CREATE TRIGGER trg_website_products_updated_at
@@ -265,10 +343,458 @@ CREATE TABLE IF NOT EXISTS website_product_images (
 CREATE INDEX IF NOT EXISTS idx_website_product_images_prod ON website_product_images (product_id);
 
 -- ============================================================================
--- . WEBSITE SUPPORT, SUPPORT MESSAGES & SUPPORT IMAGES
+-- 11. WEBSITE SUPPLIERS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_suppliers (
+    id SERIAL PRIMARY KEY,
+    supplier_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
+    balance NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    note TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_suppliers_web ON website_suppliers (website_id, is_active);
+
+DROP TRIGGER IF EXISTS trg_website_suppliers_updated_at ON website_suppliers;
+CREATE TRIGGER trg_website_suppliers_updated_at
+BEFORE UPDATE ON website_suppliers
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 12. WEBSITE CUSTOMERS (Clients directory and purchasing metrics)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_customers (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    email VARCHAR(255),
+    address TEXT,
+    total_spent NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total_orders INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_website_customers_phone UNIQUE (website_id, phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_customers_web ON website_customers (website_id);
+CREATE INDEX IF NOT EXISTS idx_website_customers_search ON website_customers (website_id, name, phone);
+
+DROP TRIGGER IF EXISTS trg_website_customers_updated_at ON website_customers;
+CREATE TRIGGER trg_website_customers_updated_at
+BEFORE UPDATE ON website_customers
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 13. WEBSITE PURCHASES (Restock from suppliers to store inventory)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_purchases (
+    id SERIAL PRIMARY KEY,
+    purchase_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    branch_id INTEGER REFERENCES website_branches(id) ON DELETE SET NULL,
+    supplier_id INTEGER REFERENCES website_suppliers(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL, -- staff member who recorded purchase
+    invoice_no VARCHAR(100),
+    subtotal_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    extra_discount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total_paid NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    due_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) DEFAULT 'Cash',
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'PAID' CHECK (payment_status IN ('PAID', 'PARTIAL', 'DUE')),
+    note TEXT,
+    items JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of items snapshot
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_purchases_web ON website_purchases (website_id, branch_id);
+CREATE INDEX IF NOT EXISTS idx_website_purchases_supp ON website_purchases (supplier_id);
+
+DROP TRIGGER IF EXISTS trg_website_purchases_updated_at ON website_purchases;
+CREATE TRIGGER trg_website_purchases_updated_at
+BEFORE UPDATE ON website_purchases
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_purchase_items (
+    id SERIAL PRIMARY KEY,
+    purchase_id INTEGER NOT NULL REFERENCES website_purchases(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES website_products(id) ON DELETE SET NULL,
+    variant_id INTEGER,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_purchase_items_purch ON website_purchase_items (purchase_id);
+
+CREATE TABLE IF NOT EXISTS website_purchase_payments (
+    id SERIAL PRIMARY KEY,
+    payment_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    purchase_id INTEGER NOT NULL REFERENCES website_purchases(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'Cash',
+    transaction_id VARCHAR(100),
+    note TEXT,
+    payment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_purchase_payments_purch ON website_purchase_payments (purchase_id);
+CREATE INDEX IF NOT EXISTS idx_website_purchase_payments_web ON website_purchase_payments (website_id);
+
+-- ============================================================================
+-- 14. WEBSITE SALES (POS terminal transactions, client orders & fulfillment)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_sales (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    branch_id INTEGER REFERENCES website_branches(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL, -- staff / cashier
+    customer_id INTEGER REFERENCES website_customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(255) DEFAULT 'Walk-in Customer',
+    customer_phone VARCHAR(50) DEFAULT '+880',
+    invoice_no VARCHAR(100),
+    subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    tax_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    delivery_charge NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    discount_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    amount_received NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    change_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    paid_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    due_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_type VARCHAR(50) NOT NULL DEFAULT 'cash', -- 'cash', 'card', 'mobile_banking', 'split'
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'PAID' CHECK (payment_status IN ('PAID', 'PARTIAL', 'DUE', 'REFUNDED')),
+    order_status VARCHAR(50) NOT NULL DEFAULT 'delivered' CHECK (order_status IN ('pending', 'confirmed', 'out_for_delivery', 'delivered', 'returned', 'cancelled')),
+    note TEXT,
+    items JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array snapshot of products/variants sold
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_sales_web ON website_sales (website_id, order_status);
+CREATE INDEX IF NOT EXISTS idx_website_sales_branch ON website_sales (branch_id);
+CREATE INDEX IF NOT EXISTS idx_website_sales_cust ON website_sales (customer_id);
+
+DROP TRIGGER IF EXISTS trg_website_sales_updated_at ON website_sales;
+CREATE TRIGGER trg_website_sales_updated_at
+BEFORE UPDATE ON website_sales
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_sale_items (
+    id SERIAL PRIMARY KEY,
+    sale_id INTEGER NOT NULL REFERENCES website_sales(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES website_products(id) ON DELETE SET NULL,
+    variant_id INTEGER,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_sale_items_sale ON website_sale_items (sale_id);
+
+CREATE TABLE IF NOT EXISTS website_sale_payments (
+    id SERIAL PRIMARY KEY,
+    payment_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    sale_id INTEGER NOT NULL REFERENCES website_sales(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'cash',
+    transaction_id VARCHAR(100),
+    note TEXT,
+    payment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_sale_payments_sale ON website_sale_payments (sale_id);
+CREATE INDEX IF NOT EXISTS idx_website_sale_payments_web ON website_sale_payments (website_id);
+
+-- ============================================================================
+-- 15. WEBSITE EXPENSES & EXPENSE PAYMENTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_expenses (
+    id SERIAL PRIMARY KEY,
+    expense_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    branch_id INTEGER REFERENCES website_branches(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'General',
+    expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    paid_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    due_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) DEFAULT 'cash',
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'paid' CHECK (payment_status IN ('paid', 'partial', 'due')),
+    note TEXT,
+    items JSONB DEFAULT '[]'::jsonb, -- Array of [{ item_name, quantity, unit_cost }]
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_expenses_web ON website_expenses (website_id, expense_date);
+
+DROP TRIGGER IF EXISTS trg_website_expenses_updated_at ON website_expenses;
+CREATE TRIGGER trg_website_expenses_updated_at
+BEFORE UPDATE ON website_expenses
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_expense_payments (
+    id SERIAL PRIMARY KEY,
+    payment_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    expense_id INTEGER NOT NULL REFERENCES website_expenses(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'cash',
+    reference_no VARCHAR(100),
+    note TEXT,
+    payment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_expense_payments_exp ON website_expense_payments (expense_id);
+CREATE INDEX IF NOT EXISTS idx_website_expense_payments_web ON website_expense_payments (website_id);
+
+-- ============================================================================
+-- 16. WEBSITE INVESTORS, INVESTMENTS, SHARES & WITHDRAWALS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_investors (
+    id SERIAL PRIMARY KEY,
+    investor_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    email VARCHAR(255),
+    address TEXT,
+    nid_passport VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_investors_web ON website_investors (website_id, is_active);
+
+DROP TRIGGER IF EXISTS trg_website_investors_updated_at ON website_investors;
+CREATE TRIGGER trg_website_investors_updated_at
+BEFORE UPDATE ON website_investors
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_investments (
+    id SERIAL PRIMARY KEY,
+    investment_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    investor_id INTEGER NOT NULL REFERENCES website_investors(id) ON DELETE CASCADE,
+    amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) DEFAULT 'bank_transfer',
+    reference_no VARCHAR(100),
+    investment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_investments_inv ON website_investments (investor_id);
+CREATE INDEX IF NOT EXISTS idx_website_investments_web ON website_investments (website_id);
+
+CREATE TABLE IF NOT EXISTS website_shares (
+    id SERIAL PRIMARY KEY,
+    share_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    investor_id INTEGER NOT NULL REFERENCES website_investors(id) ON DELETE CASCADE,
+    shares_count NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    share_percentage NUMERIC(6, 2) NOT NULL DEFAULT 0,
+    share_value NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_shares_inv ON website_shares (investor_id);
+CREATE INDEX IF NOT EXISTS idx_website_shares_web ON website_shares (website_id);
+
+CREATE TABLE IF NOT EXISTS website_withdrawals (
+    id SERIAL PRIMARY KEY,
+    withdrawal_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    investor_id INTEGER NOT NULL REFERENCES website_investors(id) ON DELETE CASCADE,
+    amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) DEFAULT 'bank_transfer',
+    reference_no VARCHAR(100),
+    withdrawal_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_withdrawals_inv ON website_withdrawals (investor_id);
+CREATE INDEX IF NOT EXISTS idx_website_withdrawals_web ON website_withdrawals (website_id);
+
+-- ============================================================================
+-- 17. WEBSITE SALARIES & STAFF PAYROLL
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_salaries (
+    id SERIAL PRIMARY KEY,
+    salary_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    title VARCHAR(150) NOT NULL,
+    base_salary NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    bonus NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    allowance NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    deduction NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_salaries_web ON website_salaries (website_id);
+
+DROP TRIGGER IF EXISTS trg_website_salaries_updated_at ON website_salaries;
+CREATE TRIGGER trg_website_salaries_updated_at
+BEFORE UPDATE ON website_salaries
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_staff_salaries (
+    id SERIAL PRIMARY KEY,
+    staff_salary_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    staff_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
+    salary_id INTEGER NOT NULL REFERENCES website_salaries(id) ON DELETE CASCADE,
+    effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_staff_salaries_staff ON website_staff_salaries (staff_id);
+CREATE INDEX IF NOT EXISTS idx_website_staff_salaries_sal ON website_staff_salaries (salary_id);
+CREATE INDEX IF NOT EXISTS idx_website_staff_salaries_web ON website_staff_salaries (website_id);
+
+DROP TRIGGER IF EXISTS trg_website_staff_salaries_updated_at ON website_staff_salaries;
+CREATE TRIGGER trg_website_staff_salaries_updated_at
+BEFORE UPDATE ON website_staff_salaries
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_salary_payments (
+    id SERIAL PRIMARY KEY,
+    payment_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    staff_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
+    staff_salary_id INTEGER REFERENCES website_staff_salaries(id) ON DELETE SET NULL,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    payment_month VARCHAR(50) NOT NULL, -- e.g. 'October 2026'
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'Cash',
+    status VARCHAR(50) NOT NULL DEFAULT 'Paid',
+    transaction_id VARCHAR(100),
+    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    account_details TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_salary_payments_staff ON website_salary_payments (staff_id);
+CREATE INDEX IF NOT EXISTS idx_website_salary_payments_web ON website_salary_payments (website_id);
+
+-- ============================================================================
+-- 18. WEBSITE NOTICES
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_notices (
+    id SERIAL PRIMARY KEY,
+    notice_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    created_by INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    notice_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_notices_web ON website_notices (website_id, notice_date DESC);
+
+DROP TRIGGER IF EXISTS trg_website_notices_updated_at ON website_notices;
+CREATE TRIGGER trg_website_notices_updated_at
+BEFORE UPDATE ON website_notices
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 19. WEBSITE ISSUES & INTERNAL STAFF TICKETS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_issues (
+    id SERIAL PRIMARY KEY,
+    issue_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL REFERENCES website_users(id) ON DELETE CASCADE,
+    receiver_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_issues_web ON website_issues (website_id, status);
+CREATE INDEX IF NOT EXISTS idx_website_issues_receiver ON website_issues (receiver_id);
+
+DROP TRIGGER IF EXISTS trg_website_issues_updated_at ON website_issues;
+CREATE TRIGGER trg_website_issues_updated_at
+BEFORE UPDATE ON website_issues
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- ============================================================================
+-- 20. WEBSITE REVIEWS (Customer product ratings & feedback)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_reviews (
+    id SERIAL PRIMARY KEY,
+    review_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES website_products(id) ON DELETE SET NULL,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_email VARCHAR(255),
+    rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT NOT NULL,
+    is_approved BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_reviews_web ON website_reviews (website_id, is_approved);
+CREATE INDEX IF NOT EXISTS idx_website_reviews_prod ON website_reviews (product_id);
+
+-- ============================================================================
+-- 21. WEBSITE SUPPORT TICKETS & MESSAGING
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_support (
     id SERIAL PRIMARY KEY,
+    support_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     ticket_number VARCHAR(100) NOT NULL,
     user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
@@ -316,10 +842,11 @@ CREATE TABLE IF NOT EXISTS website_support_images (
 CREATE INDEX IF NOT EXISTS idx_website_support_images_sup ON website_support_images (support_id);
 
 -- ============================================================================
--- . WEBSITE CONTACT (Contact inquiries submitted from website website)
+-- 22. WEBSITE CONTACT (Public inquiry messages)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_contact (
     id SERIAL PRIMARY KEY,
+    contact_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email CITEXT NOT NULL,
@@ -342,17 +869,116 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- ============================================================================
--- . WEBSITE OFFERS (Coupons, discount promotions, banner sales)
+-- 23. WEBSITE BALANCE TRANSACTIONS & PROFIT TRANSFERS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_balance_transactions (
+    id SERIAL PRIMARY KEY,
+    tx_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL DEFAULT 'add' CHECK (type IN ('add', 'deduct')),
+    amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(50) DEFAULT 'Cash',
+    reference_no VARCHAR(100),
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_balance_tx_web ON website_balance_transactions (website_id);
+
+CREATE TABLE IF NOT EXISTS website_profit_transfers (
+    id SERIAL PRIMARY KEY,
+    transfer_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    investor_id INTEGER REFERENCES website_investors(id) ON DELETE SET NULL,
+    amount NUMERIC(14, 2) NOT NULL DEFAULT 0,
+    note TEXT,
+    transfer_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_profit_transfers_web ON website_profit_transfers (website_id);
+
+-- ============================================================================
+-- 24. WEBSITE ACTIVITY LOGS & LOGIN LOGS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_activity_logs (
+    id SERIAL PRIMARY KEY,
+    log_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    user_name VARCHAR(255),
+    branch_id INTEGER REFERENCES website_branches(id) ON DELETE SET NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'activity' CHECK (type IN ('activity', 'login')),
+    action VARCHAR(100) NOT NULL, -- e.g. 'LOGIN', 'SALE_COMPLETED', 'STOCK_UPDATE', 'PURCHASE_CREATED'
+    details TEXT,
+    ip_address VARCHAR(100) DEFAULT '127.0.0.1',
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_activity_logs_web ON website_activity_logs (website_id, type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_website_activity_logs_branch ON website_activity_logs (branch_id);
+
+-- ============================================================================
+-- 25. WEBSITE BLOGS & BLOG IMAGES
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS website_blogs (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER GENERATED ALWAYS AS (id) STORED,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    author_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES website_categories(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    excerpt TEXT,
+    content TEXT NOT NULL,
+    cover_image TEXT,
+    tags TEXT[] DEFAULT '{}',
+    is_published BOOLEAN NOT NULL DEFAULT TRUE,
+    published_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    views_count INTEGER NOT NULL DEFAULT 0,
+    seo_title VARCHAR(255),
+    seo_description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_website_blogs_web_slug UNIQUE (website_id, slug)
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_blogs_web ON website_blogs (website_id, is_published);
+CREATE INDEX IF NOT EXISTS idx_website_blogs_slug ON website_blogs (website_id, slug);
+
+DROP TRIGGER IF EXISTS trg_website_blogs_updated_at ON website_blogs;
+CREATE TRIGGER trg_website_blogs_updated_at
+BEFORE UPDATE ON website_blogs
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+CREATE TABLE IF NOT EXISTS website_blog_images (
+    id SERIAL PRIMARY KEY,
+    blog_id INTEGER NOT NULL REFERENCES website_blogs(id) ON DELETE CASCADE,
+    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    alt_text VARCHAR(255),
+    caption TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_website_blog_images_blog ON website_blog_images (blog_id);
+
+-- ============================================================================
+-- 26. WEBSITE OFFERS (Promotional discounts and coupons)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS website_offers (
     id SERIAL PRIMARY KEY,
+    offer_id INTEGER GENERATED ALWAYS AS (id) STORED,
     website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     code VARCHAR(50) NOT NULL,
     discount_type VARCHAR(20) NOT NULL DEFAULT 'PERCENTAGE' CHECK (discount_type IN ('PERCENTAGE', 'FIXED')),
     discount_value NUMERIC(10, 2) NOT NULL DEFAULT 10,
-    min_order_amount_in_cents INTEGER DEFAULT 0,
-    max_discount_amount_in_cents INTEGER,
+    min_order_amount NUMERIC(12, 2) DEFAULT 0,
+    max_discount_amount NUMERIC(12, 2),
     usage_limit INTEGER DEFAULT 100,
     usage_count INTEGER NOT NULL DEFAULT 0,
     valid_from TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -370,200 +996,3 @@ CREATE TRIGGER trg_website_offers_updated_at
 BEFORE UPDATE ON website_offers
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE PURCHASE (Customer purchases & orders placed on website)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_purchase (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    order_number VARCHAR(100) NOT NULL,
-    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
-    customer_name VARCHAR(255) NOT NULL,
-    customer_email CITEXT NOT NULL,
-    customer_phone VARCHAR(50),
-    total_amount_in_cents INTEGER NOT NULL DEFAULT 0,
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
-    offer_code VARCHAR(50),
-    discount_amount_in_cents INTEGER DEFAULT 0,
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'REFUNDED')),
-    payment_status VARCHAR(50) NOT NULL DEFAULT 'PAID' CHECK (payment_status IN ('UNPAID', 'PAID', 'REFUNDED')),
-    items JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of [{ product_id, name, price, quantity }]
-    shipping_address JSONB DEFAULT '{}'::jsonb,
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_website_purchase_web_order UNIQUE (website_id, order_number)
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_purchase_web ON website_purchase (website_id, status);
-
-DROP TRIGGER IF EXISTS trg_website_purchase_updated_at ON website_purchase;
-CREATE TRIGGER trg_website_purchase_updated_at
-BEFORE UPDATE ON website_purchase
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE PURCHASE PAYMENTS (Transactions related to website orders)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_purchase_payments (
-    id SERIAL PRIMARY KEY,
-    purchase_id INTEGER NOT NULL REFERENCES website_purchase(id) ON DELETE CASCADE,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    amount_in_cents INTEGER NOT NULL DEFAULT 0,
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
-    payment_method VARCHAR(50) NOT NULL DEFAULT 'CARD',
-    transaction_id VARCHAR(255) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'SUCCESS',
-    gateway_response JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_payments_purchase ON website_purchase_payments (purchase_id);
-CREATE INDEX IF NOT EXISTS idx_website_payments_web ON website_purchase_payments (website_id);
-
--- ============================================================================
--- . WEBSITE APPOINTMENTS (Booking schedule for services / consultations)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_appointments (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES website_users(id) ON DELETE SET NULL,
-    client_name VARCHAR(255) NOT NULL,
-    client_email CITEXT NOT NULL,
-    client_phone VARCHAR(50),
-    service_name VARCHAR(255) NOT NULL,
-    appointment_date DATE NOT NULL,
-    time_slot VARCHAR(50) NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED')),
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_appointments_web ON website_appointments (website_id, status);
-CREATE INDEX IF NOT EXISTS idx_website_appointments_date ON website_appointments (website_id, appointment_date);
-
-DROP TRIGGER IF EXISTS trg_website_appointments_updated_at ON website_appointments;
-CREATE TRIGGER trg_website_appointments_updated_at
-BEFORE UPDATE ON website_appointments
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE EXPERIENCES (Portfolio timeline, roles, employment history)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_experiences (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    role_title VARCHAR(255) NOT NULL,
-    organization VARCHAR(255) NOT NULL,
-    organization_url TEXT,
-    location VARCHAR(255),
-    start_date DATE,
-    end_date DATE,
-    is_current BOOLEAN NOT NULL DEFAULT FALSE,
-    description TEXT,
-    skills_used TEXT[] DEFAULT '{}',
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_experiences_web ON website_experiences (website_id, sort_order ASC);
-
-DROP TRIGGER IF EXISTS trg_website_experiences_updated_at ON website_experiences;
-CREATE TRIGGER trg_website_experiences_updated_at
-BEFORE UPDATE ON website_experiences
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE GALLERY (Portfolio media showcase)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_gallery (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    caption TEXT,
-    category VARCHAR(100) DEFAULT 'Portfolio',
-    image_url TEXT NOT NULL,
-    thumbnail_url TEXT,
-    media_type VARCHAR(20) NOT NULL DEFAULT 'IMAGE', -- 'IMAGE', 'VIDEO'
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_featured BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_gallery_web ON website_gallery (website_id, sort_order ASC);
-
-DROP TRIGGER IF EXISTS trg_website_gallery_updated_at ON website_gallery;
-CREATE TRIGGER trg_website_gallery_updated_at
-BEFORE UPDATE ON website_gallery
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE SERVICES (Services provided by the creator/brand)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_services (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL,
-    description TEXT,
-    icon VARCHAR(100) DEFAULT 'BiCodeAlt',
-    price_starting_at INTEGER DEFAULT 0,
-    currency VARCHAR(10) DEFAULT 'USD',
-    features JSONB DEFAULT '[]'::jsonb,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_website_services_web_slug UNIQUE (website_id, slug)
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_services_web ON website_services (website_id, is_active);
-
-DROP TRIGGER IF EXISTS trg_website_services_updated_at ON website_services;
-CREATE TRIGGER trg_website_services_updated_at
-BEFORE UPDATE ON website_services
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp();
-
--- ============================================================================
--- . WEBSITE TESTIMONIALS (Client reviews and endorsements)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_testimonials (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    client_name VARCHAR(255) NOT NULL,
-    client_role VARCHAR(255),
-    company VARCHAR(255),
-    avatar_url TEXT,
-    quote TEXT NOT NULL,
-    rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
-    is_featured BOOLEAN NOT NULL DEFAULT TRUE,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_testimonials_web ON website_testimonials (website_id, is_featured);
-
--- ============================================================================
--- . WEBSITE SKILLS (Technical/professional skills for portfolio)
--- ============================================================================
-CREATE TABLE IF NOT EXISTS website_skills (
-    id SERIAL PRIMARY KEY,
-    website_id INTEGER NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    category VARCHAR(100) DEFAULT 'Technical',
-    proficiency INTEGER NOT NULL DEFAULT 90 CHECK (proficiency >= 0 AND proficiency <= 100),
-    icon VARCHAR(100),
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_website_skills_web ON website_skills (website_id, sort_order ASC);

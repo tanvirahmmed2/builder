@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import {
   BiLoaderAlt,
   BiGridAlt,
 } from 'react-icons/bi';
-import AppUpdateForm from '@/components/developer/forms/AppUpdateForm';
+import AppUpdateForm from '@/components/saas/developer/forms/AppUpdateForm';
 
 export default function AppDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -26,7 +26,7 @@ export default function AppDetailPage({ params }) {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`/api/developer/apps/${encodeURIComponent(slug)}`);
+      const res = await fetch(`/api/saas/developer/apps/${encodeURIComponent(slug)}`);
       const data = await res.json();
       if (data.success && data.app) {
         setApp(data.app);
@@ -52,7 +52,7 @@ export default function AppDetailPage({ params }) {
 
     try {
       setDeleting(true);
-      const res = await fetch(`/api/developer/apps/${encodeURIComponent(slug)}`, {
+      const res = await fetch(`/api/saas/developer/apps/${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
       const data = await res.json();

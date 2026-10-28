@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ export default function CreatorPaymentInvoicePage({ params }) {
   useEffect(() => {
     let isMounted = true;
     if (creatorId && paymentId) {
-      fetch(`/api/creator/payments?id=${paymentId}&creatorId=${creatorId}`)
+      fetch(`/api/saas/creator/payments?id=${paymentId}&creatorId=${creatorId}`)
         .then((res) => res.json())
         .then((data) => {
           if (!isMounted) return;

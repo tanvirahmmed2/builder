@@ -36,7 +36,7 @@ export default function SingleBlogPage({ params }) {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`/api/blogs?slug=${encodeURIComponent(slug)}`);
+        const res = await fetch(`/api/saas/home/blogs?slug=${encodeURIComponent(slug)}`);
         const data = await res.json();
         if (data.success && data.blog) {
           setBlog(data.blog);

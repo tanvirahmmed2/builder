@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
 import Link from 'next/link';
@@ -34,7 +34,7 @@ export default function AdminPackagesPage() {
     try {
       setCreating(true);
       setFeedback(null);
-      const res = await fetch('/api/developer/packages', {
+      const res = await fetch('/api/saas/developer/packages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,7 +77,7 @@ export default function AdminPackagesPage() {
   const fetchPackages = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/packages');
+      const res = await fetch('/api/saas/developer/packages');
       const data = await res.json();
       if (data.success) {
         setPackages(data.records || []);
@@ -91,7 +91,7 @@ export default function AdminPackagesPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/developer/packages')
+    fetch('/api/saas/developer/packages')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
@@ -118,7 +118,7 @@ export default function AdminPackagesPage() {
     }
     setTogglingId(pkg.id);
     try {
-      const res = await fetch('/api/developer/packages', {
+      const res = await fetch('/api/saas/developer/packages', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: pkg.id }),
@@ -149,7 +149,7 @@ export default function AdminPackagesPage() {
     }
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/packages', {
+      const res = await fetch('/api/saas/developer/packages', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

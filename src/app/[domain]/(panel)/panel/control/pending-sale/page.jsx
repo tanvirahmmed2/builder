@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useContext, useRef } from 'react'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'

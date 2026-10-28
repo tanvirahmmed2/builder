@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiPlus, 
   BiSearch, 
@@ -23,7 +23,7 @@ export default function DashboardManagerBrandsPage() {
 
   const fetchBrands = async () => {
     try {
-      const res = await axios.get('/api/brand')
+      const res = await axios.get('/api/brands')
       setBrands(res.data)
     } catch (err) {
       toast.error('Failed to load brands')
@@ -43,7 +43,7 @@ export default function DashboardManagerBrandsPage() {
     }
     setDeletingId(id)
     try {
-      await axios.delete(`/api/brand/${id}`)
+      await axios.delete(`/api/brands/${id}`)
       toast.success('Brand deleted successfully')
       fetchBrands()
     } catch (err) {

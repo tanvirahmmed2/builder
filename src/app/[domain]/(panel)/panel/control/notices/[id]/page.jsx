@@ -4,7 +4,7 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import {
   BiArrowBack,
   BiCalendar,

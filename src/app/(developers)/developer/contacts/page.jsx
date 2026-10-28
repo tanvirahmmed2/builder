@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext, useCallback } from 'react';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ export default function AdminContactsPage() {
   const fetchContacts = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) setLoading(true);
-      const res = await fetch('/api/developer/contacts');
+      const res = await fetch('/api/saas/developer/contacts');
       const data = await res.json();
       if (data.success) {
         setContacts(data.records || []);
@@ -63,7 +63,7 @@ export default function AdminContactsPage() {
 
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/contacts/${id}`, {
+      const res = await fetch(`/api/saas/developer/contacts/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { printPriceTags } from '@/lib/printpricetag'
 import { 
   BiTag, 

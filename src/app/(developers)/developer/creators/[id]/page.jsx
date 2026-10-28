@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext, use } from 'react';
 import Link from 'next/link';
@@ -51,7 +51,7 @@ export default function CreatorDetailsPage({ params }) {
     try {
       if (isRefresh) setLoading(true);
       setError(null);
-      const res = await fetch(`/api/developer/creators/${creatorId}`);
+      const res = await fetch(`/api/saas/developer/creators/${creatorId}`);
       const json = await res.json();
       if (json.success) {
         setData(json);
@@ -72,7 +72,7 @@ export default function CreatorDetailsPage({ params }) {
       return;
     }
 
-    fetch(`/api/developer/creators/${creatorId}`)
+    fetch(`/api/saas/developer/creators/${creatorId}`)
       .then((res) => res.json())
       .then((json) => {
         if (!ignore) {
@@ -101,7 +101,7 @@ export default function CreatorDetailsPage({ params }) {
     if (!creatorId || !data?.creator) return;
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/developer/creators/${creatorId}`, {
+      const res = await fetch(`/api/saas/developer/creators/${creatorId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toggle_active: true }),

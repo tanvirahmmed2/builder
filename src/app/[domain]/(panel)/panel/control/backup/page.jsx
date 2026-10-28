@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useContext } from 'react'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import toast from 'react-hot-toast'
 import { 
   BiCloudDownload, 

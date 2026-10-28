@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
 import { Context } from '@/components/helper/Context';
@@ -17,7 +17,7 @@ import {
   BiInfoCircle,
   BiLockAlt,
 } from 'react-icons/bi';
-import FeatureForm from '@/components/developer/forms/FeatureForm';
+import FeatureForm from '@/components/saas/developer/forms/FeatureForm';
 
 export default function AdminFeaturesPage() {
   const { user } = useContext(Context) || {};
@@ -36,7 +36,7 @@ export default function AdminFeaturesPage() {
   const fetchFeatures = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/features');
+      const res = await fetch('/api/saas/developer/features');
       const data = await res.json();
       if (data.success) {
         setFeatures(data.records || []);
@@ -87,7 +87,7 @@ export default function AdminFeaturesPage() {
     }
     setDeletingId(id);
     try {
-      const res = await fetch('/api/developer/features', {
+      const res = await fetch('/api/saas/developer/features', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import {
   BiPlus,
   BiLoaderAlt,

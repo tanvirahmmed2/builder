@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ export default function CreatorSingleProjectPage() {
     try {
       if (showLoading) setLoading(true);
       setError('');
-      const res = await fetch(`/api/creator/projects/${projectId}?creatorId=${creatorId}`);
+      const res = await fetch(`/api/saas/creator/projects/${projectId}?creatorId=${creatorId}`);
       const data = await res.json();
       if (data.success && data.project) {
         setProject(data.project);
@@ -104,7 +104,7 @@ export default function CreatorSingleProjectPage() {
     setSendingReply(true);
 
     try {
-      const res = await fetch(`/api/creator/projects/${projectId}`, {
+      const res = await fetch(`/api/saas/creator/projects/${projectId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

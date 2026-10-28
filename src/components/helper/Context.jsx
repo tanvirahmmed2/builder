@@ -13,6 +13,7 @@ export const ContextProvider = ({ children }) => {
   const [creator, setCreator] = useState(null);
   const [creatorLoading, setCreatorLoading] = useState(true);
   const [theme, setThemeState] = useState('light'); // default 'light'
+  const [dashSidebar, setDashSidebar] = useState(true);
 
   // Initialize theme on client mount
   useEffect(() => {
@@ -58,15 +59,24 @@ export const ContextProvider = ({ children }) => {
 
   const fetchUser = useCallback(async () => {
     try {
-      const res = await axios.get('/api/developer/me', {
+      // First try platform developer auth
+      const res = await axios.get('/api/saas/developer/me', {
         withCredentials: true,
       });
       if (res.data?.success && res.data?.user) {
         setUser(res.data.user);
         return res.data.user;
       }
-      setUser(null);
     } catch (_) {
+      // If developer session not found, try website staff session
+      try {
+        const staffRes = await axios.get('/api/staff', { withCredentials: true });
+        if (staffRes.data?.success && (staffRes.data?.user || staffRes.data?.staff)) {
+          const staffUser = staffRes.data.user || staffRes.data.staff;
+          setUser(staffUser);
+          return staffUser;
+        }
+      } catch (_) {}
       setUser(null);
     } finally {
       setLoading(false);
@@ -75,7 +85,7 @@ export const ContextProvider = ({ children }) => {
 
   const fetchCreator = useCallback(async () => {
     try {
-      const res = await axios.get('/api/creator/me', {
+      const res = await axios.get('/api/saas/creator/me', {
         withCredentials: true,
       });
       if (res.data?.success && res.data?.creator) {
@@ -92,7 +102,7 @@ export const ContextProvider = ({ children }) => {
 
   const fetchApps = useCallback(async () => {
     try {
-      const res = await axios.get('/api/apps');
+      const res = await axios.get('/api/saas/home/apps');
       if (res.data?.success && Array.isArray(res.data?.apps)) {
         const formatted = res.data.apps.map((app) => ({
           ...app,
@@ -107,7 +117,7 @@ export const ContextProvider = ({ children }) => {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const res = await axios.get('/api/reviews');
+      const res = await axios.get('/api/saas/home/reviews');
       if (res.data?.success && Array.isArray(res.data?.reviews)) {
         setReviews(res.data.reviews);
       }
@@ -128,6 +138,9 @@ export const ContextProvider = ({ children }) => {
     setTheme,
     toggleTheme,
     isDark: theme === 'dark',
+    dashSidebar,
+    setDashSidebar,
+    toggleDashSidebar: () => setDashSidebar((prev) => !prev),
     reviews,
     setReviews,
     apps,
@@ -135,6 +148,8 @@ export const ContextProvider = ({ children }) => {
     refetchApps: fetchApps,
     user,
     setUser,
+    staff: user,
+    setStaff: setUser,
     loading,
     setLoading,
     refetchUser: fetchUser,

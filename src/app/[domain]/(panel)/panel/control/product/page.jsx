@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiPlus, 
   BiSearch, 
@@ -33,7 +33,7 @@ export default function DashboardManagerProductPage() {
       const [prodRes, catRes, brandRes] = await Promise.all([
         axios.get('/api/product'),
         axios.get('/api/category'),
-        axios.get('/api/brand')
+        axios.get('/api/brands')
       ])
       setProducts(prodRes.data)
       setCategories(catRes.data)

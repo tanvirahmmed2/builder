@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useCreator } from '../layout';
@@ -30,7 +30,7 @@ export default function CreatorProfilePage() {
     setErr('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

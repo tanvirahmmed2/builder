@@ -1,0 +1,38 @@
+{
+  "common": {
+    "brand": "BuilderSaaS",
+    "translate": "Traducir",
+    "choose_language": "Seleccionar idioma",
+    "switch_dark": "Oscuro",
+    "switch_light": "Claro",
+    "product_of": "Un producto de",
+    "all_rights_reserved": "Todos los derechos reservados.",
+    "privacy_policy": "Política de privacidad",
+    "terms_of_service": "Términos del servicio"
+  },
+  "nav": {
+    "home": "Inicio",
+    "features": "Características",
+    "templates": "Plantillas",
+    "pricing": "Precios",
+    "solutions": "Soluciones",
+    "login": "Iniciar sesión",
+    "get_started": "Comenzar gratis",
+    "dashboard": "Panel"
+  },
+  "footer": {
+    "solutions_title": "Soluciones",
+    "portfolio": "Sitios web de portafolio",
+    "ecommerce": "Comercio electrónico multitienda",
+    "restaurant": "Restaurante y POS en la nube",
+    "organization": "Equipo y Organización",
+    "resources_title": "Recursos",
+    "docs": "Documentación",
+    "api": "Referencia de API",
+    "status": "Estado del sistema",
+    "company_title": "Empresa",
+    "about": "Sobre nosotros",
+    "careers": "Empleos",
+    "contact": "Contacto"
+  }
+}

@@ -22,7 +22,7 @@ export default function FaqsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/faqs');
+      const res = await fetch('/api/saas/home/faqs');
       const data = await res.json();
       if (data?.success && Array.isArray(data?.faqs)) {
         setFaqs(data.faqs);
@@ -38,7 +38,7 @@ export default function FaqsPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/faqs')
+    fetch('/api/saas/home/faqs')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;

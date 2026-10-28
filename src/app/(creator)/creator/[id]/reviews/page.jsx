@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -40,7 +40,7 @@ export default function CreatorReviewsPage() {
     try {
       if (showLoading) setLoading(true);
       setErrorMsg('');
-      const res = await fetch('/api/creator/reviews');
+      const res = await fetch('/api/saas/creator/reviews');
       const data = await res.json();
       if (data.success) {
         setSubscriptions(data.subscriptions || []);
@@ -58,7 +58,7 @@ export default function CreatorReviewsPage() {
 
   useEffect(() => {
     let ignore = false;
-    fetch('/api/creator/reviews')
+    fetch('/api/saas/creator/reviews')
       .then((res) => res.json())
       .then((data) => {
         if (!ignore && data.success) {
@@ -100,7 +100,7 @@ export default function CreatorReviewsPage() {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/creator/reviews', {
+      const res = await fetch('/api/saas/creator/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

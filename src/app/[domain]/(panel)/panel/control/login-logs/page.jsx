@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiKey, 
   BiSearch, 
@@ -29,7 +29,7 @@ export default function DashboardLoginLogsPage() {
   const fetchBranches = async () => {
     if (user?.role === 'admin') {
       try {
-        const res = await axios.get('/api/branch')
+        const res = await axios.get('/api/branches')
         setBranches(res.data || [])
       } catch (err) {
         console.error('Failed to fetch branches:', err)

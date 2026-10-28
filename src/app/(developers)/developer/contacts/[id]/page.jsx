@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext, useCallback, use } from 'react';
 import Link from 'next/link';
@@ -47,7 +47,7 @@ export default function ContactDetailPage({ params }) {
     try {
       if (showLoading) setLoading(true);
       setError('');
-      const res = await fetch(`/api/developer/contacts/${contactId}`);
+      const res = await fetch(`/api/saas/developer/contacts/${contactId}`);
       const data = await res.json();
       if (data.success && data.contact) {
         setContact(data.contact);
@@ -80,7 +80,7 @@ export default function ContactDetailPage({ params }) {
 
     setReplySending(true);
     try {
-      const res = await fetch('/api/developer/contacts/reply', {
+      const res = await fetch('/api/saas/developer/contacts/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +117,7 @@ export default function ContactDetailPage({ params }) {
 
     setDeleting(true);
     try {
-      const res = await fetch(`/api/developer/contacts/${contact.id}`, {
+      const res = await fetch(`/api/saas/developer/contacts/${contact.id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

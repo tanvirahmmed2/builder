@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -37,7 +37,7 @@ function CheckoutContent() {
     async function checkCreatorSession() {
       setCheckingAuth(true);
       try {
-        const res = await fetch('/api/creator/auth', {
+        const res = await fetch('/api/saas/creator/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'me' }),
@@ -59,7 +59,7 @@ function CheckoutContent() {
 
   // 2. Fetch available packages
   useEffect(() => {
-    fetch('/api/packages')
+    fetch('/api/saas/home/packages')
       .then((res) => res.json())
       .then((data) => {
         const list = data.packages || [];
@@ -104,7 +104,7 @@ function CheckoutContent() {
 
     try {
       // Create UNPAID purchase and UNPAID payment invoice
-      const res = await fetch('/api/creator/purchases', {
+      const res = await fetch('/api/saas/creator/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

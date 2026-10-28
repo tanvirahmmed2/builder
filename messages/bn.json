@@ -1,0 +1,38 @@
+{
+  "common": {
+    "brand": "BuilderSaaS",
+    "translate": "অনুবাদ করুন",
+    "choose_language": "ভাষা নির্বাচন করুন",
+    "switch_dark": "ডার্ক",
+    "switch_light": "লাইট",
+    "product_of": "একটি পণ্য",
+    "all_rights_reserved": "সর্বস্বত্ব সংরক্ষিত।",
+    "privacy_policy": "গোপনীয়তা নীতি",
+    "terms_of_service": "ব্যবহারের শর্তাবলী"
+  },
+  "nav": {
+    "home": "হোম",
+    "features": "বৈশিষ্ট্যসমূহ",
+    "templates": "টেমপ্লেট",
+    "pricing": "মূল্যতালিকা",
+    "solutions": "সমাধানসমূহ",
+    "login": "লগইন",
+    "get_started": "শুরু করুন",
+    "dashboard": "ড্যাশবোর্ড"
+  },
+  "footer": {
+    "solutions_title": "সমাধানসমূহ",
+    "portfolio": "পোর্টফোলিও ওয়েবসাইট",
+    "ecommerce": "মাল্টি-স্টোর ই-কমার্স",
+    "restaurant": "রেস্তোরাঁ ও ক্লাউড পিওএস",
+    "organization": "দল ও প্রতিষ্ঠান",
+    "resources_title": "রিসোর্স",
+    "docs": "ডকুমেন্টেশন",
+    "api": "এপিআই রেফারেন্স",
+    "status": "সিস্টেম স্ট্যাটাস",
+    "company_title": "কোম্পানি",
+    "about": "আমাদের সম্পর্কে",
+    "careers": "ক্যারিয়ার",
+    "contact": "যোগাযোগ"
+  }
+}

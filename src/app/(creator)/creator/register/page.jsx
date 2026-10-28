@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BiLoaderAlt, BiUserPlus, BiEnvelope, BiBuilding, BiPhone, BiLockAlt, BiUser } from 'react-icons/bi';
-import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
+import CreatorAuthLayout from '@/components/saas/creator/CreatorAuthLayout';
 
 export default function CreatorRegisterPage() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function CreatorRegisterPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,7 +61,7 @@ export default function CreatorRegisterPage() {
     setResendMsg('');
     setError('');
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { BiPalette, BiSearch, BiGridAlt, BiLayer, BiRefresh } from 'react-icons/bi';
-import Theme from '@/components/home/cards/Theme';
+import Theme from '@/components/saas/home/cards/Theme';
 
 export default function ThemesPage() {
   const [themes, setThemes] = useState([]);
@@ -14,7 +14,7 @@ export default function ThemesPage() {
   const fetchThemesAndApps = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/themes');
+      const res = await fetch('/api/saas/home/themes');
       const data = await res.json();
       if (data.success) {
         setThemes(data.themes || []);

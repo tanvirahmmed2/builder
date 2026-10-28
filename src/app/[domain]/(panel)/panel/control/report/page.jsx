@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { STORE_NAME } from '@/lib/secret'
 import { 
   BiFile, 
@@ -110,7 +110,7 @@ export default function ManagerReportPage() {
   const fetchReportData = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/sale/report')
+      const res = await axios.get('/api/report')
       setReportData(res.data)
     } catch (err) {
       console.error('Failed to fetch analytics reports:', err)

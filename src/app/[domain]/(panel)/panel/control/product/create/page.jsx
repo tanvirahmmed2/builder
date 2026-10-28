@@ -3,8 +3,8 @@ import React, { useContext, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import ProductForm from '@/component/manager/ProductForm'
+import { Context } from '@/components/helper/Context'
+import ProductForm from '@/components/website/manager/ProductForm'
 
 export default function ProductCreatePage() {
   const { dashSidebar } = useContext(Context)

@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { BiSearch, BiGridAlt, BiRefresh, BiRocket, BiRightArrowAlt, BiStar } from 'react-icons/bi';
-import HomeAppCard from '@/components/home/cards/AppCard';
+import HomeAppCard from '@/components/saas/home/cards/AppCard';
 
 export default function AppsPage() {
   const [apps, setApps] = useState([]);
@@ -16,7 +16,7 @@ export default function AppsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get('/api/apps');
+      const res = await axios.get('/api/saas/home/apps');
       if (res.data?.success && Array.isArray(res.data?.apps)) {
         setApps(res.data.apps);
       } else {
@@ -32,7 +32,7 @@ export default function AppsPage() {
   useEffect(() => {
     let isMounted = true;
     axios
-      .get('/api/apps')
+      .get('/api/saas/home/apps')
       .then((res) => {
         if (!isMounted) return;
         if (res.data?.success && Array.isArray(res.data?.apps)) {

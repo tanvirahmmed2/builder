@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -35,7 +35,7 @@ export default function CreatorTicketsPage() {
     setErr('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

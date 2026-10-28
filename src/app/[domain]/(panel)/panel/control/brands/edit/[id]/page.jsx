@@ -3,8 +3,8 @@ import React, { useContext, useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import BrandForm from '@/component/manager/BrandForm'
+import { Context } from '@/components/helper/Context'
+import BrandForm from '@/components/website/manager/BrandForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function BrandEditPage() {
@@ -21,7 +21,7 @@ export default function BrandEditPage() {
     if (!id) return
     const fetchBrand = async () => {
       try {
-        const res = await axios.get(`/api/brand/${id}`)
+        const res = await axios.get(`/api/brands/${id}`)
         setBrand(res.data)
       } catch (err) {
         toast.error('Failed to load brand details')
@@ -36,7 +36,7 @@ export default function BrandEditPage() {
   const handleSubmit = async (formData) => {
     setLoading(true)
     try {
-      await axios.put(`/api/brand/${id}`, formData, {
+      await axios.put(`/api/brands/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Brand updated successfully')

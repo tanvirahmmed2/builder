@@ -1,16 +1,16 @@
-'use client';
+﻿'use client';
 
 import { useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BiLoaderAlt, BiShieldX, BiArrowBack } from 'react-icons/bi';
 import { Context } from '@/components/helper/Context';
-import Navbar from '@/components/developer/Navbar';
-import Sidebar from '@/components/developer/Sidebar';
+import Navbar from '@/components/saas/developer/Navbar';
+import Sidebar from '@/components/saas/developer/Sidebar';
 
 /**
  * @deprecated ROLE_PERMISSIONS is deprecated in favor of dynamic permissions stored in the database
- * and returned by authenticateStaff / /api/developer/me. Retained solely as a fallback for unmigrated sessions.
+ * and returned by authenticateStaff / /api/saas/developer/me. Retained solely as a fallback for unmigrated sessions.
  */
 export const ROLE_PERMISSIONS = {
   admin: [

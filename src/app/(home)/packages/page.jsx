@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import {
   BiChevronLeft,
   BiChevronRight,
 } from 'react-icons/bi';
-import Package from '@/components/home/cards/Package';
+import Package from '@/components/saas/home/cards/Package';
 
 function AppPackageRow({ app, packages, billingCycle, currency }) {
   const scrollRef = useRef(null);
@@ -172,7 +172,7 @@ export default function PackagesPage() {
   const fetchPackagesAndApps = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/packages');
+      const res = await fetch('/api/saas/home/packages');
       const data = await res.json();
       if (data.success && Array.isArray(data.packages)) {
         const mapped = data.packages.map((p, idx) => {
@@ -232,7 +232,7 @@ export default function PackagesPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/packages')
+    fetch('/api/saas/home/packages')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;

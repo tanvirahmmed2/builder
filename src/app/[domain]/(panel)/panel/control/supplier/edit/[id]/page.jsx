@@ -3,8 +3,8 @@ import React, { useContext, useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import SupplierForm from '@/component/manager/SupplierForm'
+import { Context } from '@/components/helper/Context'
+import SupplierForm from '@/components/website/manager/SupplierForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function SupplierEditPage() {

@@ -31,7 +31,7 @@ function PoliciesContent() {
     async function loadPolicies() {
       try {
         setLoading(true);
-        const res = await fetch('/api/policies');
+        const res = await fetch('/api/saas/home/policies');
         const data = await res.json();
         if (data.success && Array.isArray(data.policies)) {
           setPolicies(data.policies);

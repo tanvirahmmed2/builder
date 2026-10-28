@@ -33,7 +33,7 @@ export default function TutorialsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/tutorials');
+      const res = await fetch('/api/saas/home/tutorials');
       const data = await res.json();
       if (data?.success && Array.isArray(data?.tutorials)) {
         setTutorials(data.tutorials);
@@ -49,7 +49,7 @@ export default function TutorialsPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/tutorials')
+    fetch('/api/saas/home/tutorials')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;

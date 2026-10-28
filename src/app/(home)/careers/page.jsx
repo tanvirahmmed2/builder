@@ -31,7 +31,7 @@ export default function CareersPage() {
     async function loadCareers() {
       try {
         setLoading(true);
-        const res = await fetch('/api/careers');
+        const res = await fetch('/api/saas/home/careers');
         const data = await res.json();
         if (data.success) {
           setCareers(data.careers || []);

@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'

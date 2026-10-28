@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { BiSearch, BiPlus, BiMinus, BiTrash, BiRefresh } from 'react-icons/bi';
-import WebsiteForm from '@/components/developer/forms/WebsiteForm';
+import WebsiteForm from '@/components/saas/developer/forms/WebsiteForm';
 
 export default function AdminWebsitesPage() {
   const [websites, setWebsites] = useState([]);
@@ -14,7 +14,7 @@ export default function AdminWebsitesPage() {
   const fetchWebsites = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/websites');
+      const res = await fetch('/api/saas/developer/websites');
       const data = await res.json();
       if (data.success) {
         setWebsites(data.records || []);
@@ -34,7 +34,7 @@ export default function AdminWebsitesPage() {
     if (!confirm('Are you sure you want to delete this website?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/websites?id=${id}`, {
+      const res = await fetch(`/api/saas/developer/websites?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -101,7 +101,7 @@ export default function AdminWebsitesPage() {
 
       {showForm && (
         <WebsiteForm
-          apiEndpoint="/api/developer/websites"
+          apiEndpoint="/api/saas/developer/websites"
           onSuccess={() => {
             setShowForm(false);
             fetchWebsites();

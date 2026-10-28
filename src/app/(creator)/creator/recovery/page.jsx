@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { BiCheckCircle, BiLoaderAlt, BiKey, BiEnvelope, BiArrowBack, BiLockAlt } from 'react-icons/bi';
-import CreatorAuthLayout from '@/components/creator/CreatorAuthLayout';
+import CreatorAuthLayout from '@/components/saas/creator/CreatorAuthLayout';
 
 export default function CreatorRecoveryPage() {
   const [step, setStep] = useState(1); // 1: Request Code, 2: Reset Password, 3: Completed
@@ -30,7 +30,7 @@ export default function CreatorRecoveryPage() {
     setMsg('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'recover', email: email.trim() }),
@@ -72,7 +72,7 @@ export default function CreatorRecoveryPage() {
     setMsg('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +104,7 @@ export default function CreatorRecoveryPage() {
     setMsg('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'recover', email: email.trim() }),

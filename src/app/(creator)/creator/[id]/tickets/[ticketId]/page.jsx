@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -46,7 +46,7 @@ export default function CreatorSingleTicketPage() {
     try {
       if (showLoading) setLoading(true);
       setError('');
-      const res = await fetch(`/api/creator/tickets/${ticketId}`);
+      const res = await fetch(`/api/saas/creator/tickets/${ticketId}`);
       const data = await res.json();
       if (data.success && data.ticket) {
         setTicket(data.ticket);
@@ -92,7 +92,7 @@ export default function CreatorSingleTicketPage() {
     setSendingReply(true);
 
     try {
-      const res = await fetch(`/api/creator/tickets/${ticketId}`, {
+      const res = await fetch(`/api/saas/creator/tickets/${ticketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

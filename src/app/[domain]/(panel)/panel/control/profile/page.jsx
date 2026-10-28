@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiUser, 
   BiMailSend, 

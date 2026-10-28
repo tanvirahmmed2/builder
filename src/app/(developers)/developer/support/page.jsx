@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext, useCallback } from 'react';
 import Link from 'next/link';
@@ -39,7 +39,7 @@ export default function AdminSupportPage() {
   const fetchTickets = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) setLoading(true);
-      const res = await fetch('/api/developer/support');
+      const res = await fetch('/api/saas/developer/support');
       const data = await res.json();
       if (data.success) {
         setTickets(data.records || []);
@@ -66,7 +66,7 @@ export default function AdminSupportPage() {
 
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/support/${id}`, {
+      const res = await fetch(`/api/saas/developer/support/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

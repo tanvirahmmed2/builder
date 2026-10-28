@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { 
@@ -44,7 +44,7 @@ export default function AdminBranchesPage() {
   const fetchBranches = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/branch')
+      const res = await axios.get('/api/branches')
       setBranches(res.data)
     } catch (err) {
       console.error('Error fetching branches:', err)
@@ -112,10 +112,10 @@ export default function AdminBranchesPage() {
 
     try {
       if (editingBranch) {
-        const res = await axios.put(`/api/branch/${editingBranch.branch_id}`, formData)
+        const res = await axios.put(`/api/branches/${editingBranch.branch_id}`, formData)
         toast.success(res.data.message || 'Branch updated successfully!', { id: toastId })
       } else {
-        const res = await axios.post('/api/branch', formData)
+        const res = await axios.post('/api/branches', formData)
         toast.success(res.data.message || 'Branch created successfully!', { id: toastId })
       }
       fetchBranches()
@@ -133,7 +133,7 @@ export default function AdminBranchesPage() {
 
     const toastId = toast.loading('Deleting branch...')
     try {
-      const res = await axios.delete(`/api/branch/${branchId}`)
+      const res = await axios.delete(`/api/branches/${branchId}`)
       toast.success(res.data.message || 'Branch deleted successfully!', { id: toastId })
       fetchBranches()
     } catch (error) {
@@ -147,7 +147,7 @@ export default function AdminBranchesPage() {
     const toastId = toast.loading(`${newStatus ? 'Activating' : 'Deactivating'} branch...`)
 
     try {
-      const res = await axios.put(`/api/branch/${branch.branch_id}`, {
+      const res = await axios.put(`/api/branches/${branch.branch_id}`, {
         ...branch,
         is_active: newStatus
       })

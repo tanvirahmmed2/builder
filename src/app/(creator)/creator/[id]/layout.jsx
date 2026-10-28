@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import CreatorNavbar from '@/components/creator/Navbar';
-import CreatorSidebar from '@/components/creator/Sidebar';
+import CreatorNavbar from '@/components/saas/creator/Navbar';
+import CreatorSidebar from '@/components/saas/creator/Sidebar';
 import { BiLoaderAlt, BiPlus, BiX, BiDesktop, BiCheckCircle } from 'react-icons/bi';
 
 export const CreatorContext = createContext(null);
@@ -48,7 +48,7 @@ export default function CreatorLayout({ children, params }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/creator?creatorId=${creatorId}`);
+      const res = await fetch(`/api/saas/creator?creatorId=${creatorId}`);
       const json = await res.json();
       if (json.success && json.creator) {
         if (Number(creatorId) !== json.creator.id) {
@@ -69,7 +69,7 @@ export default function CreatorLayout({ children, params }) {
 
   useEffect(() => {
     let ignore = false;
-    fetch(`/api/creator?creatorId=${creatorId}`)
+    fetch(`/api/saas/creator?creatorId=${creatorId}`)
       .then((res) => res.json())
       .then((json) => {
         if (!ignore) {
@@ -105,7 +105,7 @@ export default function CreatorLayout({ children, params }) {
     setCreateSuccess('');
 
     try {
-      const res = await fetch('/api/creator', {
+      const res = await fetch('/api/saas/creator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

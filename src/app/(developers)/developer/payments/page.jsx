@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ import {
   BiReceipt,
   BiShieldQuarter,
 } from 'react-icons/bi';
-import PaymentForm from '@/components/developer/forms/PaymentForm';
+import PaymentForm from '@/components/saas/developer/forms/PaymentForm';
 
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState([]);
@@ -35,7 +35,7 @@ export default function AdminPaymentsPage() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/payments');
+      const res = await fetch('/api/saas/developer/payments');
       const data = await res.json();
       if (data.success) {
         setPayments(data.records || []);
@@ -49,7 +49,7 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     let ignore = false;
-    fetch('/api/developer/payments')
+    fetch('/api/saas/developer/payments')
       .then((res) => res.json())
       .then((data) => {
         if (!ignore && data.success) {
@@ -74,7 +74,7 @@ export default function AdminPaymentsPage() {
 
     setUpdatingId(payment.id);
     try {
-      const res = await fetch('/api/developer/payments', {
+      const res = await fetch('/api/saas/developer/payments', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +105,7 @@ export default function AdminPaymentsPage() {
 
     setUpdatingId(editingPayment.id);
     try {
-      const res = await fetch('/api/developer/payments', {
+      const res = await fetch('/api/saas/developer/payments', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +134,7 @@ export default function AdminPaymentsPage() {
     if (!confirm('Are you sure you want to delete this payment record?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/payments?id=${id}`, {
+      const res = await fetch(`/api/saas/developer/payments?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -238,7 +238,7 @@ export default function AdminPaymentsPage() {
 
       {showForm && (
         <PaymentForm
-          apiEndpoint="/api/developer/payments"
+          apiEndpoint="/api/saas/developer/payments"
           onSuccess={() => {
             setShowForm(false);
             fetchPayments();

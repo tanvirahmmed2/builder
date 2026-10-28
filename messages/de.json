@@ -1,0 +1,38 @@
+{
+  "common": {
+    "brand": "BuilderSaaS",
+    "translate": "Übersetzen",
+    "choose_language": "Sprache wählen",
+    "switch_dark": "Dunkel",
+    "switch_light": "Hell",
+    "product_of": "Ein Produkt von",
+    "all_rights_reserved": "Alle Rechte vorbehalten.",
+    "privacy_policy": "Datenschutzrichtlinie",
+    "terms_of_service": "Nutzungsbedingungen"
+  },
+  "nav": {
+    "home": "Startseite",
+    "features": "Funktionen",
+    "templates": "Vorlagen",
+    "pricing": "Preise",
+    "solutions": "Lösungen",
+    "login": "Anmelden",
+    "get_started": "Jetzt starten",
+    "dashboard": "Dashboard"
+  },
+  "footer": {
+    "solutions_title": "Lösungen",
+    "portfolio": "Portfolio-Websites",
+    "ecommerce": "Multi-Store E-Commerce",
+    "restaurant": "Restaurant & Cloud-Kassensystem",
+    "organization": "Team & Organisation",
+    "resources_title": "Ressourcen",
+    "docs": "Dokumentation",
+    "api": "API-Referenz",
+    "status": "Systemstatus",
+    "company_title": "Unternehmen",
+    "about": "Über uns",
+    "careers": "Karriere",
+    "contact": "Kontakt"
+  }
+}

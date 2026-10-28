@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiArrowBack, 
   BiUser, 
@@ -36,7 +36,7 @@ export default function CreateNewUserPage() {
   })
 
   useEffect(() => {
-    axios.get('/api/branch')
+    axios.get('/api/branches')
       .then(res => setBranches(res.data))
       .catch(err => console.error('Failed to fetch branches:', err))
   }, [])

@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiSearch, 
   BiUser, 
@@ -28,7 +28,7 @@ export default function DashboardAdminPeoplePage() {
     try {
       const [peopleRes, branchRes] = await Promise.all([
         axios.get('/api/people'),
-        axios.get('/api/branch').catch(() => ({ data: [] }))
+        axios.get('/api/branches').catch(() => ({ data: [] }))
       ])
       setUsers(peopleRes.data)
       setBranches(branchRes.data || [])

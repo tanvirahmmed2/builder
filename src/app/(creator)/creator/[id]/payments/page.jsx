@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -56,7 +56,7 @@ function PaymentsContent() {
     setPaying(true);
     setPayError('');
     try {
-      const res = await fetch('/api/creator/payments', {
+      const res = await fetch('/api/saas/creator/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

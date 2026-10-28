@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import {
   BiLoaderAlt,
   BiPalette,
 } from 'react-icons/bi';
-import ThemeForm from '@/components/developer/forms/ThemeForm';
+import ThemeForm from '@/components/saas/developer/forms/ThemeForm';
 
 export default function ThemeDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -26,7 +26,7 @@ export default function ThemeDetailPage({ params }) {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`/api/developer/themes/${encodeURIComponent(slug)}`);
+      const res = await fetch(`/api/saas/developer/themes/${encodeURIComponent(slug)}`);
       const data = await res.json();
       if (data.success && data.record) {
         setTheme(data.record);
@@ -52,7 +52,7 @@ export default function ThemeDetailPage({ params }) {
 
     try {
       setDeleting(true);
-      const res = await fetch(`/api/developer/themes/${encodeURIComponent(slug)}`, {
+      const res = await fetch(`/api/saas/developer/themes/${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
       const data = await res.json();

@@ -1,10 +1,11 @@
 'use client'
-import React, { useContext } from 'react'
-import { usePathname } from 'next/navigation'
+import React, { useContext, useEffect } from 'react'
+import { usePathname, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Context } from '@/component/helper/Context'
-import Navbar from '@/component/bars/Navbar'
-import Sidebar from '@/component/bars/Sidebar'
+import axios from 'axios'
+import { Context } from '@/components/helper/Context'
+import Navbar from '@/components/website/bars/Navbar'
+import Sidebar from '@/components/website/bars/Sidebar'
 import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 
 export const ROLE_PERMISSIONS = {
@@ -13,7 +14,7 @@ export const ROLE_PERMISSIONS = {
     'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance', 'notices', 'my-salary'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance', 'notices', 'my-salary'
   ],
   manager: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
@@ -33,6 +34,45 @@ export const ROLE_PERMISSIONS = {
 export default function DashboardLayout({ children }) {
   const { user, loading } = useContext(Context)
   const pathname = usePathname()
+  const params = useParams()
+  const domain = params?.domain || ''
+
+  // Automatically scope all client API requests to the current website domain
+  useEffect(() => {
+    if (!domain) return
+
+    const interceptor = axios.interceptors.request.use((config) => {
+      if (typeof config.url === 'string') {
+        const url = config.url
+        if (
+          url.startsWith('/api/') &&
+          !url.startsWith('/api/saas/') &&
+          !url.startsWith(`/api/${domain}/panel/control/`)
+        ) {
+          config.url = `/api/${domain}/panel/control${url.slice(4)}`
+        }
+      }
+      return config
+    })
+
+    const originalFetch = window.fetch
+    window.fetch = function (url, options) {
+      if (
+        typeof url === 'string' &&
+        url.startsWith('/api/') &&
+        !url.startsWith('/api/saas/') &&
+        !url.startsWith(`/api/${domain}/panel/control/`)
+      ) {
+        url = `/api/${domain}/panel/control${url.slice(4)}`
+      }
+      return originalFetch.call(this, url, options)
+    }
+
+    return () => {
+      axios.interceptors.request.eject(interceptor)
+      window.fetch = originalFetch
+    }
+  }, [domain])
 
   if (loading) {
     return (
@@ -44,10 +84,13 @@ export default function DashboardLayout({ children }) {
   }
 
   const segments = pathname.split('/').filter(Boolean)
-  const moduleName = segments[1] 
+  const controlIdx = segments.indexOf('control')
+  const moduleName = controlIdx !== -1 && segments.length > controlIdx + 1 ? segments[controlIdx + 1] : 'overview'
   const role = user?.role || 'staff'
   const allowedModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff
-  const isAllowed = !moduleName || moduleName === 'profile' || allowedModules.includes(moduleName)
+  const isAllowed = !moduleName || moduleName === 'profile' || moduleName === 'overview' || allowedModules.includes(moduleName)
+
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control'
 
   return (
     <>
@@ -66,7 +109,7 @@ export default function DashboardLayout({ children }) {
               </p>
             </div>
             <Link
-              href="/dashboard"
+              href={`${basePath}/overview`}
               className="mt-2 px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark"
             >
               <BiHome className="text-base" /> Return to Dashboard
@@ -79,3 +122,4 @@ export default function DashboardLayout({ children }) {
     </>
   )
 }
+

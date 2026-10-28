@@ -1,7 +1,7 @@
 'use client'
 import React, { useContext } from 'react'
 import Link from 'next/link'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { ROLE_PERMISSIONS } from '../layout'
 import { 
   BiCart,

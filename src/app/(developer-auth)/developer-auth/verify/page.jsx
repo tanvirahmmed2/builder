@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import AdminVerifyForm from '@/components/developer/forms/AdminVerifyForm';
+import AdminVerifyForm from '@/components/saas/developer-auth/AdminVerifyForm';
 
 export const metadata = {
   title: 'Admin Account Verification | PortfolioCraft SaaS',

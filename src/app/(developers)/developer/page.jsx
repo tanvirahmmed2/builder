@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -39,20 +39,20 @@ export default function AdminOverviewPage() {
         setLoading(true);
 
         // 1. Fetch current logged-in developer profile
-        const devPromise = fetch('/api/developer')
+        const devPromise = fetch('/api/saas/developer')
           .then((r) => r.json())
           .catch(() => ({ success: false }));
 
         // 2. Fetch module records in parallel
         const statsPromises = Promise.allSettled([
-          fetch('/api/developer/devs').then((r) => r.json()),
-          fetch('/api/developer/packages').then((r) => r.json()),
-          fetch('/api/developer/websites').then((r) => r.json()),
-          fetch('/api/developer/blogs').then((r) => r.json()),
-          fetch('/api/developer/support').then((r) => r.json()),
-          fetch('/api/developer/payments').then((r) => r.json()),
-          fetch('/api/developer/leads').then((r) => r.json()),
-          fetch('/api/developer/subscribers').then((r) => r.json()),
+          fetch('/api/saas/developer/devs').then((r) => r.json()),
+          fetch('/api/saas/developer/packages').then((r) => r.json()),
+          fetch('/api/saas/developer/websites').then((r) => r.json()),
+          fetch('/api/saas/developer/blogs').then((r) => r.json()),
+          fetch('/api/saas/developer/support').then((r) => r.json()),
+          fetch('/api/saas/developer/payments').then((r) => r.json()),
+          fetch('/api/saas/developer/leads').then((r) => r.json()),
+          fetch('/api/saas/developer/subscribers').then((r) => r.json()),
         ]);
 
         const [devRes, statsRes] = await Promise.all([devPromise, statsPromises]);

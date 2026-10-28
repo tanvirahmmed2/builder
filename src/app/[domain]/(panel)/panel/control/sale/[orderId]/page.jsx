@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { printReceipt } from '@/lib/printreceipt'
 import { 
   BiReceipt, 

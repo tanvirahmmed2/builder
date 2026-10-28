@@ -3,8 +3,8 @@ import React, { useContext, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import CategoryForm from '@/component/manager/CategoryForm'
+import { Context } from '@/components/helper/Context'
+import CategoryForm from '@/components/website/manager/CategoryForm'
 
 export default function CategoryCreatePage() {
   const { dashSidebar } = useContext(Context)

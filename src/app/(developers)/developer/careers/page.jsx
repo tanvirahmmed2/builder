@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -120,7 +120,7 @@ export default function DeveloperCareersPage() {
       if (search.trim()) params.append('search', search.trim());
       if (statusFilter) params.append('status', statusFilter);
 
-      const res = await fetch(`/api/developer/careers?${params.toString()}`);
+      const res = await fetch(`/api/saas/developer/careers?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setCareers(data.careers || []);
@@ -194,8 +194,8 @@ export default function DeveloperCareersPage() {
     try {
       setSavingJob(true);
       const url = editingJob
-        ? `/api/developer/careers/${editingJob.id}`
-        : '/api/developer/careers';
+        ? `/api/saas/developer/careers/${editingJob.id}`
+        : '/api/saas/developer/careers';
       const method = editingJob ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -226,7 +226,7 @@ export default function DeveloperCareersPage() {
     }
 
     try {
-      const res = await fetch(`/api/developer/careers/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/saas/developer/careers/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         fetchCareers();
@@ -242,7 +242,7 @@ export default function DeveloperCareersPage() {
   // Toggle Publish
   const handleTogglePublish = async (job) => {
     try {
-      const res = await fetch(`/api/developer/careers/${job.id}`, {
+      const res = await fetch(`/api/saas/developer/careers/${job.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -269,7 +269,7 @@ export default function DeveloperCareersPage() {
   const fetchApplications = async (jobId, status = 'ALL') => {
     try {
       setAppsLoading(true);
-      const url = `/api/developer/careers/${jobId}/applications?status=${status}`;
+      const url = `/api/saas/developer/careers/${jobId}/applications?status=${status}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -293,7 +293,7 @@ export default function DeveloperCareersPage() {
   const handleUpdateAppStatus = async (appId, newStatus) => {
     try {
       setUpdatingAppId(appId);
-      const res = await fetch(`/api/developer/careers/applications/${appId}`, {
+      const res = await fetch(`/api/saas/developer/careers/applications/${appId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -322,7 +322,7 @@ export default function DeveloperCareersPage() {
     const note = notesState[appId] || '';
     try {
       setUpdatingAppId(appId);
-      const res = await fetch(`/api/developer/careers/applications/${appId}`, {
+      const res = await fetch(`/api/saas/developer/careers/applications/${appId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reviewer_notes: note }),
@@ -345,7 +345,7 @@ export default function DeveloperCareersPage() {
     if (!window.confirm(`Delete application from ${applicantName}?`)) return;
 
     try {
-      const res = await fetch(`/api/developer/careers/applications/${appId}`, {
+      const res = await fetch(`/api/saas/developer/careers/applications/${appId}`, {
         method: 'DELETE',
       });
       const data = await res.json();

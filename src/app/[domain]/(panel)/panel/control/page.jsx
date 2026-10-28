@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiGridAlt, 
   BiChevronRight, 
@@ -42,7 +42,7 @@ export default function DashboardHomePage() {
     if (user?.branch_name) {
       setBranchName(user.branch_name)
     } else if (user?.branch_id) {
-      axios.get('/api/branch')
+      axios.get('/api/branches')
         .then(res => {
           const list = Array.isArray(res.data) ? res.data : []
           const found = list.find(b => String(b.branch_id) === String(user.branch_id))

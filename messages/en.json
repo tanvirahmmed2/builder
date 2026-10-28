@@ -1,0 +1,38 @@
+{
+  "common": {
+    "brand": "BuilderSaaS",
+    "translate": "Translate",
+    "choose_language": "Choose Language",
+    "switch_dark": "Dark",
+    "switch_light": "Light",
+    "product_of": "A Product of",
+    "all_rights_reserved": "All rights reserved.",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "templates": "Templates",
+    "pricing": "Pricing",
+    "solutions": "Solutions",
+    "login": "Sign In",
+    "get_started": "Get Started",
+    "dashboard": "Dashboard"
+  },
+  "footer": {
+    "solutions_title": "Solutions",
+    "portfolio": "Portfolio Websites",
+    "ecommerce": "Multi-Store E-Commerce",
+    "restaurant": "Restaurant & Cloud POS",
+    "organization": "Team & Organization",
+    "resources_title": "Resources",
+    "docs": "Documentation",
+    "api": "API Reference",
+    "status": "System Status",
+    "company_title": "Company",
+    "about": "About Us",
+    "careers": "Careers",
+    "contact": "Contact Us"
+  }
+}

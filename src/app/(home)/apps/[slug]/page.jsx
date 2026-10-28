@@ -33,7 +33,7 @@ export default function SingleAppPage({ params }) {
       setLoading(true);
       setError('');
       try {
-        const res = await axios.get(`/api/apps?slug=${encodeURIComponent(slug)}`);
+        const res = await axios.get(`/api/saas/home/apps?slug=${encodeURIComponent(slug)}`);
         if (res.data?.success && res.data?.app) {
           setApp(res.data.app);
         } else {

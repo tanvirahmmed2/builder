@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -32,7 +32,7 @@ export default function PurchasesPage() {
   const fetchPurchases = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/purchases');
+      const res = await fetch('/api/saas/developer/purchases');
       const data = await res.json();
       if (data.success) {
         setPurchases(data.records || []);
@@ -46,7 +46,7 @@ export default function PurchasesPage() {
 
   useEffect(() => {
     let ignore = false;
-    fetch('/api/developer/purchases')
+    fetch('/api/saas/developer/purchases')
       .then((res) => res.json())
       .then((data) => {
         if (!ignore && data.success) {
@@ -69,7 +69,7 @@ export default function PurchasesPage() {
 
     setUpdating(true);
     try {
-      const res = await fetch('/api/developer/purchases', {
+      const res = await fetch('/api/saas/developer/purchases', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +98,7 @@ export default function PurchasesPage() {
     if (!confirm(`Are you sure you want to permanently delete purchase order #${id}?`)) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/purchases?id=${id}`, {
+      const res = await fetch(`/api/saas/developer/purchases?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

@@ -3,8 +3,8 @@ import React, { useContext, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
-import BrandForm from '@/component/manager/BrandForm'
+import { Context } from '@/components/helper/Context'
+import BrandForm from '@/components/website/manager/BrandForm'
 
 export default function BrandCreatePage() {
   const { dashSidebar } = useContext(Context)
@@ -14,7 +14,7 @@ export default function BrandCreatePage() {
   const handleSubmit = async (formData) => {
     setLoading(true)
     try {
-      await axios.post('/api/brand', formData, {
+      await axios.post('/api/brands', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Brand created successfully')

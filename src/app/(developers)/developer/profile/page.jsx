@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
@@ -47,7 +47,7 @@ export default function DeveloperProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/profile');
+      const res = await fetch('/api/saas/developer/profile');
       const data = await res.json();
       if (data.success && data.developer) {
         setProfile(data.developer);
@@ -127,7 +127,7 @@ export default function DeveloperProfilePage() {
         payload.newPassword = editForm.newPassword;
       }
 
-      const res = await fetch('/api/developer/profile', {
+      const res = await fetch('/api/saas/developer/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

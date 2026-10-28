@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiChevronLeft, 
   BiPlus, 
@@ -16,7 +16,7 @@ import {
   BiSearch,
   BiStore
 } from 'react-icons/bi'
-import BarScanner from '@/component/helper/BarScanner'
+import BarScanner from '@/components/helper/BarScanner'
 
 export default function PurchaseCreatePage() {
   const { user, dashSidebar, currencySymbol, formatCurrency } = useContext(Context)
@@ -53,7 +53,7 @@ export default function PurchaseCreatePage() {
       try {
         const [supRes, branchRes, balRes] = await Promise.all([
           axios.get('/api/supplier'),
-          axios.get('/api/branch'),
+          axios.get('/api/branches'),
           axios.get('/api/available-balance')
         ])
         const activeSuppliers = supRes.data.filter(s => s.is_active !== false)

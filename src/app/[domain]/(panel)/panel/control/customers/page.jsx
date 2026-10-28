@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import { Context } from '@/component/helper/Context'
+import { Context } from '@/components/helper/Context'
 import { 
   BiSearch, 
   BiUser, 
@@ -25,7 +25,7 @@ export default function ManagerCustomersDirectoryPage() {
     setLoading(true)
     try {
       const searchParam = queryStr ? `?search=${queryStr}` : ''
-      const res = await axios.get(`/api/customer${searchParam}`)
+      const res = await axios.get(`/api/customers${searchParam}`)
       setCustomers(res.data)
     } catch (err) {
       console.error('Failed to fetch customers directory:', err)

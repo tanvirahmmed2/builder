@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ export default function AdminSpamModerationPage() {
   const fetchSpams = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/spams');
+      const res = await fetch('/api/saas/developer/spams');
       const data = await res.json();
       if (data.success) {
         setSpams(data.spams || []);
@@ -30,12 +30,12 @@ export default function AdminSpamModerationPage() {
   const handleAction = async (action, spamId) => {
     try {
       if (action === 'delete_spam') {
-        await fetch(`/api/developer/spams?id=${spamId}`, {
+        await fetch(`/api/saas/developer/spams?id=${spamId}`, {
           method: 'DELETE',
         });
       } else {
         const status = action === 'block_spam' ? 'BLOCKED' : 'RESOLVED';
-        await fetch('/api/developer/spams', {
+        await fetch('/api/saas/developer/spams', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ spamId, status }),

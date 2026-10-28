@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { BiSearch, BiPlus, BiMinus, BiTrash, BiRefresh } from 'react-icons/bi';
-import SubscriptionForm from '@/components/developer/forms/SubscriptionForm';
+import SubscriptionForm from '@/components/saas/developer/forms/SubscriptionForm';
 
 export default function AdminSubscriptionsPage() {
   const [subs, setSubs] = useState([]);
@@ -14,7 +14,7 @@ export default function AdminSubscriptionsPage() {
   const fetchSubs = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/subscriptions');
+      const res = await fetch('/api/saas/developer/subscriptions');
       const data = await res.json();
       if (data.success) {
         setSubs(data.records || []);
@@ -34,7 +34,7 @@ export default function AdminSubscriptionsPage() {
     if (!confirm('Are you sure you want to delete this subscription?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/developer/subscriptions?id=${id}`, {
+      const res = await fetch(`/api/saas/developer/subscriptions?id=${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -100,7 +100,7 @@ export default function AdminSubscriptionsPage() {
 
       {showForm && (
         <SubscriptionForm
-          apiEndpoint="/api/developer/subscriptions"
+          apiEndpoint="/api/saas/developer/subscriptions"
           onSuccess={() => {
             setShowForm(false);
             fetchSubs();

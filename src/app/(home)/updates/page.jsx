@@ -25,7 +25,7 @@ export default function UpdatesPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/updates');
+      const res = await fetch('/api/saas/home/updates');
       const data = await res.json();
       if (data?.success && Array.isArray(data?.updates)) {
         setUpdates(data.updates);
@@ -41,7 +41,7 @@ export default function UpdatesPage() {
 
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/updates')
+    fetch('/api/saas/home/updates')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;

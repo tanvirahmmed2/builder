@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { Suspense, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BiLoaderAlt } from 'react-icons/bi';
-import PaymentGatewayCheckout from '@/components/creator/PaymentGatewayCheckout';
+import PaymentGatewayCheckout from '@/components/saas/creator/PaymentGatewayCheckout';
 
 function PayContent({ params }) {
   const resolvedParams = params && typeof params.then === 'function' ? use(params) : params;

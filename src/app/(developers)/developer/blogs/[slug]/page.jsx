@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import {
   BiLoaderAlt,
   BiFile,
 } from 'react-icons/bi';
-import BlogForm from '@/components/developer/forms/BlogForm';
+import BlogForm from '@/components/saas/developer/forms/BlogForm';
 
 export default function BlogDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -27,7 +27,7 @@ export default function BlogDetailPage({ params }) {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`/api/developer/blogs/${encodeURIComponent(slug)}`);
+      const res = await fetch(`/api/saas/developer/blogs/${encodeURIComponent(slug)}`);
       const data = await res.json();
       if (data.success && data.record) {
         setBlog(data.record);
@@ -35,7 +35,7 @@ export default function BlogDetailPage({ params }) {
         setError(data.error || 'Blog article not found');
       }
 
-      const appsRes = await fetch('/api/developer/apps');
+      const appsRes = await fetch('/api/saas/developer/apps');
       const appsData = await appsRes.json();
       if (appsData.apps) setApps(appsData.apps);
       else if (appsData.records) setApps(appsData.records);
@@ -51,7 +51,7 @@ export default function BlogDetailPage({ params }) {
     let active = true;
     if (!slug) return;
 
-    fetch(`/api/developer/blogs/${encodeURIComponent(slug)}`)
+    fetch(`/api/saas/developer/blogs/${encodeURIComponent(slug)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!active) return;
@@ -68,7 +68,7 @@ export default function BlogDetailPage({ params }) {
         setLoading(false);
       });
 
-    fetch('/api/developer/apps')
+    fetch('/api/saas/developer/apps')
       .then((res) => res.json())
       .then((appsData) => {
         if (!active) return;
@@ -89,7 +89,7 @@ export default function BlogDetailPage({ params }) {
 
     try {
       setDeleting(true);
-      const res = await fetch(`/api/developer/blogs/${encodeURIComponent(slug)}`, {
+      const res = await fetch(`/api/saas/developer/blogs/${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
       const data = await res.json();

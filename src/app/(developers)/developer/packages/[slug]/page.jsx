@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -9,7 +9,7 @@ import {
   BiLoaderAlt,
   BiCube,
 } from 'react-icons/bi';
-import PackageForm from '@/components/developer/forms/PackageForm';
+import PackageForm from '@/components/saas/developer/forms/PackageForm';
 
 export default function PackageDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -25,7 +25,7 @@ export default function PackageDetailPage({ params }) {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`/api/developer/packages/${encodeURIComponent(slug)}`);
+      const res = await fetch(`/api/saas/developer/packages/${encodeURIComponent(slug)}`);
       const data = await res.json();
       if (data.success && data.record) {
         setPkg(data.record);
@@ -42,7 +42,7 @@ export default function PackageDetailPage({ params }) {
 
   useEffect(() => {
     let isMounted = true;
-    fetch(`/api/developer/packages/${encodeURIComponent(slug)}`)
+    fetch(`/api/saas/developer/packages/${encodeURIComponent(slug)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
@@ -73,7 +73,7 @@ export default function PackageDetailPage({ params }) {
 
     try {
       setDeleting(true);
-      const res = await fetch(`/api/developer/packages/${encodeURIComponent(slug)}`, {
+      const res = await fetch(`/api/saas/developer/packages/${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
       const data = await res.json();
