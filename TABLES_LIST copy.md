@@ -1,0 +1,125 @@
+# Database Tables List
+
+### schema.psql (54 tables)
+ 
+1. developers
+2. permissions
+3. roles
+3. role_permissions
+4. developer_roles
+5. session
+6. login_activity
+7. 
+8. 
+9. 
+10. blogs
+11. blogs_image
+12. live_chats
+13. live_chat_messages
+14. contacts
+15. support
+16. support_messages
+17. support_images
+18. creators
+19. creator_sessions
+20. creator_login_activity
+21. services
+22. service_images
+23. service_modules
+24. service_themes
+25. packages
+26. package_modules
+27. purchases
+28. payment
+29. payment_transactions
+30. subscription
+31. websites
+32. tutorials
+33. reports
+34. leads
+35. subscribers
+36. faqs
+37. updates
+38. reviews
+39. payrolls
+40. developer_payrolls
+41. payroll_payments
+42. internal_chats
+43. chat_participants
+44. chat_messages
+45. chat_images
+46. tasks
+47. task_comments
+48. notices
+49. meta_conversations
+50. meta_messages
+51. career
+52. career_application
+53. career_applicants
+54. career_applicant_info
+55. policies
+
+---
+
+### website_tables.psql (44 tables)
+1. website_settings
+2. website_store_branches
+3. website_staffs
+4. website_staff_roles
+5. website_role_permissions
+6. website_staff_sessions
+7. website_staff_login_activity
+8. website_users
+9. website_user_sessions
+10. website_user_login_activity
+11. website_categories
+12. website_brands
+13. website_products
+14. website_product_images
+15. website_product_stocks
+16. website_orders
+17. website_payments
+18. website_payment_transactions
+19. website_supplier
+20. website_suppliers
+21. website_purchases
+22. website_purchase_products
+23. website_purchase_payments
+24. website_expenses
+25. website_expense_items
+26. website_expense_payments
+27. website_investors
+28. website_investments
+29. website_shares
+30. website_withdrawals
+31. website_withdrawal_transactions
+32. website_staff_payrolls
+33. website_salary_payments
+34. website_notices
+35. website_issues
+36. website_reviews
+37. website_support
+38. website_support_messages
+39. website_support_images
+40. website_contacts
+41. website_balance_transactions
+42. website_profit_transfers
+43. website_activity_logs
+44. website_blogs
+45. website_blog_images
+46. website_coupons
+47. website_tutiorials
+48. website_appointments
+49. website_faqs
+50. website_policies
+51. website_payment_gateways
+52. website_payment_gateway_accounts
+53. website_currency
+54. website_awards
+55. website_work_experiences
+55. website_partners
+56. website_videos
+57. website_projects
+58. website_project_images
+59. website_abouts
+60. website_bookings
