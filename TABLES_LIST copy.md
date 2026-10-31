@@ -9,9 +9,6 @@
 4. developer_roles
 5. session
 6. login_activity
-7. 
-8. 
-9. 
 10. blogs
 11. blogs_image
 12. live_chats
