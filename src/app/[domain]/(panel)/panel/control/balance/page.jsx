@@ -1,6 +1,7 @@
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/components/helper/Context'
@@ -22,6 +23,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardBalancePage() {
+  const params = useParams()
+  const domain = params?.domain || ''
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control'
+
   const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [data, setData] = useState({
@@ -105,7 +110,7 @@ export default function DashboardBalancePage() {
               Only Administrators have authorization to access the Balance Management console.
             </p>
           </div>
-          <Link href="/dashboard" className="mt-2 px-6 py-2.5 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark shadow-sm">
+          <Link href={basePath} className="mt-2 px-6 py-2.5 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark shadow-sm">
             <BiHome className="text-base" /> Return to Dashboard
           </Link>
         </div>

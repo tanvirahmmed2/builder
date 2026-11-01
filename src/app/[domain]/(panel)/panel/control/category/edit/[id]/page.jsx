@@ -8,10 +8,13 @@ import CategoryForm from '@/components/website/manager/CategoryForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function CategoryEditPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
-  const params = useParams()
-  const { id } = params
+    const { id } = params
 
   const [category, setCategory] = useState(null)
   const [fetching, setFetching] = useState(true)
@@ -40,7 +43,7 @@ export default function CategoryEditPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Category updated successfully')
-      router.push('/dashboard/category')
+      router.push(`${basePath}/category`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update category')
       console.error(err)

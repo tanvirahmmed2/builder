@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -14,6 +15,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerBrandsPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user } = useContext(Context)
 
   const [brands, setBrands] = useState([])
@@ -72,7 +77,7 @@ export default function DashboardManagerBrandsPage() {
             <p className="text-slate-500 text-xs mt-0.5">Manage product brands and visual store logos.</p>
           </div>
           <Link
-            href="/dashboard/brands/create"
+            href={`${basePath}/brands/create`}
             className="px-4 py-2 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto bg-primary hover:bg-primary-dark"
           >
             <BiPlus className="text-base" /> Create Brand
@@ -128,7 +133,7 @@ export default function DashboardManagerBrandsPage() {
                   <span className="text-[10px] text-slate-400 font-mono">ID: #{brand.brand_id}</span>
                   <div className="flex gap-1">
                     <Link
-                      href={`/dashboard/brands/edit/${brand.brand_id}`}
+                      href={`${basePath}/brands/edit/${brand.brand_id}`}
                       className="p-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition cursor-pointer"
                     >
                       <BiEditAlt />

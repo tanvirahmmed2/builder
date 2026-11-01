@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
 import { Context } from '@/components/helper/Context'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { printReceipt } from '@/lib/printreceipt'
@@ -21,6 +21,10 @@ import {
 } from 'react-icons/bi'
 
 export default function ConfirmedSalesPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const router = useRouter()
   const { dashSidebar, website } = useContext(Context)
 
@@ -296,7 +300,7 @@ export default function ConfirmedSalesPage() {
                             <button
                               onClick={() => {
                                 setOpenMenuId(null)
-                                router.push(`/dashboard/orders/${order.order_id}`)
+                                router.push(`${basePath}/orders/${order.order_id}`)
                               }}
                               className="w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition cursor-pointer"
                             >

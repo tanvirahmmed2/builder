@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -18,6 +19,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardExpensePaymentsPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, formatCurrency } = useContext(Context)
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +85,7 @@ export default function DashboardExpensePaymentsPage() {
             <p className="text-xs text-slate-500 mt-0.5">Comprehensive record of operational expense payments, payment methods, and transaction notes.</p>
           </div>
           <Link
-            href="/dashboard/expenses"
+            href={`${basePath}/expenses`}
             className="bg-primary hover:bg-primary-dark text-white font-bold text-xs px-4 py-2.5 transition cursor-pointer shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto"
           >
             <BiReceipt className="text-base" /> Expense Console
@@ -232,7 +237,7 @@ export default function DashboardExpensePaymentsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href="/dashboard/expenses"
+                          href={`${basePath}/expenses`}
                           title="View Expense Console"
                           className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs inline-block"
                         >

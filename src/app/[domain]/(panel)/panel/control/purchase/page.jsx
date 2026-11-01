@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -19,6 +20,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerPurchasePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, website } = useContext(Context)
   const [purchases, setPurchases] = useState([])
   const [loading, setLoading] = useState(true)
@@ -88,7 +93,7 @@ export default function DashboardManagerPurchasePage() {
             <p className="text-xs text-slate-500 mt-0.5">Record goods ingestion, track supplier billing, and manage payments.</p>
           </div>
           <Link
-            href="/dashboard/purchase/create"
+            href={`${basePath}/purchase/create`}
             className="bg-primary hover:bg-primary-dark text-white font-bold text-xs px-4 py-2.5 transition cursor-pointer shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto"
           >
             <BiPlus className="text-base" /> New Purchase Invoice
@@ -225,7 +230,7 @@ export default function DashboardManagerPurchasePage() {
                               <BiPrinter className="text-base" />
                             </button>
                             <Link
-                              href={`/dashboard/purchase/${purchase.purchase_id}`}
+                              href={`${basePath}/purchase/${purchase.purchase_id}`}
                               title="View Invoice & Payments"
                               className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs"
                             >

@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -19,6 +20,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardLoginLogsPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user } = useContext(Context)
   const [logs, setLogs] = useState([])
   const [branches, setBranches] = useState([])
@@ -103,7 +108,7 @@ export default function DashboardLoginLogsPage() {
           
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <Link
-              href="/dashboard/activity-logs"
+              href={`${basePath}/activity-logs`}
               className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
             >
               <BiShieldQuarter className="text-base text-primary" /> View Activity Logs

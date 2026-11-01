@@ -8,10 +8,13 @@ import ProductForm from '@/components/website/manager/ProductForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function ProductEditPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
-  const params = useParams()
-  const { id } = params
+    const { id } = params
 
   const [product, setProduct] = useState(null)
   const [fetching, setFetching] = useState(true)
@@ -40,7 +43,7 @@ export default function ProductEditPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Product updated successfully')
-      router.push('/dashboard/product')
+      router.push(`${basePath}/product`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update product')
       console.error(err)

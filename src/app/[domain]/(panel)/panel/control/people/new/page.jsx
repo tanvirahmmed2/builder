@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/components/helper/Context'
@@ -18,6 +18,10 @@ import {
 } from 'react-icons/bi'
 
 export default function CreateNewUserPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const router = useRouter()
   const { dashSidebar } = useContext(Context)
 
@@ -84,7 +88,7 @@ export default function CreateNewUserPage() {
       })
 
       toast.success(response.data.message || 'Staff account created successfully!', { id: toastId })
-      router.push('/dashboard/people')
+      router.push(`${basePath}/people`)
     } catch (error) {
       const errorMsg = error.response?.data?.error || 'Failed to create staff account'
       toast.error(errorMsg, { id: toastId })
@@ -99,7 +103,7 @@ export default function CreateNewUserPage() {
         
         <div className="flex items-center justify-between">
           <Link 
-            href="/dashboard/people"
+            href={`${basePath}/people`}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition"
           >
             <BiArrowBack className="text-base" /> Back to Staff Accounts
@@ -274,7 +278,7 @@ export default function CreateNewUserPage() {
 
             <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 mt-2">
               <Link
-                href="/dashboard/people"
+                href={`${basePath}/people`}
                 className="px-5 py-2.5 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition"
               >
                 Cancel

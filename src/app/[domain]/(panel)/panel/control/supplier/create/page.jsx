@@ -1,12 +1,16 @@
 'use client'
 import React, { useContext, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/components/helper/Context'
 import SupplierForm from '@/components/website/manager/SupplierForm'
 
 export default function SupplierCreatePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -16,7 +20,7 @@ export default function SupplierCreatePage() {
     try {
       await axios.post('/api/supplier', supplierData)
       toast.success('Supplier created successfully')
-      router.push('/dashboard/supplier')
+      router.push(`${basePath}/supplier`)
       router.refresh()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create supplier')

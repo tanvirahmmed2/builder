@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -15,6 +16,10 @@ import {
 } from 'react-icons/bi'
 
 export default function ManagerCustomersDirectoryPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [customers, setCustomers] = useState([])
@@ -107,12 +112,12 @@ export default function ManagerCustomersDirectoryPage() {
                 {customers.map(cust => (
                   <tr key={cust.customer_id} className="hover:bg-slate-50 transition">
                     <td className="px-2 sm:px-3 py-3.5 text-center font-bold text-slate-800">
-                      <Link href={`/dashboard/customers/${cust.customer_id}`} className="hover:underline">
+                      <Link href={`${basePath}/customers/${cust.customer_id}`} className="hover:underline">
                         #{cust.customer_id}
                       </Link>
                     </td>
                     <td className="px-2 sm:px-3 py-3.5">
-                      <Link href={`/dashboard/customers/${cust.customer_id}`} className="flex items-center gap-2.5 group">
+                      <Link href={`${basePath}/customers/${cust.customer_id}`} className="flex items-center gap-2.5 group">
                         <div className="w-7 h-7 text-white text-xs font-bold flex items-center justify-center bg-primary">
                           {cust.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>

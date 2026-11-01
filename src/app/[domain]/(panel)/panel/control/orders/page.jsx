@@ -1,7 +1,7 @@
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/components/helper/Context'
@@ -26,6 +26,10 @@ import {
 } from 'react-icons/bi'
 
 export default function OrdersPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const router = useRouter()
   const { dashSidebar, user, loading: userLoading, website } = useContext(Context)
   
@@ -130,7 +134,7 @@ export default function OrdersPage() {
           <BiShieldQuarter className="text-5xl text-rose-500 mx-auto mb-3" />
           <h2 className="text-xl font-bold text-slate-900 mb-1">Access Restricted</h2>
           <p className="text-slate-500 text-sm mb-4">You do not have permission to view orders desk.</p>
-          <Link href="/dashboard" className="inline-block px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">
+          <Link href={basePath} className="inline-block px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold">
             Return to Dashboard
           </Link>
         </div>
@@ -174,7 +178,7 @@ export default function OrdersPage() {
               <BiRefresh className={`text-lg ${loading ? 'animate-spin' : ''}`} />
             </button>
             <Link 
-              href="/dashboard/sale"
+              href={`${basePath}/sale`}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 shadow-sm"
             >
               <BiPlus className="text-base" /> POS Sale
@@ -331,7 +335,7 @@ export default function OrdersPage() {
                               <button
                                 onClick={() => {
                                   setOpenMenuId(null)
-                                  router.push(`/dashboard/orders/${order.order_id}`)
+                                  router.push(`${basePath}/orders/${order.order_id}`)
                                 }}
                                 className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold flex items-center gap-2 cursor-pointer"
                               >

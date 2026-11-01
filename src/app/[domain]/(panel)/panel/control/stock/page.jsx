@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -13,6 +14,10 @@ import {
 } from 'react-icons/bi'
 
 export default function ManagerStockInventoryPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [products, setProducts] = useState([])
@@ -80,7 +85,7 @@ export default function ManagerStockInventoryPage() {
             <p className="text-xs text-slate-500 mt-1">Track physical warehouse listings, check barcodes, purchase price, and restock warning signs.</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/dashboard/manager/purchase/create" className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer bg-primary hover:bg-primary-dark">
+            <Link href={`${basePath}/purchase/create`} className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer bg-primary hover:bg-primary-dark">
               <BiPlusCircle /> Restock Order (Purchase)
             </Link>
           </div>

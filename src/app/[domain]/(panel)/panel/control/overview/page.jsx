@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -21,6 +22,10 @@ import {
 } from 'react-icons/bi'
 
 export default function AdminOverviewPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [stats, setStats] = useState({
@@ -92,7 +97,7 @@ export default function AdminOverviewPage() {
               Only Administrators have authorization to access the Overview dashboard.
             </p>
           </div>
-          <Link href="/dashboard" className="mt-2 px-6 py-2.5 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark shadow-sm">
+          <Link href={basePath} className="mt-2 px-6 py-2.5 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark shadow-sm">
             <BiHome className="text-base" /> Return to Dashboard
           </Link>
         </div>
@@ -125,12 +130,12 @@ export default function AdminOverviewPage() {
   }
 
   const tabs = [
-    { id: 'sales', label: 'Latest Sales', count: stats.latestSales?.length || 0, link: '/dashboard/history' },
-    { id: 'payments', label: 'Order Payments', count: stats.latestPayments?.length || 0, link: '/dashboard/payments' },
-    { id: 'withdrawals', label: 'Withdrawals', count: stats.latestWithdrawals?.length || 0, link: '/dashboard/withdrawals' },
-    { id: 'purchases', label: 'Purchase Payments', count: stats.latestPurchasePayments?.length || 0, link: '/dashboard/purchase-payments' },
-    { id: 'salaries', label: 'Salary Payments', count: stats.latestSalaryPayments?.length || 0, link: '/dashboard/salary-payments' },
-    { id: 'expenses', label: 'Expenses', count: stats.latestExpenses?.length || 0, link: '/dashboard/expenses' }
+    { id: 'sales', label: 'Latest Sales', count: stats.latestSales?.length || 0, link: `${basePath}/history` },
+    { id: 'payments', label: 'Order Payments', count: stats.latestPayments?.length || 0, link: `${basePath}/payments` },
+    { id: 'withdrawals', label: 'Withdrawals', count: stats.latestWithdrawals?.length || 0, link: `${basePath}/withdrawals` },
+    { id: 'purchases', label: 'Purchase Payments', count: stats.latestPurchasePayments?.length || 0, link: `${basePath}/purchase-payments` },
+    { id: 'salaries', label: 'Salary Payments', count: stats.latestSalaryPayments?.length || 0, link: `${basePath}/salary-payments` },
+    { id: 'expenses', label: 'Expenses', count: stats.latestExpenses?.length || 0, link: `${basePath}/expenses` }
   ]
 
   return (
@@ -155,7 +160,7 @@ export default function AdminOverviewPage() {
               <BiRefresh className={`text-xl ${refreshing ? 'animate-spin' : ''}`} />
             </button>
             <Link 
-              href="/dashboard/settings"
+              href={`${basePath}/settings`}
               className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm bg-primary hover:bg-primary-dark"
             >
               <BiCog className="text-base" /> Settings
@@ -305,7 +310,7 @@ export default function AdminOverviewPage() {
                         </td>
                         <td className="hidden md:table-cell px-3 py-2.5 text-center text-slate-500">{formatDate(item.created_at)}</td>
                         <td className="px-3 py-2.5 text-center">
-                          <Link href={`/dashboard/sale/${item.order_id}`} className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold transition">
+                          <Link href={`${basePath}/sale/${item.order_id}`} className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold transition">
                             Details
                           </Link>
                         </td>
@@ -528,27 +533,27 @@ export default function AdminOverviewPage() {
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Link href="/dashboard/history" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/history`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Sales History</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard/payments" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/payments`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Order Payments</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard/withdrawals" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/withdrawals`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Withdrawals</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard/purchase-payments" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/purchase-payments`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Purchase Payments</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard/salary-payments" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/salary-payments`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Salary Payments</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/dashboard/expenses" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
+            <Link href={`${basePath}/expenses`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition font-bold text-xs text-slate-700 flex items-center justify-between group">
               <span>Expenses</span>
               <BiChevronRight className="text-base text-slate-400 group-hover:translate-x-0.5 transition-transform" />
             </Link>

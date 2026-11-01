@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -14,6 +15,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerCategoryPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user } = useContext(Context)
   
   const [categories, setCategories] = useState([])
@@ -73,7 +78,7 @@ export default function DashboardManagerCategoryPage() {
             <p className="text-slate-500 text-xs mt-0.5">Manage and organize store department segments.</p>
           </div>
           <Link
-            href="/dashboard/category/create"
+            href={`${basePath}/category/create`}
             className="px-4 py-2 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto bg-primary hover:bg-primary-dark"
           >
             <BiPlus className="text-base" /> Create Category
@@ -139,7 +144,7 @@ export default function DashboardManagerCategoryPage() {
                     <td className="px-3 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Link
-                          href={`/dashboard/category/edit/${cat.category_id}`}
+                          href={`${basePath}/category/edit/${cat.category_id}`}
                           className="p-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition cursor-pointer"
                         >
                           <BiEditAlt />

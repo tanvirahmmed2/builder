@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -20,6 +20,10 @@ import {
 } from 'react-icons/bi'
 
 export default function CreateWithdrawalPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const router = useRouter()
   const { dashSidebar, currencySymbol } = useContext(Context)
 
@@ -113,7 +117,7 @@ export default function CreateWithdrawalPage() {
       })
 
       toast.success('Withdrawal recorded successfully!')
-      router.push('/dashboard/withdrawals')
+      router.push(`${basePath}/withdrawals`)
     } catch (err) {
       console.error(err)
       toast.error(err.response?.data?.error || 'Failed to record withdrawal')
@@ -141,7 +145,7 @@ export default function CreateWithdrawalPage() {
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard/withdrawals"
+              href={`${basePath}/withdrawals`}
               className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition shadow-xs cursor-pointer"
               title="Back to Withdrawals List"
             >
@@ -402,7 +406,7 @@ export default function CreateWithdrawalPage() {
               {/* Form Action Buttons */}
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
                 <Link
-                  href="/dashboard/withdrawals"
+                  href={`${basePath}/withdrawals`}
                   className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel

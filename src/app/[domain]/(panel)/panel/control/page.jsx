@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -26,6 +27,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardHomePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { user, loading: userLoading, dashSidebar, logout } = useContext(Context)
 
   const [sales, setSales] = useState([])
@@ -160,7 +165,7 @@ export default function DashboardHomePage() {
 
           {/* Module Center CTA Card */}
           <Link
-            href="/dashboard/modules"
+            href={`${basePath}/modules`}
             className="p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition flex items-center justify-between gap-4 group cursor-pointer"
           >
             <div className="flex items-center gap-3">
@@ -186,35 +191,35 @@ export default function DashboardHomePage() {
             <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-3">
               <h2 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Important Admin Shortcuts</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-                <Link href="/dashboard/overview" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/overview`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiHome className="text-lg text-primary" />
                   <span>Overview</span>
                 </Link>
-                <Link href="/dashboard/balance" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/balance`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiWallet className="text-lg text-primary" />
                   <span>Balance</span>
                 </Link>
-                <Link href="/dashboard/product" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/product`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiPackage className="text-lg text-primary" />
                   <span>Products</span>
                 </Link>
-                <Link href="/dashboard/people" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/people`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiUser className="text-lg text-primary" />
                   <span>People</span>
                 </Link>
-                <Link href="/dashboard/history" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/history`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiHistory className="text-lg text-primary" />
                   <span>Sales</span>
                 </Link>
-                <Link href="/dashboard/purchase" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/purchase`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiDollarCircle className="text-lg text-primary" />
                   <span>Purchases</span>
                 </Link>
-                <Link href="/dashboard/report" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/report`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiFile className="text-lg text-primary" />
                   <span>Reports</span>
                 </Link>
-                <Link href="/dashboard/settings" className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
+                <Link href={`${basePath}/settings`} className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 flex flex-col items-center gap-1.5 transition">
                   <BiCog className="text-lg text-primary" />
                   <span>Settings</span>
                 </Link>
@@ -228,7 +233,7 @@ export default function DashboardHomePage() {
               <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-800">Latest Procurement Purchases</h3>
-                  <Link href="/dashboard/purchase" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                  <Link href={`${basePath}/purchase`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                     View All <BiChevronRight />
                   </Link>
                 </div>
@@ -276,7 +281,7 @@ export default function DashboardHomePage() {
               <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-800">Latest Sales Orders</h3>
-                  <Link href="/dashboard/history" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                  <Link href={`${basePath}/history`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                     View All <BiChevronRight />
                   </Link>
                 </div>
@@ -320,7 +325,7 @@ export default function DashboardHomePage() {
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                   <BiShieldQuarter className="text-primary" /> Staff Activity Logs
                 </h3>
-                <Link href="/dashboard/activity-logs" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                <Link href={`${basePath}/activity-logs`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                   View Full Audit <BiChevronRight />
                 </Link>
               </div>
@@ -401,7 +406,7 @@ export default function DashboardHomePage() {
               <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Quick Checkout</p>
-                  <Link href="/dashboard/sale" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition">
+                  <Link href={`${basePath}/sale`} className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition">
                     <BiPlus /> POS Checkout
                   </Link>
                 </div>
@@ -417,7 +422,7 @@ export default function DashboardHomePage() {
               <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-800">Branch Recent Sales</h3>
-                  <Link href="/dashboard/history" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                  <Link href={`${basePath}/history`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                     View Sales <BiChevronRight />
                   </Link>
                 </div>
@@ -456,7 +461,7 @@ export default function DashboardHomePage() {
               <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-800">Branch Staff Activity</h3>
-                  <Link href="/dashboard/activity-logs" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                  <Link href={`${basePath}/activity-logs`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                     View Logs <BiChevronRight />
                   </Link>
                 </div>
@@ -505,13 +510,13 @@ export default function DashboardHomePage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link 
-                  href="/dashboard/sale"
+                  href={`${basePath}/sale`}
                   className="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                 >
                   <BiCart className="text-base" /> Create Invoice Sale
                 </Link>
                 <Link 
-                  href="/dashboard/history"
+                  href={`${basePath}/history`}
                   className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                 >
                   <BiHistory className="text-base" /> Sales History
@@ -523,7 +528,7 @@ export default function DashboardHomePage() {
             <div className="bg-white border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-800">Store Latest Sales Orders</h3>
-                <Link href="/dashboard/orders" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                <Link href={`${basePath}/orders`} className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
                   View Orders <BiChevronRight />
                 </Link>
               </div>

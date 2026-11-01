@@ -8,10 +8,13 @@ import SupplierForm from '@/components/website/manager/SupplierForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function SupplierEditPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
-  const params = useParams()
-  const { id } = params
+    const { id } = params
 
   const [supplier, setSupplier] = useState(null)
   const [fetching, setFetching] = useState(true)
@@ -38,7 +41,7 @@ export default function SupplierEditPage() {
     try {
       await axios.put(`/api/supplier/${id}`, supplierData)
       toast.success('Supplier updated successfully')
-      router.push('/dashboard/supplier')
+      router.push(`${basePath}/supplier`)
       router.refresh()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update supplier')

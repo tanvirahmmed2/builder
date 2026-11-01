@@ -14,12 +14,19 @@ export const ROLE_PERMISSIONS = {
     'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance', 'notices', 'my-salary'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs',
+    'investor', 'investments', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares',
+    'expenses', 'expense-payments', 'profits', 'balance', 'notices', 'my-salary',
+    'portfolio', 'restaurant', 'organization', 'tours', 'real-estate', 'transport',
+    'blogs', 'tutorials', 'coupons', 'loyalty', 'affiliates', 'tali-khata', 'meta-inbox', 'automation', 'media'
   ],
   manager: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'price-tag', 'customers', 'activity-logs', 'login-logs', 'expenses', 'expense-payments', 'notices', 'my-salary'
+    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'price-tag', 'customers',
+    'activity-logs', 'login-logs', 'expenses', 'expense-payments', 'notices', 'my-salary',
+    'portfolio', 'restaurant', 'organization', 'tours', 'real-estate', 'transport',
+    'blogs', 'tutorials', 'coupons', 'loyalty', 'tali-khata', 'meta-inbox', 'media'
   ],
   sales: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',

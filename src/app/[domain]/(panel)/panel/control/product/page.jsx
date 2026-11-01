@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -16,6 +17,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerProductPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user } = useContext(Context)
   
   const [products, setProducts] = useState([])
@@ -92,13 +97,13 @@ export default function DashboardManagerProductPage() {
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <Link
-              href="/dashboard/price-tag"
+              href={`${basePath}/price-tag`}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <BiTag className="text-base" /> Print Price Tags
             </Link>
             <Link
-              href="/dashboard/product/create"
+              href={`${basePath}/product/create`}
               className="px-4 py-2 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-primary hover:bg-primary-dark"
             >
               <BiPlus className="text-base" /> Create Product
@@ -210,7 +215,7 @@ export default function DashboardManagerProductPage() {
                     <td className="px-3 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Link
-                          href={`/dashboard/product/edit/${p.product_id}`}
+                          href={`${basePath}/product/edit/${p.product_id}`}
                           className="p-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition cursor-pointer"
                         >
                           <BiEditAlt />

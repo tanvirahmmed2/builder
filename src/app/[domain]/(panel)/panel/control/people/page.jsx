@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -16,6 +17,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardAdminPeoplePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, user: currentUser } = useContext(Context)
   
   const [users, setUsers] = useState([])
@@ -171,7 +176,7 @@ export default function DashboardAdminPeoplePage() {
           </div>
 
           <Link
-            href="/dashboard/people/new"
+            href={`${basePath}/people/new`}
             className="px-4 py-2.5 text-white text-xs font-bold flex items-center justify-center gap-2 rounded-xl shadow-sm transition hover:bg-primary-dark bg-primary self-start sm:self-auto"
           >
             <BiPlus className="text-lg" />

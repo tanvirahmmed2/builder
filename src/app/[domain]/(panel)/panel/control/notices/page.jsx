@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useEffect, useState, useContext } from 'react'
 import axios from 'axios'
@@ -16,6 +17,10 @@ import {
 } from 'react-icons/bi'
 
 export default function NoticeListPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { user, dashSidebar } = useContext(Context)
   const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(true)
@@ -86,7 +91,7 @@ export default function NoticeListPage() {
 
           {isAdmin && (
             <Link
-              href="/dashboard/notices/create"
+              href={`${basePath}/notices/create`}
               className="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
             >
               <BiPlus className="text-base" /> Create New Notice
@@ -129,7 +134,7 @@ export default function NoticeListPage() {
             </div>
             {isAdmin && (
               <Link
-                href="/dashboard/notices/create"
+                href={`${basePath}/notices/create`}
                 className="mt-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
               >
                 <BiPlus /> Post First Notice
@@ -173,7 +178,7 @@ export default function NoticeListPage() {
 
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                     <Link
-                      href={`/dashboard/notices/${notice.notice_id}`}
+                      href={`${basePath}/notices/${notice.notice_id}`}
                       className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
                     >
                       <BiShow /> Read Notice
@@ -182,7 +187,7 @@ export default function NoticeListPage() {
                     {isAdmin && (
                       <div className="flex items-center gap-1.5">
                         <Link
-                          href={`/dashboard/notices/edit/${notice.notice_id}`}
+                          href={`${basePath}/notices/edit/${notice.notice_id}`}
                           className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition text-sm cursor-pointer"
                           title="Edit Notice"
                         >

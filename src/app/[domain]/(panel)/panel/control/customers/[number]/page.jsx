@@ -26,8 +26,11 @@ import {
 } from 'react-icons/bi'
 
 export default function CustomerProfilePage() {
-  const params = useParams()
-  const customerId = params?.number
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
+    const customerId = params?.number
 
   const { dashSidebar, user, loading: userLoading } = useContext(Context)
 
@@ -153,7 +156,7 @@ export default function CustomerProfilePage() {
           <BiUser className="text-5xl text-slate-400 mx-auto" />
           <h1 className="text-xl font-bold text-slate-800">Customer Not Found</h1>
           <p className="text-slate-500 text-xs">No client record matches ID #{customerId}.</p>
-          <Link href="/dashboard/customers" className="mt-2 px-6 py-2.5 bg-slate-900 text-white text-xs font-bold transition shadow-sm">
+          <Link href={`${basePath}/customers`} className="mt-2 px-6 py-2.5 bg-slate-900 text-white text-xs font-bold transition shadow-sm">
             Back to Customer Directory
           </Link>
         </div>
@@ -173,7 +176,7 @@ export default function CustomerProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div className="flex items-center gap-3">
             <Link 
-              href="/dashboard/customers" 
+              href={`${basePath}/customers`} 
               className="p-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition shadow-sm"
               title="Back to Customer Directory"
             >
@@ -342,7 +345,7 @@ export default function CustomerProfilePage() {
                           <tr className="hover:bg-slate-50 transition">
                             <td className="px-3 md:px-4 py-3.5">
                               <Link 
-                                href={`/dashboard/sale/${ord.order_id}`}
+                                href={`${basePath}/sale/${ord.order_id}`}
                                 className="font-bold font-mono hover:underline block text-primary"
                               >
                                 #ORD-{ord.order_id}
@@ -394,7 +397,7 @@ export default function CustomerProfilePage() {
                                   {itemsList.length} Items {isExpanded ? <BiChevronUp /> : <BiChevronDown />}
                                 </button>
                                 <Link 
-                                  href={`/dashboard/sale/${ord.order_id}`}
+                                  href={`${basePath}/sale/${ord.order_id}`}
                                   className="p-1 text-slate-500 hover:text-slate-900 border border-slate-200 bg-white hover:bg-slate-100 transition"
                                   title="View Order Invoice"
                                 >

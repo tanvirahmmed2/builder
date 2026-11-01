@@ -41,7 +41,21 @@ import {
   BiCloudDownload,
   BiUser,
   BiLogOut,
-  BiX
+  BiX,
+  BiBriefcase,
+  BiDish,
+  BiCompass,
+  BiBuildingHouse,
+  BiBus,
+  BiNews,
+  BiBookOpen,
+  BiPurchaseTag,
+  BiGift,
+  BiShareAlt,
+  BiBookBookmark,
+  BiMessageRoundedDots,
+  BiBoltCircle,
+  BiImage
 } from 'react-icons/bi';
 
 const NAV_SECTIONS = [
@@ -50,12 +64,24 @@ const NAV_SECTIONS = [
     items: [
       { slug: 'overview', label: 'Admin Overview', icon: BiHome, path: 'overview' },
       { slug: 'sale', label: 'POS Terminal', icon: BiCart, path: 'sale' },
+      { slug: 'orders', label: 'Order Processing', icon: BiListUl, path: 'orders' },
       { slug: 'pending-sale', label: 'Pending Sales', icon: BiTimeFive, path: 'pending-sale' },
       { slug: 'confirmed-sale', label: 'Confirmed Sales', icon: BiCheckCircle, path: 'confirmed-sale' },
       { slug: 'out_for_delivery', label: 'Out For Delivery', icon: BiShoppingBag, path: 'out_for_delivery' },
       { slug: 'completed-sale', label: 'Completed Sales', icon: BiCheckCircle, path: 'completed-sale' },
       { slug: 'history', label: 'Sales History', icon: BiHistory, path: 'history' },
       { slug: 'return', label: 'Returns', icon: BiUndo, path: 'return' },
+    ]
+  },
+  {
+    title: 'Specialized Modules',
+    items: [
+      { slug: 'portfolio', label: 'Portfolio Showcase', icon: BiBriefcase, path: 'portfolio' },
+      { slug: 'restaurant', label: 'Restaurant & POS/KDS', icon: BiDish, path: 'restaurant' },
+      { slug: 'organization', label: 'Organization & HR', icon: BiBuilding, path: 'organization' },
+      { slug: 'tours', label: 'Tours & Travel', icon: BiCompass, path: 'tours' },
+      { slug: 'real-estate', label: 'Real Estate & Units', icon: BiBuildingHouse, path: 'real-estate' },
+      { slug: 'transport', label: 'Transport & Fleet', icon: BiBus, path: 'transport' },
     ]
   },
   {
@@ -69,6 +95,23 @@ const NAV_SECTIONS = [
     ]
   },
   {
+    title: 'Marketing & Omnichannel',
+    items: [
+      { slug: 'coupons', label: 'Discount Coupons', icon: BiPurchaseTag, path: 'coupons' },
+      { slug: 'loyalty', label: 'Customer Loyalty', icon: BiGift, path: 'loyalty' },
+      { slug: 'affiliates', label: 'Affiliates & Referrals', icon: BiShareAlt, path: 'affiliates' },
+      { slug: 'meta-inbox', label: 'Meta & Social Inbox', icon: BiMessageRoundedDots, path: 'meta-inbox' },
+    ]
+  },
+  {
+    title: 'Content & Media',
+    items: [
+      { slug: 'blogs', label: 'Articles & Blogs', icon: BiNews, path: 'blogs' },
+      { slug: 'tutorials', label: 'Tutorials & Guides', icon: BiBookOpen, path: 'tutorials' },
+      { slug: 'media', label: 'Media Library', icon: BiImage, path: 'media' },
+    ]
+  },
+  {
     title: 'Purchases & CRM',
     items: [
       { slug: 'purchase', label: 'Supplier Purchases', icon: BiShoppingBag, path: 'purchase' },
@@ -78,9 +121,10 @@ const NAV_SECTIONS = [
     ]
   },
   {
-    title: 'Finance & Accounts',
+    title: 'Finance, Ledger & Tali',
     items: [
       { slug: 'balance', label: 'Balance & Ledger', icon: BiWallet, path: 'balance' },
+      { slug: 'tali-khata', label: 'Tali Khata Ledger', icon: BiBookBookmark, path: 'tali-khata' },
       { slug: 'available-balance', label: 'Available Balance', icon: BiMoney, path: 'available-balance' },
       { slug: 'profits', label: 'Profits & Transfers', icon: BiTrendingUp, path: 'profits' },
       { slug: 'expenses', label: 'Expenses', icon: BiReceipt, path: 'expenses' },
@@ -117,6 +161,7 @@ const NAV_SECTIONS = [
     items: [
       { slug: 'settings', label: 'Console Settings', icon: BiCog, path: 'settings' },
       { slug: 'modules', label: 'Active Modules', icon: BiGridAlt, path: 'modules' },
+      { slug: 'automation', label: 'Automation & Hooks', icon: BiBoltCircle, path: 'automation' },
       { slug: 'activity-logs', label: 'Activity Logs', icon: BiListUl, path: 'activity-logs' },
       { slug: 'login-logs', label: 'Login Logs', icon: BiShieldCheck, path: 'login-logs' },
       { slug: 'backup', label: 'Database Backup', icon: BiCloudDownload, path: 'backup' },

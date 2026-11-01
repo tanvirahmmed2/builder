@@ -1,6 +1,6 @@
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -19,6 +19,10 @@ import {
 import BarScanner from '@/components/helper/BarScanner'
 
 export default function PurchaseCreatePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { user, dashSidebar, currencySymbol, formatCurrency } = useContext(Context)
   const router = useRouter()
   
@@ -252,7 +256,7 @@ export default function PurchaseCreatePage() {
 
       await axios.post('/api/purchase', payload)
       toast.success('Purchase invoice created successfully!')
-      router.push('/dashboard/purchase')
+      router.push(`${basePath}/purchase`)
       router.refresh()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create purchase invoice')
@@ -281,7 +285,7 @@ export default function PurchaseCreatePage() {
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         
         <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
-          <Link href="/dashboard/purchase" className="p-2 hover:bg-white text-slate-500 hover:text-slate-800 rounded-xl transition border border-transparent hover:border-slate-200">
+          <Link href={`${basePath}/purchase`} className="p-2 hover:bg-white text-slate-500 hover:text-slate-800 rounded-xl transition border border-transparent hover:border-slate-200">
             <BiChevronLeft className="text-xl" />
           </Link>
           <div>
@@ -347,7 +351,7 @@ export default function PurchaseCreatePage() {
                       ))}
                     </select>
                     <Link
-                      href="/dashboard/supplier/create"
+                      href={`${basePath}/supplier/create`}
                       target="_blank"
                       title="Add New Supplier"
                       className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-650 rounded-xl border border-slate-200 transition flex items-center justify-center"
@@ -723,7 +727,7 @@ export default function PurchaseCreatePage() {
                   )}
                 </button>
                 <Link
-                  href="/dashboard/purchase"
+                  href={`${basePath}/purchase`}
                   className="w-full py-2.5 border border-slate-200 text-center text-slate-600 hover:bg-slate-50 rounded-xl text-sm font-semibold transition"
                 >
                   Cancel

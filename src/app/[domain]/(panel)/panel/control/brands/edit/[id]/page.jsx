@@ -8,10 +8,13 @@ import BrandForm from '@/components/website/manager/BrandForm'
 import { BiLoaderAlt } from 'react-icons/bi'
 
 export default function BrandEditPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
-  const params = useParams()
-  const { id } = params
+    const { id } = params
 
   const [brand, setBrand] = useState(null)
   const [fetching, setFetching] = useState(true)
@@ -40,7 +43,7 @@ export default function BrandEditPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Brand updated successfully')
-      router.push('/dashboard/brands')
+      router.push(`${basePath}/brands`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update brand')
       console.error(err)

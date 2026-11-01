@@ -22,8 +22,11 @@ import {
 } from 'react-icons/bi'
 
 export default function POSOrderDetailPage() {
-  const params = useParams()
-  const router = useRouter()
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
+    const router = useRouter()
   const orderId = params.orderId
 
   const { user, loading: userLoading, dashSidebar, website } = useContext(Context)
@@ -67,7 +70,7 @@ export default function POSOrderDetailPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
           <div className="flex items-center gap-2">
             <Link 
-              href="/dashboard/sale" 
+              href={`${basePath}/sale`} 
               className="p-1.5 border border-slate-200 hover:bg-slate-100 bg-white rounded-lg text-slate-650 transition cursor-pointer flex items-center justify-center"
             >
               <BiChevronLeft className="text-lg" />
@@ -89,7 +92,7 @@ export default function POSOrderDetailPage() {
               <BiRefresh className={loading ? 'animate-spin' : ''} />
             </button>
             <Link 
-              href="/dashboard/sale"
+              href={`${basePath}/sale`}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
             >
               <BiPlus className="text-sm" /> New POS Sale

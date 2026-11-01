@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -18,6 +19,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerSupplierPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   
   const [suppliers, setSuppliers] = useState([])
@@ -78,7 +83,7 @@ export default function DashboardManagerSupplierPage() {
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">Manage external product suppliers, contacts, and metadata.</p>
           </div>
           <Link
-            href="/dashboard/supplier/create"
+            href={`${basePath}/supplier/create`}
             className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer self-start sm:self-auto bg-primary hover:bg-primary-dark"
           >
             <BiPlus className="text-base" /> Create Supplier
@@ -163,7 +168,7 @@ export default function DashboardManagerSupplierPage() {
                     <td className="px-3 md:px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Link
-                          href={`/dashboard/supplier/edit/${supplier.supplier_id}`}
+                          href={`${basePath}/supplier/edit/${supplier.supplier_id}`}
                           className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition border border-transparent"
                         >
                           <BiEditAlt className="text-base" />

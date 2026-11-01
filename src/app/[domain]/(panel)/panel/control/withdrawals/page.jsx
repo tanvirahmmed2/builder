@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -22,6 +23,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardWithdrawalsPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, formatCurrency, currencySymbol } = useContext(Context)
   const [withdrawals, setWithdrawals] = useState([])
   const [investors, setInvestors] = useState([])
@@ -123,7 +128,7 @@ export default function DashboardWithdrawalsPage() {
               <BiRefresh className={`text-lg ${loading ? 'animate-spin' : ''}`} />
             </button>
             <Link
-              href="/dashboard/withdrawals/create"
+              href={`${basePath}/withdrawals/create`}
               className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-amber-700 transition cursor-pointer"
             >
               <BiPlus className="text-lg" /> Record Withdrawal

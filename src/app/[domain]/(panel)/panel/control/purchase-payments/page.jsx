@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -18,6 +19,10 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardPurchasePaymentsPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, formatCurrency } = useContext(Context)
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +85,7 @@ export default function DashboardPurchasePaymentsPage() {
             <p className="text-xs text-slate-500 mt-0.5">Track supplier payment histories, transaction references, and procurement disbursements.</p>
           </div>
           <Link
-            href="/dashboard/purchase"
+            href={`${basePath}/purchase`}
             className="bg-primary hover:bg-primary-dark text-white font-bold text-xs px-4 py-2.5 transition cursor-pointer shadow-sm flex items-center justify-center gap-1.5 self-start sm:self-auto"
           >
             <BiReceipt className="text-base" /> Purchase Invoices
@@ -193,7 +198,7 @@ export default function DashboardPurchasePaymentsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <Link
-                          href={`/dashboard/purchase/${pm.purchase_id}`}
+                          href={`${basePath}/purchase/${pm.purchase_id}`}
                           className="font-bold text-primary hover:underline text-xs"
                         >
                           {pm.invoice_no ? `#${pm.invoice_no}` : `INV-PR-${pm.purchase_id}`}
@@ -235,7 +240,7 @@ export default function DashboardPurchasePaymentsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={`/dashboard/purchase/${pm.purchase_id}`}
+                          href={`${basePath}/purchase/${pm.purchase_id}`}
                           title="View Invoice & Details"
                           className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs inline-block"
                         >

@@ -22,10 +22,13 @@ import {
 import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
 export default function PurchaseDetailPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, currencySymbol, formatCurrency, website } = useContext(Context)
   const router = useRouter()
-  const params = useParams()
-  const { id } = params
+    const { id } = params
 
   const [purchase, setPurchase] = useState(null)
   const [fetching, setFetching] = useState(true)
@@ -63,7 +66,7 @@ export default function PurchaseDetailPage() {
     try {
       await axios.delete(`/api/purchase/${id}`)
       toast.success('Purchase invoice deleted successfully')
-      router.push('/dashboard/purchase')
+      router.push(`${basePath}/purchase`)
       router.refresh()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to delete purchase invoice')
@@ -136,7 +139,7 @@ export default function PurchaseDetailPage() {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/purchase" className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800 shadow-xs">
+            <Link href={`${basePath}/purchase`} className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800 shadow-xs">
               <BiChevronLeft className="text-xl" />
             </Link>
             <div>

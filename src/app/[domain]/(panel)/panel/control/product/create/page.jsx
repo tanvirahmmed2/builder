@@ -1,12 +1,16 @@
 'use client'
 import React, { useContext, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter , useParams } from 'next/navigation'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/components/helper/Context'
 import ProductForm from '@/components/website/manager/ProductForm'
 
 export default function ProductCreatePage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar } = useContext(Context)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -18,7 +22,7 @@ export default function ProductCreatePage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Product created successfully')
-      router.push('/dashboard/product')
+      router.push(`${basePath}/product`)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create product')
       console.error(err)

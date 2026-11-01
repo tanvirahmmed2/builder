@@ -1,3 +1,4 @@
+import { useParams } from 'next/navigation';
 'use client'
 import React, { useState, useEffect, useContext } from 'react'
 import Link from 'next/link'
@@ -19,6 +20,10 @@ import {
 import { toast } from 'react-hot-toast'
 
 export default function ExpensesPage() {
+  const params = useParams();
+  const domain = params?.domain || '';
+  const basePath = domain ? `/${domain}/panel/control` : '/panel/control';
+
   const { dashSidebar, formatCurrency } = useContext(Context)
   const [expenses, setExpenses] = useState([])
   const [availableBalance, setAvailableBalance] = useState(0)
@@ -253,7 +258,7 @@ export default function ExpensesPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/dashboard/expense-payments"
+              href={`${basePath}/expense-payments`}
               className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               <BiDollarCircle className="text-base text-primary" /> Expense Payments Ledger
