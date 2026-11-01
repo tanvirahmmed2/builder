@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { BiPalette, BiCheck, BiX } from 'react-icons/bi';
 
 export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
-  const [apps, setApps] = useState([]);
+  const [services, setServices] = useState([]);
   const [formData, setFormData] = useState({
     app_id: initialData?.app_id || '',
     name: initialData?.name || initialData?.title || '',
@@ -38,18 +38,18 @@ export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
   }, [initialData]);
 
   useEffect(() => {
-    async function loadApps() {
+    async function loadServices() {
       try {
-        const res = await fetch('/api/saas/home/apps');
+        const res = await fetch('/api/saas/home/services');
         const data = await res.json();
         if (data.success) {
-          setApps(data.apps || []);
+          setServices(data.services || data.apps || []);
         }
       } catch (e) {
         console.error('Failed to load apps:', e);
       }
     }
-    loadApps();
+    loadServices();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -61,6 +61,7 @@ export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
       ...formData,
       id: initialData?.id,
       title: formData.name,
+      service_id: formData.app_id ? Number(formData.app_id) : null,
       app_id: formData.app_id ? Number(formData.app_id) : null,
     };
     delete payload.slug;
@@ -140,16 +141,16 @@ export default function ThemeForm({ initialData = null, onSuccess, onCancel }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Target Application</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Target Ecosystem Service</label>
             <select
               value={formData.app_id || ''}
               onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
               className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
             >
-              <option value="">General / All Apps</option>
-              {apps.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.title}
+              <option value="">General / All Services</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.title}
                 </option>
               ))}
             </select>

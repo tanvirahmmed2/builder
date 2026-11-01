@@ -102,11 +102,12 @@ export const ContextProvider = ({ children }) => {
 
   const fetchApps = useCallback(async () => {
     try {
-      const res = await axios.get('/api/saas/home/apps');
+      const res = await axios.get('/api/saas/home/services');
       if (res.data?.success && Array.isArray(res.data?.apps)) {
-        const formatted = res.data.apps.map((app) => ({
-          ...app,
-          path: `/apps/${app.slug}`,
+        const list = res.data?.services || res.data?.apps || [];
+        const formatted = list.map((item) => ({
+          ...item,
+          path: `/services/${item.slug}`,
         }));
         setApps(formatted);
       }
@@ -146,6 +147,9 @@ export const ContextProvider = ({ children }) => {
     apps,
     setApps,
     refetchApps: fetchApps,
+    services: apps,
+    setServices: setApps,
+    refetchServices: fetchApps,
     user,
     setUser,
     staff: user,

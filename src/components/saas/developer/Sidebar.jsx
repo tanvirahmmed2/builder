@@ -62,8 +62,7 @@ export const ADMIN_NAV_SECTIONS = [
   {
     title: 'Commerce & Plans',
     links: [
-      { href: '/developer/packages', label: 'Packages', icon: BiCube },
-      { href: '/developer/features', label: 'Features', icon: BiCheckShield },
+      { href: '/developer/packages', label: 'Packages & Modules', icon: BiCube },
       { href: '/developer/subscriptions', label: 'Subscriptions', icon: BiCheckShield },
       { href: '/developer/purchases', label: 'Purchases', icon: BiReceipt },
       { href: '/developer/payments', label: 'Payments', icon: BiCreditCard },
@@ -106,14 +105,13 @@ export const ADMIN_NAV_SECTIONS = [
       { href: '/developer/roles', label: 'Roles & Permissions', icon: BiShieldQuarter },
       { href: '/developer/payroll', label: 'Payroll & Salaries', icon: BiCreditCard },
       { href: '/developer/my-salaries', label: 'My Salaries', icon: BiCreditCard },
-      { href: '/developer/careers', label: 'Careers & Hiring', icon: BiBriefcase },
+      { href: '/developer/careers', label: 'Careers & Applicants', icon: BiBriefcase },
     ],
   },
   {
     title: 'Platform & Settings',
     links: [
-      { href: '/developer/apps', label: 'Ecosystem Apps', icon: BiGridAlt },
-      { href: '/developer/modules', label: 'Database Modules', icon: BiGridAlt },
+      { href: '/developer/services', label: 'Services & Modules', icon: BiGridAlt },
       { href: '/developer/spams', label: 'Spam Defense', icon: BiShieldX },
       { href: '/developer/settings', label: 'Settings', icon: BiCog },
       { href: '/developer/profile', label: 'My Profile', icon: BiUser },
@@ -140,6 +138,7 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
       moduleName === 'profile' ||
       moduleName === 'settings' ||
       allowedModules.includes(moduleName) ||
+      (moduleName === 'services' && (allowedModules.includes('services') || allowedModules.includes('apps'))) ||
       (moduleName === 'roles' && (allowedModules.includes('developers') || allowedModules.includes('roles')))
     );
   };
@@ -158,110 +157,109 @@ export default function DeveloperSidebar({ isOpen, onClose, currentUser = null }
 
   const isLinkActive = (link) => {
     if (link.exact) return pathname === link.href;
-    return pathname === link.href || pathname.startsWith(`${link.href}/`);
+    return pathname.startsWith(link.href);
   };
-
-  const navContent = (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10 transition-colors">
-       
-
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="md:hidden text-2xl p-1 text-slate-500 hover:text-secondary rounded-md transition-colors cursor-pointer"
-            aria-label="Close menu"
-          >
-            <BiX />
-          </button>
-        )}
-      </div>
-
-      {/* Navigation Sections */}
-      <div className="p-3 space-y-5 flex-1">
-        {DEVELOPER_NAV_SECTIONS.map((section) => {
-          const visibleLinks = section.links.filter(isLinkAllowed);
-          if (visibleLinks.length === 0) return null;
-
-          return (
-            <div key={section.title} className="space-y-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-1">
-                {section.title}
-              </div>
-              {visibleLinks.map((link) => {
-                const Icon = link.icon;
-                const active = isLinkActive(link);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={onClose}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                      active
-                        ? 'bg-primary/15 text-slate-900 dark:text-white border-l-4 border-primary font-bold shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <Icon className={`text-base ${active ? 'text-primary' : 'text-slate-400'}`} />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer CTA and Actions */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2 sticky bottom-0 transition-colors">
-        <Link
-          href="/"
-          onClick={onClose}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium transition-colors"
-        >
-          <BiHome className="text-sm" />
-          <span>Platform Home</span>
-        </Link>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 border border-secondary text-secondary hover:bg-secondary hover:text-white py-2 px-3 rounded-lg font-semibold transition-colors duration-200 text-xs cursor-pointer"
-        >
-          <BiLogOut className="text-sm" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <>
-      {/* Mobile Backdrop overlay */}
-      <div
-        className={`fixed inset-0 bg-black/40 z-50 md:hidden transition-opacity duration-300 ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden transition-opacity"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Mobile Drawer */}
+      {/* Main Sidebar */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 md:hidden flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        aria-label="Developer Mobile Navigation"
       >
-        {navContent}
-      </aside>
+        {/* Brand Header */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/50">
+          <Link href="/developer" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+              <BiLayer className="text-xl" />
+            </div>
+            <div>
+              <span className="font-bold text-white text-base tracking-tight block leading-tight">
+                {SITE_NAME}
+              </span>
+              <span className="text-[10px] uppercase font-semibold text-indigo-400 tracking-wider">
+                Developer Console
+              </span>
+            </div>
+          </Link>
+          <button
+            onClick={onClose}
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+          >
+            <BiX className="text-2xl" />
+          </button>
+        </div>
 
-      {/* Desktop Persistent Sidebar */}
-      <aside
-        className="hidden md:flex md:w-64 md:flex-col md:shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-screen sticky top-0 z-30 transition-colors"
-        aria-label="Developer Desktop Navigation"
-      >
-        {navContent}
+        {/* Scrollable Navigation */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 custom-scrollbar">
+          {DEVELOPER_NAV_SECTIONS.map((section, idx) => {
+            const filteredLinks = section.links.filter(isLinkAllowed);
+            if (filteredLinks.length === 0) return null;
+
+            return (
+              <div key={idx} className="space-y-1">
+                <p className="px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-2">
+                  {section.title}
+                </p>
+                {filteredLinks.map((link) => {
+                  const Icon = link.icon;
+                  const active = isLinkActive(link);
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => onClose && onClose()}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <Icon className={`text-lg shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} />
+                      <span className="truncate">{link.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* User Footer Profile & Logout */}
+        <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+          <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-slate-800/40 border border-slate-800">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 uppercase">
+                {currentUser?.name?.charAt(0) || 'D'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate leading-tight">
+                  {currentUser?.name || 'Developer'}
+                </p>
+                <p className="text-xs text-slate-400 truncate capitalize">
+                  {currentUser?.role || 'Staff'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Sign Out"
+              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition shrink-0"
+            >
+              <BiLogOut className="text-lg" />
+            </button>
+          </div>
+        </div>
       </aside>
     </>
   );

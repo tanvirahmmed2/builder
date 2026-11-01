@@ -36,13 +36,13 @@ export default function HomeNavbar() {
               Themes
             </Link>
 
-            {/* Ecosystem Apps Dropdown */}
+            {/* Ecosystem Services Dropdown */}
             <div className="relative group flex items-center">
               <Link
-                href="/apps"
+                href="/services"
                 className="text-xs xl:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-secondary dark:hover:text-secondary-light px-3 py-2 rounded-xl  transition-colors flex items-center gap-1"
               >
-                <span>Apps</span>
+                <span>Services</span>
                 {apps && apps.length > 0 && (
                   <BiChevronDown className="text-xs text-slate-400 group-hover:text-secondary transition-transform duration-200 group-hover:rotate-180" />
                 )}
@@ -56,7 +56,7 @@ export default function HomeNavbar() {
                       {apps.map((a) => (
                         <Link
                           key={a.id}
-                          href={a.path || `/apps/${a.slug}`}
+                          href={a.path || `/services/${a.slug}`}
                           className="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-secondary flex items-center justify-between"
                         >
                           <span className="truncate">{a.title}</span>

@@ -14,7 +14,7 @@ export async function GET(request) {
     let query = `
       SELECT 
         b.id,
-        b.app_id,
+        b.service_id,
         b.title,
         b.slug,
         b.summary,
@@ -22,8 +22,8 @@ export async function GET(request) {
         b.published_at,
         b.created_at,
         d.name AS author_name,
-        a.title AS app_title,
-        a.slug AS app_slug,
+        s.title AS service_title,
+        s.slug AS service_slug,
         COALESCE(
           (
             SELECT json_agg(
@@ -51,7 +51,7 @@ export async function GET(request) {
         ) AS cover_image
       FROM blogs b
       LEFT JOIN developers d ON b.author_id = d.id
-      LEFT JOIN apps a ON b.app_id = a.id
+      LEFT JOIN services s ON b.service_id = s.id
       WHERE b.is_published = TRUE
     `;
 
@@ -76,15 +76,15 @@ export async function GET(request) {
 
     const res = await queryDb(query, params);
 
-    if (slug || id) {
-      const blog = res.rows[0] || null;
-      if (!blog) {
-        return NextResponse.json({ success: false, error: 'Article not found.' }, { status: 404 });
-      }
-      return NextResponse.json({ success: true, blog, record: blog });
+    if ((slug || id) && res.rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Blog not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, blogs: res.rows, records: res.rows });
+    return NextResponse.json({
+      success: true,
+      blog: slug || id ? res.rows[0] : null,
+      blogs: slug || id ? [res.rows[0]] : res.rows,
+    });
   } catch (error) {
     console.error('Public blogs GET error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -180,7 +180,7 @@ export default function AdminPackagesPage() {
           !searchTerm.trim() ||
           pkg.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           pkg.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          pkg.app_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (pkg.service_title || pkg.app_title)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (Array.isArray(pkg.allowed_modules) &&
             pkg.allowed_modules.some((m) => m.toLowerCase().includes(searchTerm.toLowerCase())));
 
@@ -363,7 +363,7 @@ export default function AdminPackagesPage() {
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
             <input
               type="text"
-              placeholder="Search packages by name, slug, module, or app..."
+              placeholder="Search packages by name, slug, module, or service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all font-medium"
@@ -424,7 +424,7 @@ export default function AdminPackagesPage() {
                 <th className="px-5 py-3.5 whitespace-nowrap">BDT Pricing (৳)</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Max Websites</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Allowed Modules</th>
-                <th className="px-5 py-3.5 whitespace-nowrap">Ecosystem App</th>
+                <th className="px-5 py-3.5 whitespace-nowrap">Ecosystem Service</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
                 <th className="px-5 py-3.5 whitespace-nowrap">Created</th>
                 <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
@@ -533,10 +533,10 @@ export default function AdminPackagesPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        {pkg.app_title ? (
+                        {(pkg.service_title || pkg.app_title) ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
                             <BiLayer className="text-xs" />
-                            <span>{pkg.app_title}</span>
+                            <span>{pkg.service_title || pkg.app_title}</span>
                           </span>
                         ) : (
                           <span className="text-[11px] text-slate-400 italic">Global Tier</span>

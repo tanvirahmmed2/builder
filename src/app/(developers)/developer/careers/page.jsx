@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import TalentPoolSection from '@/components/saas/developer/careers/TalentPoolSection';
 import {
   BiBriefcase,
   BiPlus,
@@ -71,6 +72,7 @@ const APPLICATION_STATUSES = [
 ];
 
 export default function DeveloperCareersPage() {
+  const [mainTab, setMainTab] = useState('jobs'); // 'jobs' | 'talent_pool'
   const [careers, setCareers] = useState([]);
   const [stats, setStats] = useState({
     total_jobs: 0,

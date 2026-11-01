@@ -167,7 +167,7 @@ export default function AdminBlogsPage() {
       blog.slug?.toLowerCase().includes(q) ||
       blog.summary?.toLowerCase().includes(q) ||
       blog.author_name?.toLowerCase().includes(q) ||
-      blog.app_title?.toLowerCase().includes(q)
+      (blog.service_title || (blog.service_title || blog.app_title))?.toLowerCase().includes(q)
     );
   });
 
@@ -185,7 +185,7 @@ export default function AdminBlogsPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 line-clamp-2">
-            Publish educational articles, marketing insights, and product guides linked with ecosystem apps.
+            Publish educational articles, marketing insights, and product guides linked with ecosystem services.
           </p>
         </div>
 
@@ -233,7 +233,7 @@ export default function AdminBlogsPage() {
             <BiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
             <input
               type="text"
-              placeholder="Search by title, app, or author..."
+              placeholder="Search by title, service, or author..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-300 rounded-xl pl-8.5 pr-8 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all"
@@ -373,15 +373,15 @@ export default function AdminBlogsPage() {
                         </Link>
                       </div>
 
-                      {(blog.app_title || imageCount > 0 || blog.summary) && (
+                      {((blog.service_title || blog.app_title) || imageCount > 0 || blog.summary) && (
                         <div className="flex items-center gap-2 text-[11px] text-slate-400 min-w-0">
-                          {blog.app_title && (
+                          {(blog.service_title || blog.app_title) && (
                             <span
                               className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 truncate max-w-[140px] shrink-0"
-                              title={`Linked app: ${blog.app_title}`}
+                              title={`Linked service: ${(blog.service_title || blog.app_title)}`}
                             >
                               <BiRocket className="text-[10px] shrink-0" />
-                              <span className="truncate">{blog.app_title}</span>
+                              <span className="truncate">{(blog.service_title || blog.app_title)}</span>
                             </span>
                           )}
 

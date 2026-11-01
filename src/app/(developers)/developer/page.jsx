@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -164,15 +164,13 @@ export default function AdminOverviewPage() {
       category: 'Content & Design',
       items: [
         { label: 'Blog Articles', path: '/developer/blogs', desc: 'Platform articles, guides, and releases' },
-        { label: 'Themes Gallery', path: '/developer/themes', desc: 'Design templates and layout presets' },
-        { label: 'Ecosystem Apps', path: '/developer/apps', desc: 'Active platform applications and integrations' },
+        { label: 'Ecosystem Services', path: '/developer/services', desc: 'Active platform services, modules, and themes' },
       ],
     },
     {
       category: 'Billing & Monetization',
       items: [
         { label: 'Packages', path: '/developer/packages', desc: 'Subscription tiers and pricing limits' },
-        { label: 'Feature Catalog', path: '/developer/features', desc: 'Modular platform feature definitions' },
         { label: 'Payments', path: '/developer/payments', desc: 'Revenue transactions and billing records' },
         { label: 'Subscriptions', path: '/developer/subscriptions', desc: 'Recurring memberships and renewal schedules' },
       ],

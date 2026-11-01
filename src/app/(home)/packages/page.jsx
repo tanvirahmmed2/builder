@@ -80,10 +80,10 @@ function AppPackageRow({ app, packages, billingCycle, currency }) {
         <div className="flex items-center gap-3">
           {app.slug && app.slug !== 'global' && (
             <Link
-              href={`/apps/${app.slug}`}
+              href={`/services/${app.slug}`}
               className="text-xs font-semibold text-secondary hover:text-secondary-dark flex items-center gap-1 hover:underline"
             >
-              <span>Explore App</span>
+              <span>Explore Service</span>
               <span>&rarr;</span>
             </Link>
           )}

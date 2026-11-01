@@ -18,7 +18,7 @@ export default function BlogDetailPage({ params }) {
   const router = useRouter();
 
   const [blog, setBlog] = useState(null);
-  const [apps, setApps] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -35,10 +35,11 @@ export default function BlogDetailPage({ params }) {
         setError(data.error || 'Blog article not found');
       }
 
-      const appsRes = await fetch('/api/saas/developer/apps');
-      const appsData = await appsRes.json();
-      if (appsData.apps) setApps(appsData.apps);
-      else if (appsData.records) setApps(appsData.records);
+      const srvRes = await fetch('/api/saas/developer/services');
+      const srvData = await srvRes.json();
+      if (srvData.services) setServices(srvData.services);
+      else if (srvData.records) setServices(srvData.records);
+      else if (srvData.data) setServices(srvData.data);
     } catch (err) {
       console.error('Error fetching blog details:', err);
       setError(err.message || 'Failed to load article');
@@ -68,12 +69,13 @@ export default function BlogDetailPage({ params }) {
         setLoading(false);
       });
 
-    fetch('/api/saas/developer/apps')
+    fetch('/api/saas/developer/services')
       .then((res) => res.json())
-      .then((appsData) => {
+      .then((srvData) => {
         if (!active) return;
-        if (appsData.apps) setApps(appsData.apps);
-        else if (appsData.records) setApps(appsData.records);
+        if (srvData.services) setServices(srvData.services);
+      else if (srvData.records) setServices(srvData.records);
+      else if (srvData.data) setServices(srvData.data);
       })
       .catch(() => {});
 
@@ -210,7 +212,7 @@ export default function BlogDetailPage({ params }) {
         <BlogForm
           blog={blog}
           initialData={blog}
-          apps={apps}
+          services={services}
           onSuccess={handleUpdateSuccess}
           onCancel={() => router.push('/developer/blogs')}
         />

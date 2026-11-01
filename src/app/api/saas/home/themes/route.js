@@ -2,26 +2,31 @@ import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
 
 // ============================================================================
-// GET: Public list of active themes categorized by apps
+// GET: Public list of active themes categorized by services
 // ============================================================================
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const appFilter = searchParams.get('app') || searchParams.get('app_id') || '';
+    const serviceFilter =
+      searchParams.get('service') ||
+      searchParams.get('service_id') ||
+      searchParams.get('app') ||
+      searchParams.get('app_id') ||
+      '';
     const search = searchParams.get('search') || '';
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit'), 10) : null;
 
-    // 1. Build query for active themes joined with apps table
-    const conditions = ['t.is_active = TRUE'];
+    // 1. Build query for active themes joined with services table
+    const conditions = ['st.is_active = TRUE'];
     const params = [];
 
-    if (appFilter && appFilter !== 'ALL' && appFilter !== 'all') {
-      if (!isNaN(appFilter)) {
-        params.push(Number(appFilter));
-        conditions.push(`t.app_id = $${params.length}`);
+    if (serviceFilter && serviceFilter !== 'ALL' && serviceFilter !== 'all') {
+      if (!isNaN(serviceFilter)) {
+        params.push(Number(serviceFilter));
+        conditions.push(`st.service_id = $${params.length}`);
       } else {
-        params.push(appFilter.toLowerCase());
-        conditions.push(`LOWER(a.slug) = $${params.length}`);
+        params.push(serviceFilter.toLowerCase());
+        conditions.push(`LOWER(s.slug) = $${params.length}`);
       }
     }
 
@@ -29,35 +34,35 @@ export async function GET(request) {
       params.push(`%${search.trim().toLowerCase()}%`);
       const idx = params.length;
       conditions.push(`(
-        LOWER(t.name) LIKE $${idx} OR 
-        LOWER(COALESCE(t.description, '')) LIKE $${idx} OR 
-        LOWER(COALESCE(t.category, '')) LIKE $${idx} OR
-        LOWER(COALESCE(a.title, '')) LIKE $${idx}
+        LOWER(st.name) LIKE $${idx} OR 
+        LOWER(COALESCE(st.slug, '')) LIKE $${idx} OR 
+        LOWER(COALESCE(s.title, '')) LIKE $${idx}
       )`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     let themesQuery = `
       SELECT 
-        t.id,
-        t.app_id,
-        t.name,
-        t.slug,
-        t.description,
-        t.category,
-        t.preview_image,
-        t.theme_config,
-        t.is_active,
-        t.is_premium,
-        t.created_at,
-        t.updated_at,
-        a.title AS app_title,
-        a.slug AS app_slug,
-        a.short_description AS app_short_description
-      FROM themes t
-      LEFT JOIN apps a ON t.app_id = a.id
+        st.id,
+        st.service_id,
+        st.service_id AS app_id,
+        st.name,
+        st.slug,
+        st.preview_image,
+        st.theme_config,
+        st.is_active,
+        st.is_premium,
+        st.created_at,
+        st.updated_at,
+        s.title AS service_title,
+        s.slug AS service_slug,
+        s.title AS app_title,
+        s.slug AS app_slug,
+        s.short_description AS app_short_description
+      FROM service_themes st
+      LEFT JOIN services s ON st.service_id = s.id
       ${whereClause}
-      ORDER BY t.id DESC
+      ORDER BY st.id DESC
     `;
 
     if (limit && !isNaN(limit) && limit > 0) {
@@ -65,28 +70,28 @@ export async function GET(request) {
       themesQuery += ` LIMIT $${params.length}`;
     }
 
-    // 2. Query for published apps to build categories
-    const appsQuery = `
+    // 2. Query for published services to build categories
+    const servicesQuery = `
       SELECT 
-        a.id,
-        a.title,
-        a.slug,
-        a.short_description,
-        COUNT(t.id)::int AS theme_count
-      FROM apps a
-      LEFT JOIN themes t ON t.app_id = a.id AND t.is_active = TRUE
-      WHERE a.is_published = TRUE
-      GROUP BY a.id, a.title, a.slug, a.short_description
-      ORDER BY a.title ASC
+        s.id,
+        s.title,
+        s.slug,
+        s.short_description,
+        COUNT(st.id)::int AS theme_count
+      FROM services s
+      LEFT JOIN service_themes st ON st.service_id = s.id AND st.is_active = TRUE
+      WHERE s.is_published = TRUE
+      GROUP BY s.id, s.title, s.slug, s.short_description
+      ORDER BY s.order_index ASC, s.title ASC
     `;
 
-    const [themesResult, appsResult] = await Promise.all([
+    const [themesResult, servicesResult] = await Promise.all([
       queryDb(themesQuery, params).catch((err) => {
-        console.error('Error fetching themes:', err);
+        console.error('Error fetching service themes:', err);
         return { rows: [] };
       }),
-      queryDb(appsQuery).catch((err) => {
-        console.error('Error fetching apps for categories:', err);
+      queryDb(servicesQuery).catch((err) => {
+        console.error('Error fetching services for theme categories:', err);
         return { rows: [] };
       }),
     ]);
@@ -94,13 +99,11 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       themes: themesResult.rows || [],
-      apps: appsResult.rows || [],
+      services: servicesResult.rows || [],
+      apps: servicesResult.rows || [], // backwards compatibility
     });
   } catch (error) {
     console.error('Failed to load themes:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch themes' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

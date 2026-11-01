@@ -25,7 +25,7 @@ export default function PackageForm({
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     description: initialData?.description || '',
-    app_id: initialData?.app_id ? String(initialData.app_id) : '',
+    service_id: initialData?.service_id ? String(initialData.service_id) : (initialData?.app_id ? String(initialData.app_id) : ''),
     monthly_price_usd:
       initialData?.monthly_price_usd !== undefined
         ? String(initialData.monthly_price_usd)
@@ -53,31 +53,30 @@ export default function PackageForm({
     is_active: initialData?.is_active !== undefined ? initialData.is_active : true,
   });
 
-  const [apps, setApps] = useState([]);
+  const [services, setServices] = useState([]);
   const [selectedModules, setSelectedModules] = useState(
     initialData?.allowed_modules || initialData?.modules || []
   );
   const [customModuleInput, setCustomModuleInput] = useState('');
-  const [loadingApps, setLoadingApps] = useState(true);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Fetch registered applications
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/saas/developer/apps')
+    fetch('/api/saas/developer/services')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
-        if (Array.isArray(data.records)) {
-          setApps(data.records);
-        }
+        const list = Array.isArray(data.services) ? data.services : (Array.isArray(data.records) ? data.records : (Array.isArray(data.data) ? data.data : []));
+        setServices(list);
       })
       .catch((err) => {
         console.error('Error fetching apps:', err);
       })
       .finally(() => {
-        if (isMounted) setLoadingApps(false);
+        if (isMounted) setLoadingServices(false);
       });
 
     return () => {
@@ -93,7 +92,7 @@ export default function PackageForm({
       setFormData({
         name: initialData.name || '',
         description: initialData.description || '',
-        app_id: initialData.app_id ? String(initialData.app_id) : '',
+        service_id: initialData.service_id ? String(initialData.service_id) : (initialData.app_id ? String(initialData.app_id) : ''),
         monthly_price_usd:
           initialData.monthly_price_usd !== undefined
             ? String(initialData.monthly_price_usd)
@@ -127,38 +126,18 @@ export default function PackageForm({
   }, [initialData]);
 
   // Find currently selected app and its registered modules
-  const selectedApp = apps.find((a) => String(a.id) === String(formData.app_id));
-  const currentAppModules = selectedApp?.modules || [];
+  const selectedService = services.find((s) => String(s.id) === String(formData.service_id));
+  const currentServiceModules = selectedService?.modules || [];
 
-  const handleAppChange = (newAppId) => {
-    setFormData((prev) => ({ ...prev, app_id: newAppId }));
+  const handleServiceChange = (newServiceId) => {
+    setFormData((prev) => ({ ...prev, service_id: newServiceId }));
     setError('');
-    const targetApp = apps.find((a) => String(a.id) === String(newAppId));
-    if (targetApp && Array.isArray(targetApp.modules) && targetApp.modules.length > 0) {
-      setSelectedModules(targetApp.modules.map((m) => m.name));
+    const targetService = services.find((s) => String(s.id) === String(newServiceId));
+    if (targetService && Array.isArray(targetService.modules) && targetService.modules.length > 0) {
+      setSelectedModules(targetService.modules.map((m) => m.module_name || m.name));
     } else {
       setSelectedModules([]);
     }
-  };
-
-  const toggleModule = (moduleTitle) => {
-    setSelectedModules((prev) => {
-      if (prev.includes(moduleTitle)) {
-        return prev.filter((m) => m !== moduleTitle);
-      } else {
-        return [...prev, moduleTitle];
-      }
-    });
-  };
-
-  const handleSelectAllModules = () => {
-    if (currentAppModules.length > 0) {
-      setSelectedModules(currentAppModules.map((m) => m.name));
-    }
-  };
-
-  const handleDeselectAllModules = () => {
-    setSelectedModules([]);
   };
 
   const handleAddCustomModule = (e) => {
@@ -176,7 +155,7 @@ export default function PackageForm({
     e.preventDefault();
     setError('');
 
-    if (!formData.app_id) {
+    if (!formData.service_id) {
       setError('Please select a linked ecosystem application for this package.');
       return;
     }
@@ -195,7 +174,8 @@ export default function PackageForm({
     const payloadData = {
       name: formData.name.trim(),
       description: formData.description,
-      app_id: Number(formData.app_id),
+      service_id: Number(formData.service_id),
+      app_id: Number(formData.service_id),
       monthly_price_usd: monthlyUsd,
       yearly_price_usd: yearlyUsd,
       monthly_price_bdt: monthlyBdt,
@@ -229,7 +209,7 @@ export default function PackageForm({
           setFormData({
             name: '',
             description: '',
-            app_id: '',
+            service_id: '',
             monthly_price_usd: '29.00',
             yearly_price_usd: '290.00',
             monthly_price_bdt: '3000.00',
@@ -293,32 +273,32 @@ export default function PackageForm({
         <div className="p-5 rounded-2xl bg-secondary/5 dark:bg-secondary/10 border border-secondary/20 space-y-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-              Linked Ecosystem Application <span className="text-rose-500">*</span>
+              Linked Ecosystem Service <span className="text-rose-500">*</span>
             </label>
-            {selectedApp && (
+            {selectedService && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-                {currentAppModules.length} Modules Available
+                {currentServiceModules.length} Modules Available
               </span>
             )}
           </div>
           <select
             required
-            value={formData.app_id}
-            onChange={(e) => handleAppChange(e.target.value)}
-            disabled={loadingApps}
+            value={formData.service_id}
+            onChange={(e) => handleServiceChange(e.target.value)}
+            disabled={loadingServices}
             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all font-semibold cursor-pointer disabled:opacity-50"
           >
             <option value="">
-              {loadingApps ? 'Loading applications...' : '-- Select an Application (Required) --'}
+              {loadingServices ? 'Loading ecosystem services...' : '-- Select an Ecosystem Service (Required) --'}
             </option>
             {apps.map((app) => (
-              <option key={app.id} value={app.id}>
-                {app.title} (#{app.id})
+              <option key={service.id} value={service.id}>
+                {service.title} (#{service.id})
               </option>
             ))}
           </select>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Packages are tied to specific applications. Selecting an application dynamically reveals its registered feature modules.
+            Packages are tied to specific services. Selecting an application dynamically reveals its registered feature modules.
           </p>
         </div>
 
@@ -511,11 +491,11 @@ export default function PackageForm({
               <div className="flex items-center gap-2">
                 <BiLayer className="text-secondary text-lg" />
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Allowed Website Modules {selectedApp ? `for ${selectedApp.title}` : ''}
+                  Allowed Website Modules {selectedService ? `for ${selectedService.title}` : ''}
                 </h4>
-                {selectedApp && (
+                {selectedService && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
-                    {selectedModules.length} of {currentAppModules.length} enabled
+                    {selectedModules.length} of {currentServiceModules.length} enabled
                   </span>
                 )}
               </div>
@@ -524,7 +504,7 @@ export default function PackageForm({
               </p>
             </div>
 
-            {selectedApp && currentAppModules.length > 0 && (
+            {selectedService && currentServiceModules.length > 0 && (
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
@@ -545,36 +525,36 @@ export default function PackageForm({
             )}
           </div>
 
-          {!formData.app_id ? (
+          {!formData.service_id ? (
             <div className="p-8 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-dashed border-amber-200 dark:border-amber-900/40 text-center space-y-2">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center text-xl">
                 <BiLayer />
               </div>
               <h5 className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                Select an Application to View Modules
+                Select a Service to View Modules
               </h5>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 max-w-sm mx-auto">
-                Choose an ecosystem application above to reveal and unlock its registered website builder modules for this tier.
+                Choose an ecosystem service above to reveal and unlock its registered website builder modules for this tier.
               </p>
             </div>
-          ) : currentAppModules.length === 0 ? (
+          ) : currentServiceModules.length === 0 ? (
             <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-1">
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                No modules registered for this application yet.
+                No modules registered for this service yet.
               </p>
               <p className="text-[11px] text-slate-400">
-                You can assign modules to {selectedApp?.title} in the Applications manager, or add custom modules below.
+                You can assign modules to {selectedService?.title} in the Services manager, or add custom modules below.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {currentAppModules.map((mod) => {
-                const isSelected = selectedModules.includes(mod.name);
+              {currentServiceModules.map((mod) => {
+                const isSelected = selectedModules.includes(mod.module_name || mod.name);
                 return (
                   <button
                     key={mod.id || mod.slug}
                     type="button"
-                    onClick={() => toggleModule(mod.name)}
+                    onClick={() => toggleModule(mod.module_name || mod.name)}
                     className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs transition-all text-left cursor-pointer ${
                       isSelected
                         ? 'bg-white dark:bg-slate-900 border-secondary text-slate-900 dark:text-white shadow-xs'
@@ -589,7 +569,7 @@ export default function PackageForm({
                       {isSelected ? <BiCheckSquare /> : <BiSquare />}
                     </span>
                     <div className="min-w-0">
-                      <div className="font-bold truncate text-slate-800 dark:text-slate-100">{mod.name}</div>
+                      <div className="font-bold truncate text-slate-800 dark:text-slate-100">{mod.module_name || mod.name}</div>
                       {mod.description && (
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-1 mt-0.5">
                           {mod.description}
@@ -603,7 +583,7 @@ export default function PackageForm({
           )}
 
           {/* Add Custom Module Section if app is selected */}
-          {formData.app_id && (
+          {formData.service_id && (
             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700 flex items-center gap-2">
               <input
                 type="text"

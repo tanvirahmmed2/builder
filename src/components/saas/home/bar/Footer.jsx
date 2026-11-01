@@ -79,10 +79,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/apps"
+                  href="/services"
                   className="hover:text-white transition-colors"
                 >
-                  Ecosystem Apps
+                  Ecosystem Services
                 </Link>
               </li>
               <li>

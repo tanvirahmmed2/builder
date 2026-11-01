@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useContext, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -15,20 +15,20 @@ import Sidebar from '@/components/saas/developer/Sidebar';
 export const ROLE_PERMISSIONS = {
   admin: [
     'overview', 'developers', 'roles', 'team', 'creators', 'users', 'websites',
-    'blogs', 'themes', 'packages', 'features', 'modules', 'purchases', 'payments', 'subscriptions', 'payroll', 'my-salaries',
+    'blogs', 'themes', 'packages', 'purchases', 'payments', 'subscriptions', 'payroll', 'my-salaries',
     'live-chats', 'chats', 'contacts', 'support', 'projects', 'reports', 'reviews', 'spams',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
+    'leads', 'subscribers', 'services', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
   ],
   manager: [
-    'overview', 'creators', 'users', 'websites', 'packages', 'features',
+    'overview', 'creators', 'users', 'websites', 'packages',
     'purchases', 'payments', 'subscriptions', 'live-chats', 'chats', 'contacts', 'support', 'projects', 'my-salaries',
     'facebook-messages', 'instagram-messages', 'whatsapp-messages',
-    'reports', 'reviews', 'leads', 'subscribers', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
+    'reports', 'reviews', 'leads', 'subscribers', 'services', 'apps', 'profile', 'settings', 'faqs', 'updates', 'tasks', 'notices', 'tutorials', 'careers', 'policies'
   ],
   developer: [
-    'overview', 'websites', 'themes', 'packages', 'features',
-    'apps', 'spams', 'reports', 'blogs', 'support', 'projects', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates', 'policies'
+    'overview', 'websites', 'themes', 'packages',
+    'services', 'apps', 'spams', 'reports', 'blogs', 'support', 'projects', 'profile', 'settings', 'chats', 'tasks', 'notices', 'my-salaries', 'tutorials', 'faqs', 'updates', 'policies'
   ],
   marketer: [
     'overview', 'blogs', 'themes', 'leads',
@@ -63,59 +63,59 @@ export default function DeveloperLayout({ children }) {
   }
 
   if (!user) {
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-2">
-        <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
-        <p className="text-slate-600 text-sm font-semibold">Redirecting to login...</p>
-      </div>
-    );
+    return null;
   }
 
-  const segments = pathname.split('/').filter(Boolean);
-  const moduleName = segments[1] || 'overview';
-  const role = (user?.role || 'developer').toLowerCase();
+  // Active module authorization check
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const activeModule = pathSegments[1] || 'overview';
 
   const userPerms = Array.isArray(user?.permissions) ? user.permissions : null;
+  const role = (user?.role || 'developer').toLowerCase();
   const fallbackModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.developer || [];
   const allowedModules = userPerms && userPerms.length > 0 ? userPerms : fallbackModules;
 
-  const isAllowed =
-    !segments[1] ||
-    moduleName === 'overview' ||
-    moduleName === 'profile' ||
-    moduleName === 'settings' ||
-    allowedModules.includes(moduleName) ||
-    (moduleName === 'roles' && (allowedModules.includes('developers') || allowedModules.includes('roles')));
+  // Unrestricted developer endpoints
+  const isPublicSection =
+    activeModule === 'overview' ||
+    activeModule === 'profile' ||
+    activeModule === 'settings' ||
+    (activeModule === 'roles' && (allowedModules.includes('developers') || allowedModules.includes('roles')));
 
-  if (!isAllowed) {
+  const isAuthorized =
+    isPublicSection ||
+    allowedModules.includes(activeModule) ||
+    (activeModule === 'services' && allowedModules.includes('apps')) ||
+    (activeModule === 'apps' && allowedModules.includes('services'));
+
+  if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 flex">
+      <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           currentUser={user}
         />
-        <div className="flex-1 flex flex-col min-w-0">
-          <Navbar
-            onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-            currentUser={user}
-          />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto flex items-center justify-center">
-            <div className="max-w-md w-full bg-white border border-rose-200 rounded-2xl p-8 text-center shadow-xs">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-3xl">
-                <BiShieldX />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <Navbar onMenuClick={() => setSidebarOpen(true)} currentUser={user} />
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 flex items-center justify-center">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 max-w-md w-full text-center">
+              <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-100">
+                <BiShieldX className="text-3xl" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Access Restricted</h2>
-              <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                Your account ({user.roleName || user.role || 'Staff'}) does not have permission to access the <span className="font-semibold text-rose-600 font-mono">/{moduleName}</span> module.
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Restricted Access</h2>
+              <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                Your role (<span className="font-semibold capitalize text-slate-800">{user?.role}</span>) does not have permission to access the <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs text-rose-600 font-semibold">{activeModule}</span> module.
               </p>
-              <Link
-                href="/developer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors shadow-xs"
-              >
-                <BiArrowBack className="text-sm" />
-                <span>Return to Overview</span>
-              </Link>
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/developer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl transition shadow-sm"
+                >
+                  <BiArrowBack className="text-lg" />
+                  Return to Overview
+                </Link>
+              </div>
             </div>
           </main>
         </div>
@@ -124,21 +124,15 @@ export default function DeveloperLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex transition-colors">
-      {/* Sidebar: persistent on desktop, drawer on mobile */}
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         currentUser={user}
       />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Navbar
-          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-          currentUser={user}
-        />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar onMenuClick={() => setSidebarOpen(true)} currentUser={user} />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>

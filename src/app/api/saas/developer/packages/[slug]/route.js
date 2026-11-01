@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
 import { hasModulePermission } from '@/lib/middleware/developer';
-
 import slugify from 'slugify';
 
 async function generateUniqueSlug(name, excludeId = null) {
@@ -31,17 +30,33 @@ export async function GET(request, { params }) {
     const cleanSlug = decodeURIComponent(slug || '').trim();
 
     const res = await queryDb(
-      `SELECT p.*, a.title AS app_title, a.slug AS app_slug,
+      `SELECT p.*, s.title AS service_title, s.slug AS service_slug,
               COALESCE(
                 (
-                  SELECT json_agg(am.module_title ORDER BY am.id ASC)
-                  FROM allowed_modules am
-                  WHERE am.package_id = p.id
+                  SELECT json_agg(
+                    json_build_object(
+                      'id', pm.id,
+                      'name', pm.module_name,
+                      'slug', pm.module_slug,
+                      'is_enabled', pm.is_enabled,
+                      'limits', pm.limits
+                    ) ORDER BY pm.id ASC
+                  )
+                  FROM package_modules pm
+                  WHERE pm.package_id = p.id
+                ),
+                '[]'::json
+              ) AS package_modules,
+              COALESCE(
+                (
+                  SELECT json_agg(pm.module_name ORDER BY pm.id ASC)
+                  FROM package_modules pm
+                  WHERE pm.package_id = p.id
                 ),
                 '[]'::json
               ) AS allowed_modules
        FROM packages p
-       LEFT JOIN apps a ON p.app_id = a.id
+       LEFT JOIN services s ON p.service_id = s.id
        WHERE p.slug = $1 OR p.id::text = $1
        LIMIT 1`,
       [cleanSlug]
@@ -53,7 +68,6 @@ export async function GET(request, { params }) {
 
     const record = res.rows[0];
 
-    // Count subscribers / active subscriptions
     let subscriptionsCount = 0;
     try {
       const subRes = await queryDb(
@@ -99,14 +113,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, error: 'Package name cannot be empty' }, { status: 400 });
     }
 
-    const appId = data.app_id !== undefined ? (data.app_id ? Number(data.app_id) : null) : current.app_id;
-    if (!appId) {
-      return NextResponse.json({ success: false, error: 'A linked application (app_id) is required.' }, { status: 400 });
-    }
+    const serviceId = data.service_id !== undefined || data.app_id !== undefined
+      ? Number(data.service_id || data.app_id) || null
+      : current.service_id;
 
-    let newSlug = current.slug;
+    let updatedSlug = current.slug;
     if (name && name !== current.name) {
-      newSlug = await generateUniqueSlug(name, current.id);
+      updatedSlug = await generateUniqueSlug(name, current.id);
     }
 
     const description = data.description !== undefined ? data.description : current.description;
@@ -123,79 +136,83 @@ export async function PUT(request, { params }) {
       ? Math.max(0, Number(data.yearly_price_bdt) || 0)
       : Number(current.yearly_price_bdt !== undefined ? current.yearly_price_bdt : 0);
     const priceInCents = Math.round(monthlyPriceUsd * 100);
-    const currency = data.currency !== undefined ? (data.currency || 'USD').toUpperCase() : current.currency;
-    const billingInterval = (data.billing_interval || data.billingInterval) !== undefined
-      ? (data.billing_interval || data.billingInterval || 'MONTHLY').toUpperCase()
-      : current.billing_interval;
+    const currency = (data.currency || current.currency || 'USD').toUpperCase();
+    const billingInterval = (data.billing_interval || data.billingInterval || current.billing_interval || 'MONTHLY').toUpperCase();
     const maxWebsites = data.max_websites !== undefined
       ? Math.max(1, Number(data.max_websites))
-      : (data.max_portfolios !== undefined
-          ? Math.max(1, Number(data.max_portfolios))
-          : (current.max_websites !== undefined ? current.max_websites : (current.max_portfolios || 1)));
+      : (data.max_portfolios !== undefined ? Math.max(1, Number(data.max_portfolios)) : current.max_websites);
     const isActive = data.is_active !== undefined ? Boolean(data.is_active) : current.is_active;
 
     const res = await queryDb(
-      `UPDATE packages
-       SET name = $1,
-           slug = $2,
-           description = $3,
-           price_in_cents = $4,
-           currency = $5,
-           billing_interval = $6,
-           monthly_price_usd = $7,
-           yearly_price_usd = $8,
-           monthly_price_bdt = $9,
-           yearly_price_bdt = $10,
-           max_websites = $11,
-           max_portfolios = $12,
-           is_active = $13,
-           app_id = $14,
-           updated_at = CURRENT_TIMESTAMP
+      `UPDATE packages SET
+         name = $1,
+         slug = $2,
+         description = $3,
+         price_in_cents = $4,
+         currency = $5,
+         billing_interval = $6,
+         monthly_price_usd = $7,
+         yearly_price_usd = $8,
+         monthly_price_bdt = $9,
+         yearly_price_bdt = $10,
+         max_websites = $11,
+         max_portfolios = $12,
+         is_active = $13,
+         service_id = $14,
+         updated_at = CURRENT_TIMESTAMP
        WHERE id = $15
        RETURNING *`,
       [
-        name, newSlug, description, priceInCents, currency, billingInterval,
+        name, updatedSlug, description, priceInCents, currency, billingInterval,
         monthlyPriceUsd, yearlyPriceUsd, monthlyPriceBdt, yearlyPriceBdt,
-        maxWebsites, maxWebsites, isActive, appId, current.id
+        maxWebsites, maxWebsites, isActive, serviceId, current.id
       ]
     );
 
     const updatedPackage = res.rows[0];
 
-    // Synchronize allowed_modules if provided
-    const modulesToSave = Array.isArray(data.allowed_modules)
-      ? data.allowed_modules
-      : (Array.isArray(data.modules) ? data.modules : null);
+    const modulesToSave = Array.isArray(data.package_modules)
+      ? data.package_modules
+      : (Array.isArray(data.allowed_modules) ? data.allowed_modules : (Array.isArray(data.modules) ? data.modules : null));
 
-    if (modulesToSave !== null) {
-      await queryDb('DELETE FROM allowed_modules WHERE package_id = $1', [current.id]);
+    if (Array.isArray(modulesToSave)) {
+      await queryDb('DELETE FROM package_modules WHERE package_id = $1', [current.id]);
       for (const modItem of modulesToSave) {
-        const cleanTitle = String(
+        const modName = String(
           typeof modItem === 'object' && modItem !== null
-            ? (modItem.name || modItem.title || modItem.slug || '')
+            ? (modItem.name || modItem.module_name || modItem.title || modItem.slug || '')
             : (modItem || '')
         ).trim();
-        if (cleanTitle) {
+        const modSlug = slugify(
+          typeof modItem === 'object' && modItem !== null
+            ? (modItem.slug || modItem.module_slug || modName)
+            : modName,
+          { lower: true, strict: true }
+        ) || 'module';
+
+        if (modName) {
           await queryDb(
-            `INSERT INTO allowed_modules (package_id, module_title) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-            [current.id, cleanTitle]
-          ).catch((e) => console.warn('Error syncing allowed_module:', e.message));
+            `INSERT INTO package_modules (package_id, module_name, module_slug, is_enabled)
+             VALUES ($1, $2, $3, TRUE)
+             ON CONFLICT (package_id, module_slug) DO NOTHING`,
+            [current.id, modName, modSlug]
+          ).catch((e) => console.warn('Error inserting package_module:', e.message));
         }
       }
     }
 
     const modRes = await queryDb(
-      `SELECT module_title FROM allowed_modules WHERE package_id = $1 ORDER BY id ASC`,
+      `SELECT module_name FROM package_modules WHERE package_id = $1 ORDER BY id ASC`,
       [current.id]
     ).catch(() => ({ rows: [] }));
 
-    updatedPackage.allowed_modules = modRes.rows.map((r) => r.module_title);
+    updatedPackage.allowed_modules = modRes.rows.map((r) => r.module_name);
 
     return NextResponse.json({
       success: true,
+      message: 'Package updated successfully',
       record: updatedPackage,
       package: updatedPackage,
-      message: 'Package updated successfully',
     });
   } catch (error) {
     console.error('Developer package PUT error:', error);
@@ -213,18 +230,18 @@ export async function DELETE(request, { params }) {
     const { slug } = await params;
     const cleanSlug = decodeURIComponent(slug || '').trim();
 
-    const deleteRes = await queryDb(
-      'DELETE FROM packages WHERE slug = $1 OR id::text = $1 RETURNING id, name',
-      [cleanSlug]
-    );
-
-    if (deleteRes.rows.length === 0) {
+    const existingRes = await queryDb('SELECT id FROM packages WHERE slug = $1 OR id::text = $1 LIMIT 1', [cleanSlug]);
+    if (existingRes.rows.length === 0) {
       return NextResponse.json({ success: false, error: 'Package not found' }, { status: 404 });
     }
 
+    const packageId = existingRes.rows[0].id;
+    await queryDb('DELETE FROM package_modules WHERE package_id = $1', [packageId]).catch(() => {});
+    await queryDb('DELETE FROM packages WHERE id = $1', [packageId]);
+
     return NextResponse.json({
       success: true,
-      message: `Package "${deleteRes.rows[0].name}" deleted successfully`,
+      message: 'Package deleted successfully',
     });
   } catch (error) {
     console.error('Developer package DELETE error:', error);

@@ -8,7 +8,7 @@ cloudinary.config({
   secure: true,
 });
 
-export async function uploadToCloudinary(file, folder = 'portfoliobuilder/apps') {
+export async function uploadToCloudinary(file, folder = 'portfoliobuilder/services') {
   if (!file) return null;
 
   const bytes = await file.arrayBuffer();

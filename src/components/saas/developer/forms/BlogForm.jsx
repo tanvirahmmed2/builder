@@ -21,6 +21,7 @@ import {
 export default function BlogForm({
   blog = null,
   initialData = null,
+  services = [],
   apps = [],
   onSuccess,
   onCancel,
@@ -34,6 +35,7 @@ export default function BlogForm({
     slug: '',
     summary: '',
     content: '',
+    service_id: '',
     app_id: '',
     is_published: false,
   });
@@ -52,8 +54,9 @@ export default function BlogForm({
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [attachingAssetId, setAttachingAssetId] = useState(null);
 
-  const [fetchedApps, setFetchedApps] = useState([]);
-  const availableApps = apps && apps.length > 0 ? apps : fetchedApps;
+  const [fetchedServices, setFetchedServices] = useState([]);
+  const propList = (services && services.length > 0) ? services : apps;
+  const availableServices = (propList && propList.length > 0) ? propList : fetchedServices;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -62,19 +65,20 @@ export default function BlogForm({
 
   // Fetch available apps if not provided
   useEffect(() => {
-    if (!apps || apps.length === 0) {
+    if (!services || services.length === 0) {
       let active = true;
       axios
-        .get(apiEndpoint)
+        .get('/api/saas/developer/services')
         .then((res) => {
-          if (active && res.data?.apps) setFetchedApps(res.data.apps);
+          if (active && res.data?.services) setFetchedServices(res.data.services);
+          else if (active && res.data?.records) setFetchedServices(res.data.records);
         })
         .catch(() => {});
       return () => {
         active = false;
       };
     }
-  }, [apps, apiEndpoint]);
+  }, [services, apps]);
 
   // Sync state with incoming blog data when currentBlog changes
   const [prevBlogId, setPrevBlogId] = useState(currentBlog?.id);
@@ -86,7 +90,8 @@ export default function BlogForm({
         slug: currentBlog.slug || '',
         summary: currentBlog.summary || '',
         content: currentBlog.content || '',
-        app_id: currentBlog.app_id ? String(currentBlog.app_id) : '',
+        service_id: currentBlog.service_id ? String(currentBlog.service_id) : (currentBlog.app_id ? String(currentBlog.app_id) : ''),
+        app_id: currentBlog.service_id ? String(currentBlog.service_id) : (currentBlog.app_id ? String(currentBlog.app_id) : ''),
         is_published: Boolean(currentBlog.is_published),
       });
       setImages(Array.isArray(currentBlog.images) ? currentBlog.images : []);
@@ -96,7 +101,8 @@ export default function BlogForm({
         slug: '',
         summary: '',
         content: '',
-        app_id: '',
+        service_id: '',
+    app_id: '',
         is_published: false,
       });
       setImages([]);
@@ -263,7 +269,10 @@ export default function BlogForm({
         uploadFormData.append('summary', formData.summary);
         uploadFormData.append('content', formData.content);
         uploadFormData.append('is_published', String(targetPublished));
-        if (formData.app_id) uploadFormData.append('app_id', String(formData.app_id));
+        if (formData.service_id || formData.app_id) {
+        uploadFormData.append('service_id', String(formData.service_id || formData.app_id));
+        uploadFormData.append('app_id', String(formData.service_id || formData.app_id));
+      }
 
         selectedFiles.forEach((file) => {
           uploadFormData.append('images', file);
@@ -296,7 +305,8 @@ export default function BlogForm({
         title: formData.title,
         summary: formData.summary,
         content: formData.content,
-        app_id: formData.app_id ? Number(formData.app_id) : null,
+        service_id: (formData.service_id || formData.app_id) ? Number(formData.service_id || formData.app_id) : null,
+      app_id: (formData.service_id || formData.app_id) ? Number(formData.service_id || formData.app_id) : null,
         is_published: targetPublished,
       };
 
@@ -361,7 +371,7 @@ export default function BlogForm({
             </div>
             <p className="text-xs text-slate-500">
               {isEditing
-                ? 'Manage article copy, associate ecosystem apps, and upload Cloudinary gallery images.'
+                ? 'Manage article copy, associate ecosystem services, and upload Cloudinary gallery images.'
                 : 'Initialize an article draft for creators and ecosystem developers.'}
             </p>
           </div>
@@ -411,18 +421,18 @@ export default function BlogForm({
           />
         </div>
 
-        {/* Associated Ecosystem App */}
+        {/* Associated Ecosystem Service */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Associated Ecosystem App <span className="text-slate-400 font-normal">(Optional)</span>
+            Associated Ecosystem Service <span className="text-slate-400 font-normal">(Optional)</span>
           </label>
           <select
-            value={formData.app_id}
-            onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
+            value={formData.service_id || formData.app_id}
+            onChange={(e) => setFormData({ ...formData, service_id: e.target.value, app_id: e.target.value })}
             className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:border-secondary focus:bg-white transition-colors"
           >
-            <option value="">-- No App Linked (General Platform Article) --</option>
-            {availableApps.map((a) => (
+            <option value="">-- No Service Linked (General Platform Article) --</option>
+            {availableServices.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.title} ({a.slug})
               </option>
