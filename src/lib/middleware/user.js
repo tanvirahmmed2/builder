@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { queryDb, pool } from '@/lib/db/pg';
-import { JWT_SECRET, USER_TOKEN } from '@/lib/db/secret';
+import { JWT_SECRET, USER_TOKEN, BASE_URL } from '@/lib/db/secret';
 
 export const WEBSITE_AUTH_COOKIE = 'website_session_token';
 
@@ -36,73 +36,209 @@ export function verifyWebsiteToken(token) {
 }
 
 // ============================================================================
-// 2. DOMAIN & WEBSITE RESOLUTION (Resolves website by subdomain or custom domain)
+// 2. DOMAIN NORMALIZATION & RESOLUTION HELPERS
+// ============================================================================
+
+/**
+ * Normalizes a raw domain or host string by stripping protocol, path, port,
+ * and trailing characters, converting to lowercase.
+ */
+export function normalizeDomain(domain) {
+  if (!domain || typeof domain !== 'string') return '';
+  let clean = domain.trim().toLowerCase();
+  clean = clean.replace(/^https?:\/\//i, '');
+  clean = clean.split('/')[0].split('?')[0];
+  clean = clean.split(':')[0];
+  return clean.trim();
+}
+
+/**
+ * Checks if the given domain corresponds to the core SaaS platform.
+ * (e.g., disibin.com, www.disibin.com, localhost, 127.0.0.1)
+ */
+export function isBaseSaasDomain(rawDomain, baseDomain = BASE_URL) {
+  const norm = normalizeDomain(rawDomain);
+  const base = normalizeDomain(baseDomain) || 'disibin.com';
+
+  if (!norm) return false;
+
+  // Exact match with configured base domain or www.baseDomain
+  if (norm === base || norm === `www.${base}`) return true;
+
+  // Strip leading www. for comparative check
+  const normWithoutWww = norm.replace(/^www\./, '');
+  const baseWithoutWww = base.replace(/^www\./, '');
+  if (normWithoutWww === baseWithoutWww) return true;
+
+  // Local development hostnames
+  if (
+    norm === 'localhost' ||
+    norm === '127.0.0.1' ||
+    norm === '0.0.0.0' ||
+    norm === '::1'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Classifies an incoming host into Base SaaS, Subdomain, or Custom Domain.
+ */
+export function parseDomainInfo(rawHost, baseDomain = BASE_URL) {
+  const norm = normalizeDomain(rawHost);
+  const base = normalizeDomain(baseDomain) || 'disibin.com';
+  const baseWithoutWww = base.replace(/^www\./, '');
+
+  if (!norm) {
+    return { isBaseDomain: false, isSubdomain: false, isCustomDomain: false, slug: null };
+  }
+
+  // Check if it's the core SaaS domain
+  if (isBaseSaasDomain(norm, base)) {
+    return { isBaseDomain: true, isSubdomain: false, isCustomDomain: false, slug: null };
+  }
+
+  // Check if it's a subdomain of the base domain (e.g., shop.disibin.com)
+  if (norm.endsWith(`.${baseWithoutWww}`)) {
+    const sub = norm.slice(0, -(baseWithoutWww.length + 1)).toLowerCase();
+    if (sub && sub !== 'www') {
+      return { isBaseDomain: false, isSubdomain: true, isCustomDomain: false, slug: sub };
+    }
+    return { isBaseDomain: true, isSubdomain: false, isCustomDomain: false, slug: null };
+  }
+
+  // Check if it's a subdomain of localhost in local dev (e.g., shop.localhost)
+  if (norm.endsWith('.localhost')) {
+    const sub = norm.slice(0, -'.localhost'.length).toLowerCase();
+    if (sub && sub !== 'www') {
+      return { isBaseDomain: false, isSubdomain: true, isCustomDomain: false, slug: sub };
+    }
+    return { isBaseDomain: true, isSubdomain: false, isCustomDomain: false, slug: null };
+  }
+
+  // Otherwise, treat as a custom domain
+  return {
+    isBaseDomain: false,
+    isSubdomain: false,
+    isCustomDomain: true,
+    slug: norm,
+  };
+}
+
+// ============================================================================
+// 3. WEBSITE RESOLUTION
 // ============================================================================
 
 export async function resolveWebsiteFromRequest(req, optionalSlug = null) {
   try {
-    let slug = optionalSlug;
+    const cleanBase = normalizeDomain(BASE_URL) || 'disibin.com';
+    let targetSlug = optionalSlug;
 
-    // 1. Check if slug provided in URL search params
-    if (!slug && req && req.url) {
-      try {
-        const parsedUrl = new URL(req.url);
-        slug = parsedUrl.searchParams.get('slug') || parsedUrl.searchParams.get('subdomain');
-      } catch (_) {}
-    }
+    // 1. Check headers and URL if optionalSlug was not provided
+    let reqHost = '';
+    if (req) {
+      if (typeof req.headers?.get === 'function') {
+        // Standard Web Request / NextRequest
+        targetSlug = targetSlug || req.headers.get('x-domain') || req.headers.get('x-tenant-slug');
+        reqHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+      } else if (req.headers) {
+        // Node.js IncomingMessage or plain headers object
+        targetSlug = targetSlug || req.headers['x-domain'] || req.headers['x-tenant-slug'];
+        reqHost = req.headers['x-forwarded-host'] || req.headers['host'] || '';
+      }
 
-    // 2. Check Host / x-forwarded-host header if no explicit slug provided
-    if (!slug && req && req.headers) {
-      const host = (
-        (typeof req.headers.get === 'function' ? req.headers.get('x-forwarded-host') || req.headers.get('host') : null) ||
-        (req.headers['x-forwarded-host'] || req.headers['host']) ||
-        ''
-      ).toLowerCase().split(':')[0]; // strip port
-
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
-        // First check custom_domain match
-        const customRes = await queryDb(
-          'SELECT * FROM websites WHERE LOWER(custom_domain) = $1 LIMIT 1',
-          [host]
-        );
-        if (customRes.rows.length > 0) {
-          return await enrichWebsiteRecord(customRes.rows[0]);
-        }
-
-        // Check if host is a subdomain (e.g., mysite.domain.com -> mysite)
-        const parts = host.split('.');
-        if (parts.length > 2) {
-          slug = parts[0];
-        }
+      // Check query params if still unresolved
+      if (!targetSlug && req.url) {
+        try {
+          const parsedUrl = new URL(req.url, 'http://localhost');
+          targetSlug =
+            parsedUrl.searchParams.get('slug') ||
+            parsedUrl.searchParams.get('subdomain') ||
+            parsedUrl.searchParams.get('domain');
+        } catch (_) {}
       }
     }
 
-    // 3. Query by slug / subdomain or ID
+    const hostInfo = parseDomainInfo(reqHost, cleanBase);
+
+    // If NO optionalSlug/targetSlug was provided and the request host is the Base SaaS domain:
+    // It's the main SaaS platform. Return null immediately (no tenant website context).
+    if (!targetSlug && hostInfo.isBaseDomain) {
+      return null;
+    }
+
+    // If still no targetSlug, check if host itself is a subdomain or custom domain
+    if (!targetSlug) {
+      if (hostInfo.isSubdomain || hostInfo.isCustomDomain) {
+        targetSlug = hostInfo.slug;
+      }
+    }
+
+    // If still no targetSlug resolved -> cannot map to any website
+    if (!targetSlug) {
+      return null;
+    }
+
+    // 2. Clean and validate targetSlug
+    const cleanSlug = String(targetSlug).toLowerCase().trim();
+    const cleanSlugWithoutWww = cleanSlug.replace(/^www\./, '');
+
+    // Reserved system routes / base domains should never resolve as a website
+    if (
+      cleanSlug === cleanBase ||
+      cleanSlug === `www.${cleanBase}` ||
+      cleanSlug === 'localhost' ||
+      cleanSlug === 'www' ||
+      cleanSlug === 'admin' ||
+      cleanSlug === 'api' ||
+      cleanSlug === 'creator' ||
+      cleanSlug === 'developer' ||
+      cleanSlug === 'saas'
+    ) {
+      return null;
+    }
+
     let website = null;
-    if (slug) {
-      const cleanSlug = String(slug).toLowerCase().trim();
-      const isNumeric = !isNaN(Number(cleanSlug));
 
-      if (isNumeric) {
-        const numRes = await queryDb('SELECT * FROM websites WHERE id = $1 LIMIT 1', [Number(cleanSlug)]);
-        if (numRes.rows.length > 0) website = numRes.rows[0];
-      }
-
-      if (!website) {
-        const subRes = await queryDb(
-          'SELECT * FROM websites WHERE LOWER(subdomain) = $1 OR LOWER(custom_domain) = $1 LIMIT 1',
-          [cleanSlug]
-        );
-        if (subRes.rows.length > 0) website = subRes.rows[0];
-      }
+    // 3. Look up by numeric ID
+    const isNumeric = /^\d+$/.test(cleanSlug);
+    if (isNumeric) {
+      const numRes = await queryDb(
+        'SELECT * FROM websites WHERE id = $1 AND status != $2 LIMIT 1',
+        [Number(cleanSlug), 'DELETED']
+      );
+      if (numRes.rows.length > 0) website = numRes.rows[0];
     }
 
-    // Fallback: Return first published or active website for local preview/development
+    // 4. Look up by subdomain or custom_domain on websites table
     if (!website) {
-      const fallbackRes = await queryDb('SELECT * FROM websites ORDER BY id ASC LIMIT 1');
-      if (fallbackRes.rows.length > 0) website = fallbackRes.rows[0];
+      const subRes = await queryDb(
+        `SELECT * FROM websites 
+         WHERE (LOWER(subdomain) = $1 OR LOWER(custom_domain) = $1 OR LOWER(custom_domain) = $2)
+           AND status != $3
+         LIMIT 1`,
+        [cleanSlug, cleanSlugWithoutWww, 'DELETED']
+      );
+      if (subRes.rows.length > 0) website = subRes.rows[0];
     }
 
+    // 5. Look up via website_custom_domains table
+    if (!website) {
+      const customDomainRes = await queryDb(
+        `SELECT w.* FROM websites w
+         JOIN website_custom_domains cd ON cd.website_id = w.id
+         WHERE (LOWER(cd.domain) = $1 OR LOWER(cd.domain) = $2)
+           AND cd.status IN ('active', 'verified', 'pending')
+           AND w.status != $3
+         LIMIT 1`,
+        [cleanSlug, cleanSlugWithoutWww, 'DELETED']
+      );
+      if (customDomainRes.rows.length > 0) website = customDomainRes.rows[0];
+    }
+
+    // Strict isolation: if not found, return null (never fall back to first row)
     if (!website) return null;
 
     return await enrichWebsiteRecord(website);

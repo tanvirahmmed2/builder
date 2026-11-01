@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
-import { WebsiteContext } from '@/components/website/context/WebsiteContext';
+import { WebsiteContext, useTenantBasePrefix } from '@/components/website/context/WebsiteContext';
 import {
   BiRightArrowAlt,
   BiShoppingBag,
@@ -18,7 +18,7 @@ export default function TenantHomePage() {
   const { website, addToCart } = useContext(WebsiteContext) || {};
   const params = useParams();
   const domain = params?.domain || '';
-  const basePrefix = domain ? `/${domain}` : '';
+  const basePrefix = useTenantBasePrefix();
 
   const [catalog, setCatalog] = useState(null);
   const [loading, setLoading] = useState(true);

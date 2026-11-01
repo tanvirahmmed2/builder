@@ -2,7 +2,7 @@
 import React, { useContext, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
-import { WebsiteContext } from '@/components/website/context/WebsiteContext';
+import { WebsiteContext, useTenantBasePrefix } from '@/components/website/context/WebsiteContext';
 import {
   BiShoppingBag,
   BiSun,
@@ -19,8 +19,7 @@ export default function StoreNavbar() {
   const pathname = usePathname();
   const domain = params?.domain || '';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const basePrefix = domain ? `/${domain}` : '';
+  const basePrefix = useTenantBasePrefix();
   const siteName = website?.settings?.site_name || website?.name || 'Store';
   const siteType = website?.website_type || 'ecommerce';
 

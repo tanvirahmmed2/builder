@@ -15,18 +15,19 @@ export const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
 export const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME;
 export const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-export const ADMIN_TOKEN = 'admin-hiesci';
-export const LIVE_CHAT_TOKEN='live-chat-hiesci'
-export const CREATOR_TOKEN='creator-hiesci'
-export const USER_TOKEN='user-hiesci'
+export const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+export const LIVE_CHAT_TOKEN = process.env.LIVE_CHAT_TOKEN
+export const CREATOR_TOKEN = process.env.CREATOR_TOKEN
+export const USER_TOKEN = process.env.USER_TOKEN
+export const STAFF_TOKEN = process.env.STAFF_TOKEN
 
-export const SITE_NAME='Hiesci'
-export const SITE_CONTACT="+01805003886"
-export const SITE_MAIL='support@hiesci.com'
-export const SITE_ADDRESS='Mymensingh, Bangladesh'
+export const SITE_NAME = 'Hiesci'
+export const SITE_CONTACT = "+01805003886"
+export const SITE_MAIL = 'support@hiesci.com'
+export const SITE_ADDRESS = 'Mymensingh, Bangladesh'
 
-export const COMPANY_NAME='Disibin'
-export const COMPANY_URL='https://disibin.com'
+export const COMPANY_NAME = 'Disibin'
+export const COMPANY_URL = 'https://disibin.com'
 
 export const PAYOONER_CLIENT_ID = process.env.PAYOONER_CLIENT_ID;
 export const PAYOONER_CLIENT_SECRET = process.env.PAYOONER_CLIENT_SECRET;
@@ -52,3 +53,4 @@ export const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
 export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION;
 
 
+export const BASE_URL = process.env.BASE_URL || 'disibin.com';

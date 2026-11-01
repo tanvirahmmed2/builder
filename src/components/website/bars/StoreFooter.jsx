@@ -2,13 +2,13 @@
 import React, { useContext } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { WebsiteContext } from '@/components/website/context/WebsiteContext';
+import { WebsiteContext, useTenantBasePrefix } from '@/components/website/context/WebsiteContext';
 
 export default function StoreFooter() {
   const { website } = useContext(WebsiteContext) || {};
   const params = useParams();
   const domain = params?.domain || '';
-  const basePrefix = domain ? `/${domain}` : '';
+  const basePrefix = useTenantBasePrefix();
 
   const siteName = website?.settings?.site_name || website?.name || 'Store';
   const tagline = website?.settings?.tagline || 'Powered by Next-Gen Multi-Type SaaS Engine';
