@@ -14,8 +14,8 @@ export async function GET(request, context) {
               s.name AS supplier_name, s.phone AS supplier_phone,
               b.name AS branch_name, b.code AS branch_code,
               u.name AS staff_name, u.role AS staff_role
-       FROM website_purchases p
-       LEFT JOIN website_suppliers s ON s.id = p.supplier_id
+       FROM website_ecommerce_purchases p
+       LEFT JOIN website_ecommerce_suppliers s ON s.id = p.supplier_id
        LEFT JOIN website_branches b ON b.id = p.branch_id
        LEFT JOIN website_users u ON u.id = p.user_id
        WHERE p.website_id = $1
@@ -54,9 +54,9 @@ export async function POST(request, context) {
 
     await client.query('BEGIN');
 
-    // 1. Insert into website_purchases
+    // 1. Insert into website_ecommerce_purchases
     const purchaseRes = await client.query(
-      `INSERT INTO website_purchases (
+      `INSERT INTO website_ecommerce_purchases (
          website_id, branch_id, supplier_id, user_id, invoice_no,
          subtotal_amount, extra_discount, total_amount, total_paid,
          due_amount, payment_method, payment_status, note, items
@@ -82,7 +82,7 @@ export async function POST(request, context) {
 
     const purchase = purchaseRes.rows[0];
 
-    // 2. Insert items into website_purchase_items & increment product stock
+    // 2. Insert items into website_ecommerce_purchase_items & increment product stock
     for (const item of items) {
       const prodId = item.product_id ? Number(item.product_id) : null;
       const qty = parseInt(item.quantity, 10) || 1;
@@ -90,14 +90,14 @@ export async function POST(request, context) {
       const itemSubtotal = qty * unitCost;
 
       await client.query(
-        `INSERT INTO website_purchase_items (purchase_id, website_id, product_id, variant_id, product_name, quantity, unit_cost, subtotal)
+        `INSERT INTO website_ecommerce_purchase_items (purchase_id, website_id, product_id, variant_id, product_name, quantity, unit_cost, subtotal)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [purchase.id, website.id, prodId, item.variant_id ? Number(item.variant_id) : null, item.name || item.product_name || 'Item', qty, unitCost, itemSubtotal]
       );
 
       if (prodId) {
         await client.query(
-          `UPDATE website_products
+          `UPDATE website_ecommerce_products
            SET stock = stock + $1,
                buy_price = CASE WHEN $2 > 0 THEN $2 ELSE buy_price END,
                updated_at = NOW()
@@ -110,7 +110,7 @@ export async function POST(request, context) {
     // 3. Record purchase payment if paidAmt > 0
     if (paidAmt > 0) {
       await client.query(
-        `INSERT INTO website_purchase_payments (purchase_id, website_id, amount, payment_method, note)
+        `INSERT INTO website_ecommerce_purchase_payments (purchase_id, website_id, amount, payment_method, note)
          VALUES ($1, $2, $3, $4, $5)`,
         [purchase.id, website.id, paidAmt, payment_method, `Initial payment for #${invoiceNo}`]
       );
@@ -119,7 +119,7 @@ export async function POST(request, context) {
     // 4. Update supplier balance if supplier_id given
     if (supplier_id && dueAmt > 0) {
       await client.query(
-        `UPDATE website_suppliers
+        `UPDATE website_ecommerce_suppliers
          SET balance = balance + $1, updated_at = NOW()
          WHERE id = $2 AND website_id = $3`,
         [dueAmt, Number(supplier_id), website.id]

@@ -12,7 +12,7 @@ export async function GET(request, context) {
               s.requester_name, s.requester_email, s.subject, s.priority, s.status,
               s.created_at, s.updated_at,
               COUNT(m.id) AS messages_count
-       FROM website_support s
+       FROM website_support_tickets s
        LEFT JOIN website_support_messages m ON m.support_id = s.id
        WHERE s.website_id = $1
        GROUP BY s.id

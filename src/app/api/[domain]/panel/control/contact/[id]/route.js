@@ -11,7 +11,7 @@ export async function DELETE(request, context) {
     const contactId = Number(params.id);
 
     const res = await queryDb(
-      `DELETE FROM website_contact
+      `DELETE FROM website_contacts
        WHERE id = $1 AND website_id = $2
        RETURNING id, name, subject`,
       [contactId, website.id]

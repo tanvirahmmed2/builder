@@ -28,7 +28,7 @@ export async function GET(request, context) {
               i.title, i.message, i.status, i.priority, i.created_at, i.updated_at,
               s.name AS sender_name, s.role AS sender_role,
               r.name AS receiver_name, r.role AS receiver_role
-       FROM website_issues i
+       FROM website_support_tickets i
        JOIN website_users s ON s.id = i.sender_id
        LEFT JOIN website_users r ON r.id = i.receiver_id
        WHERE i.website_id = $1
@@ -61,7 +61,7 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(
-      `INSERT INTO website_issues (website_id, sender_id, receiver_id, title, message, priority)
+      `INSERT INTO website_support_tickets (website_id, sender_id, receiver_id, title, message, priority)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, id AS issue_id, website_id, sender_id, receiver_id, title, message, status, priority, created_at, updated_at`,
       [website.id, user.id, recId ? Number(recId) : null, title.trim(), message.trim(), priority]

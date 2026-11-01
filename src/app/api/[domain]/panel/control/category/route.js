@@ -10,7 +10,7 @@ export async function GET(request, context) {
 
     const res = await queryDb(
       `SELECT id, id AS category_id, website_id, parent_id, name, slug, type, description, image_url, created_at, updated_at
-       FROM website_categories
+       FROM website_ecommerce_categories
        WHERE website_id = $1
        ORDER BY name ASC`,
       [website.id]
@@ -56,7 +56,7 @@ export async function POST(request, context) {
     const finalSlug = slugify(slug || name, { lower: true, strict: true }) || 'cat-' + Date.now();
 
     const res = await queryDb(
-      `INSERT INTO website_categories (website_id, parent_id, name, slug, type, description, image_url)
+      `INSERT INTO website_ecommerce_categories (website_id, parent_id, name, slug, type, description, image_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, id AS category_id, website_id, parent_id, name, slug, type, description, image_url, created_at, updated_at`,
       [website.id, parent_id, String(name).trim(), finalSlug, type, description || null, image_url || null]

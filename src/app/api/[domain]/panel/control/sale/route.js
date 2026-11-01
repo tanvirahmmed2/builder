@@ -20,7 +20,7 @@ export async function GET(request, context) {
              s.order_status, s.note, s.items, s.created_at, s.updated_at,
              b.name AS branch_name, b.code AS branch_code,
              u.name AS staff_name
-      FROM website_sales s
+      FROM website_ecommerce_orders s
       LEFT JOIN website_branches b ON b.id = s.branch_id
       LEFT JOIN website_users u ON u.id = s.user_id
       WHERE s.website_id = $1
@@ -119,9 +119,9 @@ export async function POST(request, context) {
       customerId = custRes.rows[0]?.id;
     }
 
-    // 2. Insert into website_sales
+    // 2. Insert into website_ecommerce_orders
     const saleRes = await client.query(
-      `INSERT INTO website_sales (
+      `INSERT INTO website_ecommerce_orders (
          website_id, branch_id, user_id, customer_id, customer_name, customer_phone,
          invoice_no, subtotal, tax_amount, delivery_charge, discount_amount,
          total_amount, amount_received, change_amount, paid_amount, due_amount,
@@ -163,14 +163,14 @@ export async function POST(request, context) {
       const itemSubtotal = qty * unitPrice;
 
       await client.query(
-        `INSERT INTO website_sale_items (sale_id, website_id, product_id, variant_id, product_name, quantity, unit_price, subtotal)
+        `INSERT INTO website_ecommerce_order_items (sale_id, website_id, product_id, variant_id, product_name, quantity, unit_price, subtotal)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [sale.id, website.id, prodId, item.variant_id ? Number(item.variant_id) : null, item.name || item.product_name || 'Product', qty, unitPrice, itemSubtotal]
       );
 
       if (prodId) {
         await client.query(
-          `UPDATE website_products
+          `UPDATE website_ecommerce_products
            SET stock = GREATEST(0, stock - $1), updated_at = NOW()
            WHERE id = $2 AND website_id = $3`,
           [qty, prodId, website.id]
@@ -181,7 +181,7 @@ export async function POST(request, context) {
     // 4. Record sale payment
     if (paidAmt > 0) {
       await client.query(
-        `INSERT INTO website_sale_payments (sale_id, website_id, amount, payment_method, note)
+        `INSERT INTO website_payments (sale_id, website_id, amount, payment_method, note)
          VALUES ($1, $2, $3, $4, $5)`,
         [sale.id, website.id, paidAmt, payment_type, `Payment for invoice #${invoiceNo}`]
       );

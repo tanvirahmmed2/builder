@@ -11,7 +11,7 @@ export async function GET(request, context) {
       `SELECT id, id AS salary_id, website_id, title, base_salary, bonus, allowance,
               deduction, note, created_at, updated_at,
               (base_salary + bonus + allowance - deduction) AS net_salary
-       FROM website_salaries
+       FROM website_staff_payrolls
        WHERE website_id = $1
        ORDER BY id ASC`,
       [website.id]
@@ -37,7 +37,7 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(
-      `INSERT INTO website_salaries (website_id, title, base_salary, bonus, allowance, deduction, note)
+      `INSERT INTO website_staff_payrolls (website_id, title, base_salary, bonus, allowance, deduction, note)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, id AS salary_id, website_id, title, base_salary, bonus, allowance, deduction, note, created_at, updated_at`,
       [

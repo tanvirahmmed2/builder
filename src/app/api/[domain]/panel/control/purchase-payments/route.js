@@ -11,9 +11,9 @@ export async function GET(request, context) {
       `SELECT pp.id, pp.id AS payment_id, pp.purchase_id, pp.amount, pp.payment_method,
               pp.transaction_id, pp.note, pp.payment_date, pp.created_at,
               p.invoice_no, s.name AS supplier_name
-       FROM website_purchase_payments pp
-       JOIN website_purchases p ON p.id = pp.purchase_id
-       LEFT JOIN website_suppliers s ON s.id = p.supplier_id
+       FROM website_ecommerce_purchase_payments pp
+       JOIN website_ecommerce_purchases p ON p.id = pp.purchase_id
+       LEFT JOIN website_ecommerce_suppliers s ON s.id = p.supplier_id
        WHERE pp.website_id = $1
        ORDER BY pp.id DESC`,
       [website.id]

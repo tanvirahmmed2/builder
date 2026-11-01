@@ -14,7 +14,7 @@ export async function PUT(request, context) {
     const { staff_id, salary_id, effective_date, status, note } = body;
 
     const res = await queryDb(
-      `UPDATE website_staff_salaries
+      `UPDATE website_staff_payrolls
        SET staff_id = COALESCE($1, staff_id),
            salary_id = COALESCE($2, salary_id),
            effective_date = COALESCE($3, effective_date),
@@ -63,7 +63,7 @@ export async function DELETE(request, context) {
     const assignmentId = Number(params.id);
 
     const res = await queryDb(
-      `DELETE FROM website_staff_salaries
+      `DELETE FROM website_staff_payrolls
        WHERE id = $1 AND website_id = $2
        RETURNING id`,
       [assignmentId, website.id]

@@ -20,7 +20,7 @@ export async function GET(request, context) {
               s.order_status, s.note, s.items, s.created_at, s.updated_at,
               b.name AS branch_name, b.code AS branch_code, b.address AS branch_address, b.phone AS branch_phone,
               u.name AS staff_name
-       FROM website_sales s
+       FROM website_ecommerce_orders s
        LEFT JOIN website_branches b ON b.id = s.branch_id
        LEFT JOIN website_users u ON u.id = s.user_id
        WHERE ${condition} AND s.website_id = $3
@@ -37,7 +37,7 @@ export async function GET(request, context) {
     // Fetch line items
     const itemsRes = await queryDb(
       `SELECT id, product_id, variant_id, product_name, quantity, unit_price, subtotal
-       FROM website_sale_items
+       FROM website_ecommerce_order_items
        WHERE sale_id = $1 AND website_id = $2
        ORDER BY id ASC`,
       [sale.id, website.id]
@@ -46,7 +46,7 @@ export async function GET(request, context) {
     // Fetch payments
     const paymentsRes = await queryDb(
       `SELECT id, id AS payment_id, amount, payment_method, transaction_id, note, payment_date, created_at
-       FROM website_sale_payments
+       FROM website_payments
        WHERE sale_id = $1 AND website_id = $2
        ORDER BY id DESC`,
       [sale.id, website.id]
@@ -85,7 +85,7 @@ export async function PUT(request, context) {
     const condition = isNum ? '(id = $1 OR invoice_no = $2)' : 'invoice_no = $2';
     const saleCheck = await client.query(
       `SELECT id, invoice_no, total_amount, paid_amount, due_amount, order_status, payment_status
-       FROM website_sales
+       FROM website_ecommerce_orders
        WHERE ${condition} AND website_id = $3
        FOR UPDATE`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]
@@ -110,7 +110,7 @@ export async function PUT(request, context) {
       newPayStatus = newDue <= 0 ? 'PAID' : 'PARTIAL';
 
       await client.query(
-        `INSERT INTO website_sale_payments (sale_id, website_id, amount, payment_method, note)
+        `INSERT INTO website_payments (sale_id, website_id, amount, payment_method, note)
          VALUES ($1, $2, $3, $4, $5)`,
         [currentSale.id, website.id, addAmt, payment_type || 'cash', `Payment added via control panel`]
       );
@@ -121,7 +121,7 @@ export async function PUT(request, context) {
     }
 
     const updatedRes = await client.query(
-      `UPDATE website_sales
+      `UPDATE website_ecommerce_orders
        SET order_status = COALESCE($1, order_status),
            payment_status = COALESCE($2, payment_status),
            paid_amount = $3,
@@ -174,7 +174,7 @@ export async function DELETE(request, context) {
 
     const condition = isNum ? '(id = $1 OR invoice_no = $2)' : 'invoice_no = $2';
     const saleRes = await client.query(
-      `SELECT id, invoice_no FROM website_sales WHERE ${condition} AND website_id = $3`,
+      `SELECT id, invoice_no FROM website_ecommerce_orders WHERE ${condition} AND website_id = $3`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]
     );
 
@@ -188,14 +188,14 @@ export async function DELETE(request, context) {
 
     // Revert product stocks for each sold item
     const itemsRes = await client.query(
-      `SELECT product_id, quantity FROM website_sale_items WHERE sale_id = $1 AND website_id = $2`,
+      `SELECT product_id, quantity FROM website_ecommerce_order_items WHERE sale_id = $1 AND website_id = $2`,
       [orderId, website.id]
     );
 
     for (const item of itemsRes.rows) {
       if (item.product_id) {
         await client.query(
-          `UPDATE website_products
+          `UPDATE website_ecommerce_products
            SET stock = stock + $1, updated_at = NOW()
            WHERE id = $2 AND website_id = $3`,
           [item.quantity, item.product_id, website.id]
@@ -204,7 +204,7 @@ export async function DELETE(request, context) {
     }
 
     // Delete sale
-    await client.query(`DELETE FROM website_sales WHERE id = $1 AND website_id = $2`, [orderId, website.id]);
+    await client.query(`DELETE FROM website_ecommerce_orders WHERE id = $1 AND website_id = $2`, [orderId, website.id]);
 
     await client.query('COMMIT');
 

@@ -17,8 +17,8 @@ export async function GET(request, context) {
               s.name AS supplier_name, s.phone AS supplier_phone, s.company_name AS supplier_company,
               b.name AS branch_name, b.code AS branch_code,
               u.name AS staff_name
-       FROM website_purchases p
-       LEFT JOIN website_suppliers s ON s.id = p.supplier_id
+       FROM website_ecommerce_purchases p
+       LEFT JOIN website_ecommerce_suppliers s ON s.id = p.supplier_id
        LEFT JOIN website_branches b ON b.id = p.branch_id
        LEFT JOIN website_users u ON u.id = p.user_id
        WHERE p.id = $1 AND p.website_id = $2
@@ -35,7 +35,7 @@ export async function GET(request, context) {
     // Fetch payments made for this purchase
     const paymentsRes = await queryDb(
       `SELECT id, id AS payment_id, amount, payment_method, transaction_id, note, payment_date, created_at
-       FROM website_purchase_payments
+       FROM website_ecommerce_purchase_payments
        WHERE purchase_id = $1 AND website_id = $2
        ORDER BY id DESC`,
       [purchaseId, website.id]
@@ -44,7 +44,7 @@ export async function GET(request, context) {
     // Fetch items
     const itemsRes = await queryDb(
       `SELECT id, product_id, variant_id, product_name, quantity, unit_cost, subtotal
-       FROM website_purchase_items
+       FROM website_ecommerce_purchase_items
        WHERE purchase_id = $1 AND website_id = $2
        ORDER BY id ASC`,
       [purchaseId, website.id]
@@ -78,14 +78,14 @@ export async function DELETE(request, context) {
 
     // 1. Get purchase items to revert stock
     const itemsRes = await client.query(
-      `SELECT product_id, quantity FROM website_purchase_items WHERE purchase_id = $1 AND website_id = $2`,
+      `SELECT product_id, quantity FROM website_ecommerce_purchase_items WHERE purchase_id = $1 AND website_id = $2`,
       [purchaseId, website.id]
     );
 
     for (const item of itemsRes.rows) {
       if (item.product_id) {
         await client.query(
-          `UPDATE website_products
+          `UPDATE website_ecommerce_products
            SET stock = GREATEST(0, stock - $1), updated_at = NOW()
            WHERE id = $2 AND website_id = $3`,
           [item.quantity, item.product_id, website.id]
@@ -95,7 +95,7 @@ export async function DELETE(request, context) {
 
     // 2. Delete purchase (cascade deletes items and payments)
     const delRes = await client.query(
-      `DELETE FROM website_purchases WHERE id = $1 AND website_id = $2 RETURNING invoice_no`,
+      `DELETE FROM website_ecommerce_purchases WHERE id = $1 AND website_id = $2 RETURNING invoice_no`,
       [purchaseId, website.id]
     );
 

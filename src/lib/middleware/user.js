@@ -250,3 +250,7 @@ export function hasPermission(user, moduleSlug, action = 'view') {
 export function canAccessModule(user, moduleSlug) {
   return hasPermission(user, moduleSlug, 'view') || hasPermission(user, moduleSlug, 'manage');
 }
+
+export { getWebsiteStaffSession, hasStaffPermission } from './website/staff';
+export { getWebsiteClientSession } from './website/user';
+

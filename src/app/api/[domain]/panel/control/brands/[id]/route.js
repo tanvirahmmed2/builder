@@ -13,7 +13,7 @@ export async function GET(request, context) {
 
     const res = await queryDb(
       `SELECT id, id AS brand_id, website_id, name, slug, image_url, description, is_active, created_at, updated_at
-       FROM website_brands
+       FROM website_ecommerce_brands
        WHERE id = $1 AND website_id = $2
        LIMIT 1`,
       [brandId, website.id]
@@ -59,7 +59,7 @@ export async function PUT(request, context) {
     const finalSlug = slug ? slugify(slug, { lower: true, strict: true }) : (name ? slugify(name, { lower: true, strict: true }) : null);
 
     const res = await queryDb(
-      `UPDATE website_brands
+      `UPDATE website_ecommerce_brands
        SET name = COALESCE($1, name),
            slug = COALESCE($2, slug),
            image_url = COALESCE($3, image_url),
@@ -100,7 +100,7 @@ export async function DELETE(request, context) {
     const brandId = Number(params.id);
 
     const res = await queryDb(
-      `DELETE FROM website_brands
+      `DELETE FROM website_ecommerce_brands
        WHERE id = $1 AND website_id = $2
        RETURNING id`,
       [brandId, website.id]

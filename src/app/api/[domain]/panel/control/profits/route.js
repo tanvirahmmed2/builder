@@ -11,9 +11,9 @@ export async function GET(request, context) {
       queryDb(
         `SELECT COALESCE(SUM(s.total_amount), 0) AS total_revenue,
                 COALESCE(SUM(si.quantity * p.buy_price), 0) AS total_cogs
-         FROM website_sales s
-         JOIN website_sale_items si ON si.sale_id = s.id
-         LEFT JOIN website_products p ON p.id = si.product_id
+         FROM website_ecommerce_orders s
+         JOIN website_ecommerce_order_items si ON si.sale_id = s.id
+         LEFT JOIN website_ecommerce_products p ON p.id = si.product_id
          WHERE s.website_id = $1 AND s.order_status != 'cancelled'`,
         [website.id]
       ),

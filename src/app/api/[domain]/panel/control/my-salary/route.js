@@ -16,8 +16,8 @@ export async function GET(request, context) {
         `SELECT ss.id, ss.effective_date, ss.status,
                 s.title, s.base_salary, s.bonus, s.allowance, s.deduction,
                 (s.base_salary + s.bonus + s.allowance - s.deduction) AS net_salary
-         FROM website_staff_salaries ss
-         JOIN website_salaries s ON s.id = ss.salary_id
+         FROM website_staff_payrolls ss
+         JOIN website_staff_payrolls s ON s.id = ss.salary_id
          WHERE ss.staff_id = $1 AND ss.website_id = $2 AND ss.status = 'active'
          ORDER BY ss.id DESC
          LIMIT 1`,
@@ -25,7 +25,7 @@ export async function GET(request, context) {
       ),
       queryDb(
         `SELECT id, id AS payment_id, amount, payment_month, payment_method, status, transaction_id, payment_date
-         FROM website_salary_payments
+         FROM website_staff_salary_payments
          WHERE staff_id = $1 AND website_id = $2
          ORDER BY payment_date DESC
          LIMIT 50`,

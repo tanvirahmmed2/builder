@@ -16,7 +16,7 @@ export async function GET(request, context) {
       `SELECT s.id, s.id AS support_id, s.website_id, s.ticket_number, s.user_id,
               s.requester_name, s.requester_email, s.subject, s.priority, s.status,
               s.created_at, s.updated_at
-       FROM website_support s
+       FROM website_support_tickets s
        WHERE ${condition} AND s.website_id = $3
        LIMIT 1`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]
@@ -38,7 +38,7 @@ export async function GET(request, context) {
                 '[]'
               ) AS images
        FROM website_support_messages m
-       LEFT JOIN website_support_images img ON img.message_id = m.id
+       LEFT JOIN website_support_attachments img ON img.message_id = m.id
        WHERE m.support_id = $1 AND m.website_id = $2
        GROUP BY m.id
        ORDER BY m.id ASC`,
@@ -70,7 +70,7 @@ export async function PATCH(request, context) {
 
     const condition = isNum ? '(id = $1 OR ticket_number = $2)' : 'ticket_number = $2';
     const res = await queryDb(
-      `UPDATE website_support
+      `UPDATE website_support_tickets
        SET status = COALESCE($3, status),
            priority = COALESCE($4, priority),
            updated_at = NOW()
@@ -110,7 +110,7 @@ export async function DELETE(request, context) {
 
     const condition = isNum ? '(id = $1 OR ticket_number = $2)' : 'ticket_number = $2';
     const res = await queryDb(
-      `DELETE FROM website_support
+      `DELETE FROM website_support_tickets
        WHERE ${condition} AND website_id = $3
        RETURNING id, ticket_number`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]

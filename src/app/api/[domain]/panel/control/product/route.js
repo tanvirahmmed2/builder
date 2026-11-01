@@ -19,9 +19,9 @@ export async function GET(request, context) {
              p.sku, p.barcode, p.unit, p.buy_price, p.sale_price, p.discount_price, p.stock,
              p.description, p.image, p.is_active, p.variants, p.created_at, p.updated_at,
              c.name AS category_name, b.name AS brand_name
-      FROM website_products p
-      LEFT JOIN website_categories c ON c.id = p.category_id
-      LEFT JOIN website_brands b ON b.id = p.brand_id
+      FROM website_ecommerce_products p
+      LEFT JOIN website_ecommerce_categories c ON c.id = p.category_id
+      LEFT JOIN website_ecommerce_brands b ON b.id = p.brand_id
       WHERE p.website_id = $1
     `;
     const params = [website.id];
@@ -104,7 +104,7 @@ export async function POST(request, context) {
     const finalSlug = slugify(slug || name, { lower: true, strict: true }) + '-' + Math.floor(1000 + Math.random() * 9000);
 
     const res = await queryDb(
-      `INSERT INTO website_products (
+      `INSERT INTO website_ecommerce_products (
          website_id, category_id, brand_id, name, slug, sku, barcode, unit,
          buy_price, sale_price, discount_price, stock, description, image, is_active, variants
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)

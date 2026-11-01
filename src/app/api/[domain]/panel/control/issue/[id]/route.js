@@ -11,7 +11,7 @@ export async function DELETE(request, context) {
     const issueId = Number(params.id);
 
     const res = await queryDb(
-      `DELETE FROM website_issues
+      `DELETE FROM website_support_tickets
        WHERE id = $1 AND website_id = $2
        RETURNING id, title`,
       [issueId, website.id]

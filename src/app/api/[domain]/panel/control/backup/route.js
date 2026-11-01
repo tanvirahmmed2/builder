@@ -18,12 +18,12 @@ export async function GET(request, context) {
       expensesRes
     ] = await Promise.all([
       queryDb('SELECT * FROM website_branches WHERE website_id = $1', [website.id]),
-      queryDb('SELECT * FROM website_categories WHERE website_id = $1', [website.id]),
-      queryDb('SELECT * FROM website_brands WHERE website_id = $1', [website.id]),
-      queryDb('SELECT * FROM website_products WHERE website_id = $1', [website.id]),
-      queryDb('SELECT * FROM website_suppliers WHERE website_id = $1', [website.id]),
+      queryDb('SELECT * FROM website_ecommerce_categories WHERE website_id = $1', [website.id]),
+      queryDb('SELECT * FROM website_ecommerce_brands WHERE website_id = $1', [website.id]),
+      queryDb('SELECT * FROM website_ecommerce_products WHERE website_id = $1', [website.id]),
+      queryDb('SELECT * FROM website_ecommerce_suppliers WHERE website_id = $1', [website.id]),
       queryDb('SELECT * FROM website_customers WHERE website_id = $1', [website.id]),
-      queryDb('SELECT * FROM website_sales WHERE website_id = $1', [website.id]),
+      queryDb('SELECT * FROM website_ecommerce_orders WHERE website_id = $1', [website.id]),
       queryDb('SELECT * FROM website_expenses WHERE website_id = $1', [website.id]),
     ]);
 
@@ -34,12 +34,12 @@ export async function GET(request, context) {
 
     const tables = [
       { name: 'website_branches', rows: branchesRes.rows },
-      { name: 'website_categories', rows: categoriesRes.rows },
-      { name: 'website_brands', rows: brandsRes.rows },
-      { name: 'website_products', rows: productsRes.rows },
-      { name: 'website_suppliers', rows: suppliersRes.rows },
+      { name: 'website_ecommerce_categories', rows: categoriesRes.rows },
+      { name: 'website_ecommerce_brands', rows: brandsRes.rows },
+      { name: 'website_ecommerce_products', rows: productsRes.rows },
+      { name: 'website_ecommerce_suppliers', rows: suppliersRes.rows },
       { name: 'website_customers', rows: customersRes.rows },
-      { name: 'website_sales', rows: salesRes.rows },
+      { name: 'website_ecommerce_orders', rows: salesRes.rows },
       { name: 'website_expenses', rows: expensesRes.rows },
     ];
 

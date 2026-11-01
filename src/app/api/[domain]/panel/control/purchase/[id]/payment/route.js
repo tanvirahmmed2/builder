@@ -28,7 +28,7 @@ export async function POST(request, context) {
     // 1. Verify purchase exists
     const purchRes = await client.query(
       `SELECT id, invoice_no, supplier_id, total_amount, total_paid, due_amount
-       FROM website_purchases
+       FROM website_ecommerce_purchases
        WHERE id = $1 AND website_id = $2
        FOR UPDATE`,
       [purchaseId, website.id]
@@ -44,17 +44,17 @@ export async function POST(request, context) {
     const newDue = Math.max(0, parseFloat(p.total_amount) - newPaid);
     const newStatus = newDue <= 0 ? 'PAID' : 'PARTIAL';
 
-    // 2. Insert into website_purchase_payments
+    // 2. Insert into website_ecommerce_purchase_payments
     const payRes = await client.query(
-      `INSERT INTO website_purchase_payments (purchase_id, website_id, amount, payment_method, transaction_id, note)
+      `INSERT INTO website_ecommerce_purchase_payments (purchase_id, website_id, amount, payment_method, transaction_id, note)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [purchaseId, website.id, payAmt, payment_method, transaction_id, note]
     );
 
-    // 3. Update website_purchases
+    // 3. Update website_ecommerce_purchases
     await client.query(
-      `UPDATE website_purchases
+      `UPDATE website_ecommerce_purchases
        SET total_paid = $1, due_amount = $2, payment_status = $3, updated_at = NOW()
        WHERE id = $4 AND website_id = $5`,
       [newPaid, newDue, newStatus, purchaseId, website.id]
@@ -63,7 +63,7 @@ export async function POST(request, context) {
     // 4. Update supplier balance if applicable
     if (p.supplier_id) {
       await client.query(
-        `UPDATE website_suppliers
+        `UPDATE website_ecommerce_suppliers
          SET balance = GREATEST(0, balance - $1), updated_at = NOW()
          WHERE id = $2 AND website_id = $3`,
         [payAmt, p.supplier_id, website.id]

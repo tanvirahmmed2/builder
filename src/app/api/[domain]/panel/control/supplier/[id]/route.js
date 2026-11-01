@@ -12,7 +12,7 @@ export async function GET(request, context) {
 
     const res = await queryDb(
       `SELECT id, id AS supplier_id, website_id, name, company_name, email, phone, address, balance, note, is_active, created_at, updated_at
-       FROM website_suppliers
+       FROM website_ecommerce_suppliers
        WHERE id = $1 AND website_id = $2
        LIMIT 1`,
       [supplierId, website.id]
@@ -41,7 +41,7 @@ export async function PUT(request, context) {
     const { name, company_name, email, phone, address, balance, note, is_active } = body;
 
     const res = await queryDb(
-      `UPDATE website_suppliers
+      `UPDATE website_ecommerce_suppliers
        SET name = COALESCE($1, name),
            company_name = COALESCE($2, company_name),
            email = COALESCE($3, email),
@@ -85,7 +85,7 @@ export async function DELETE(request, context) {
     const supplierId = Number(params.id);
 
     const res = await queryDb(
-      `DELETE FROM website_suppliers
+      `DELETE FROM website_ecommerce_suppliers
        WHERE id = $1 AND website_id = $2
        RETURNING id, name`,
       [supplierId, website.id]

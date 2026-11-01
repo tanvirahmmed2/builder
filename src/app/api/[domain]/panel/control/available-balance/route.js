@@ -8,11 +8,11 @@ export async function GET(request, context) {
     if (errorResponse) return errorResponse;
 
     const [salesPaidRes, manualAddRes, purchRes, expRes, salRes, withRes] = await Promise.all([
-      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_sales WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_ecommerce_orders WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_balance_transactions WHERE website_id = $1 AND type = 'add'`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_purchases WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_ecommerce_purchases WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_expenses WHERE website_id = $1`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_salary_payments WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_staff_salary_payments WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_withdrawals WHERE website_id = $1`, [website.id]),
     ]);
 

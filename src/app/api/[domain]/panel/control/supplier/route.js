@@ -9,7 +9,7 @@ export async function GET(request, context) {
 
     const res = await queryDb(
       `SELECT id, id AS supplier_id, website_id, name, company_name, email, phone, address, balance, note, is_active, created_at, updated_at
-       FROM website_suppliers
+       FROM website_ecommerce_suppliers
        WHERE website_id = $1
        ORDER BY name ASC`,
       [website.id]
@@ -35,7 +35,7 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(
-      `INSERT INTO website_suppliers (website_id, name, company_name, email, phone, address, balance, note, is_active)
+      `INSERT INTO website_ecommerce_suppliers (website_id, name, company_name, email, phone, address, balance, note, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, id AS supplier_id, website_id, name, company_name, email, phone, address, balance, note, is_active, created_at, updated_at`,
       [website.id, name.trim(), company_name || null, email || null, phone || null, address || null, parseFloat(balance) || 0, note || null, is_active]

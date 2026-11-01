@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryDb } from '@/lib/db/pg';
 import { resolveWebsiteFromRequest, getWebsiteUserSession } from '@/lib/middleware/user';
+import { getWebsiteStaffSession } from '@/lib/middleware/website/staff';
 
 /**
  * Resolves the target website from the request context and params.
@@ -27,8 +28,12 @@ export async function getControlAuth(request, context) {
     return { website: null, user: null, errorResponse: NextResponse.json({ success: false, error: 'Website not found' }, { status: 404 }) };
   }
 
-  const session = await getWebsiteUserSession(request, website.id);
-  const user = session?.user || session || null;
+  // Check staff session first, then user session
+  let user = await getWebsiteStaffSession(request, website.id);
+  if (!user) {
+    const session = await getWebsiteUserSession(request, website.id);
+    user = session?.user || session || null;
+  }
 
   return { website, user, errorResponse: null };
 }

@@ -13,7 +13,7 @@ export async function POST(request, context) {
 
     const condition = isNum ? '(id = $1 OR ticket_number = $2)' : 'ticket_number = $2';
     const ticketCheck = await queryDb(
-      `SELECT id, ticket_number FROM website_support WHERE ${condition} AND website_id = $3 LIMIT 1`,
+      `SELECT id, ticket_number FROM website_support_tickets WHERE ${condition} AND website_id = $3 LIMIT 1`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]
     );
 
@@ -41,7 +41,7 @@ export async function POST(request, context) {
     );
 
     // Update ticket timestamp
-    await queryDb(`UPDATE website_support SET updated_at = NOW() WHERE id = $1`, [ticketId]);
+    await queryDb(`UPDATE website_support_tickets SET updated_at = NOW() WHERE id = $1`, [ticketId]);
 
     await logWebsiteActivity({
       websiteId: website.id,

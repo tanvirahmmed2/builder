@@ -17,7 +17,7 @@ export async function GET(request, context) {
       const res = await queryDb(
         `SELECT invoice_no, customer_name, customer_phone, total_amount, paid_amount, due_amount,
                 payment_type, order_status, created_at
-         FROM website_sales
+         FROM website_ecommerce_orders
          WHERE website_id = $1
          ORDER BY id DESC`,
         [website.id]
@@ -29,7 +29,7 @@ export async function GET(request, context) {
     } else if (type === 'purchases') {
       const res = await queryDb(
         `SELECT invoice_no, total_amount, total_paid, due_amount, payment_status, created_at
-         FROM website_purchases
+         FROM website_ecommerce_purchases
          WHERE website_id = $1
          ORDER BY id DESC`,
         [website.id]
@@ -53,7 +53,7 @@ export async function GET(request, context) {
     } else {
       // Inventory
       const res = await queryDb(
-        `SELECT name, sku, barcode, stock, buy_price, sale_price FROM website_products WHERE website_id = $1 ORDER BY name ASC`,
+        `SELECT name, sku, barcode, stock, buy_price, sale_price FROM website_ecommerce_products WHERE website_id = $1 ORDER BY name ASC`,
         [website.id]
       );
       csv = 'Product,SKU,Barcode,Stock,BuyPrice,SalePrice\n';

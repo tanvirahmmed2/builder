@@ -12,7 +12,7 @@ export async function GET(request, context) {
               r.customer_email, r.rating, r.comment, r.is_approved, r.created_at,
               p.name AS product_name, p.image AS product_image
        FROM website_reviews r
-       LEFT JOIN website_products p ON p.id = r.product_id
+       LEFT JOIN website_ecommerce_products p ON p.id = r.product_id
        WHERE r.website_id = $1
        ORDER BY r.id DESC`,
       [website.id]

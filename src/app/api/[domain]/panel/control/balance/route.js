@@ -11,12 +11,12 @@ export async function GET(request, context) {
       salesRes, manualAddRes, manualDeductRes,
       purchRes, expRes, salRes, withRes, txRes, settingsRes
     ] = await Promise.all([
-      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_sales WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_ecommerce_orders WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_balance_transactions WHERE website_id = $1 AND type = 'add'`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_balance_transactions WHERE website_id = $1 AND type = 'deduct'`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_purchases WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_ecommerce_purchases WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_expenses WHERE website_id = $1`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_salary_payments WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_staff_salary_payments WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_withdrawals WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT id, id AS tx_id, type, amount, payment_method, reference_no, note, created_at FROM website_balance_transactions WHERE website_id = $1 ORDER BY id DESC LIMIT 50`, [website.id]),
       queryDb(`SELECT is_share_investment FROM website_settings WHERE website_id = $1 LIMIT 1`, [website.id]),

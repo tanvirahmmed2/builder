@@ -13,9 +13,9 @@ export async function GET(request, context) {
               c.id AS category_id, c.name AS category_name, b.name AS brand_name,
               (p.stock * p.buy_price) AS total_cost_value,
               (p.stock * p.sale_price) AS total_retail_value
-       FROM website_products p
-       LEFT JOIN website_categories c ON c.id = p.category_id
-       LEFT JOIN website_brands b ON b.id = p.brand_id
+       FROM website_ecommerce_products p
+       LEFT JOIN website_ecommerce_categories c ON c.id = p.category_id
+       LEFT JOIN website_ecommerce_brands b ON b.id = p.brand_id
        WHERE p.website_id = $1
        ORDER BY p.stock ASC, p.name ASC`,
       [website.id]

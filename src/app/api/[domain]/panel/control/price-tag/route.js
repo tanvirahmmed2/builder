@@ -13,9 +13,9 @@ export async function GET(request, context) {
     let sql = `
       SELECT p.id, p.id AS product_id, p.name, p.barcode, p.sku, p.sale_price, p.discount_price,
              p.unit, c.name AS category_name, b.name AS brand_name
-      FROM website_products p
-      LEFT JOIN website_categories c ON c.id = p.category_id
-      LEFT JOIN website_brands b ON b.id = p.brand_id
+      FROM website_ecommerce_products p
+      LEFT JOIN website_ecommerce_categories c ON c.id = p.category_id
+      LEFT JOIN website_ecommerce_brands b ON b.id = p.brand_id
       WHERE p.website_id = $1 AND p.is_active = TRUE
     `;
     const params = [website.id];

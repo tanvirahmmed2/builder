@@ -19,9 +19,9 @@ export async function GET(request, context) {
                 p.sku, p.barcode, p.unit, p.buy_price, p.sale_price, p.discount_price, p.stock,
                 p.description, p.image, p.is_active, p.variants, p.created_at, p.updated_at,
                 c.name AS category_name, b.name AS brand_name
-         FROM website_products p
-         LEFT JOIN website_categories c ON c.id = p.category_id
-         LEFT JOIN website_brands b ON b.id = p.brand_id
+         FROM website_ecommerce_products p
+         LEFT JOIN website_ecommerce_categories c ON c.id = p.category_id
+         LEFT JOIN website_ecommerce_brands b ON b.id = p.brand_id
          WHERE (p.id = $1 OR p.slug = $2) AND p.website_id = $3
          LIMIT 1`,
         [Number(identifier), String(identifier), website.id]
@@ -32,9 +32,9 @@ export async function GET(request, context) {
                 p.sku, p.barcode, p.unit, p.buy_price, p.sale_price, p.discount_price, p.stock,
                 p.description, p.image, p.is_active, p.variants, p.created_at, p.updated_at,
                 c.name AS category_name, b.name AS brand_name
-         FROM website_products p
-         LEFT JOIN website_categories c ON c.id = p.category_id
-         LEFT JOIN website_brands b ON b.id = p.brand_id
+         FROM website_ecommerce_products p
+         LEFT JOIN website_ecommerce_categories c ON c.id = p.category_id
+         LEFT JOIN website_ecommerce_brands b ON b.id = p.brand_id
          WHERE p.slug = $1 AND p.website_id = $2
          LIMIT 1`,
         [String(identifier), website.id]
@@ -110,7 +110,7 @@ export async function PUT(request, context) {
     ];
 
     const res = await queryDb(
-      `UPDATE website_products
+      `UPDATE website_ecommerce_products
        SET name = COALESCE($1, name),
            slug = COALESCE($2, slug),
            category_id = COALESCE($3, category_id),
@@ -164,7 +164,7 @@ export async function DELETE(request, context) {
 
     const condition = isNum ? '(id = $1 OR slug = $2)' : 'slug = $2';
     const res = await queryDb(
-      `DELETE FROM website_products
+      `DELETE FROM website_ecommerce_products
        WHERE ${condition} AND website_id = $3
        RETURNING id, name`,
       [isNum ? Number(identifier) : -1, String(identifier), website.id]

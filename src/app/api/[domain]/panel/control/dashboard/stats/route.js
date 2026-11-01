@@ -14,23 +14,23 @@ export async function GET(request, context) {
       latestSalesRes, latestPaymentsRes, latestWithdrawalsRes,
       latestPurchPayRes, latestSalPayRes, latestExpRes
     ] = await Promise.all([
-      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_sales WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_ecommerce_orders WHERE website_id = $1 AND order_status != 'cancelled'`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_balance_transactions WHERE website_id = $1 AND type = 'add'`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_balance_transactions WHERE website_id = $1 AND type = 'deduct'`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_purchases WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(total_paid), 0) AS total FROM website_ecommerce_purchases WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(paid_amount), 0) AS total FROM website_expenses WHERE website_id = $1`, [website.id]),
-      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_salary_payments WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_staff_salary_payments WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COALESCE(SUM(amount), 0) AS total FROM website_withdrawals WHERE website_id = $1`, [website.id]),
 
-      queryDb(`SELECT COALESCE(SUM(stock * buy_price), 0) AS stock_balance, COALESCE(SUM(stock), 0) AS stock_items, COUNT(*) AS total_items FROM website_products WHERE website_id = $1`, [website.id]),
+      queryDb(`SELECT COALESCE(SUM(stock * buy_price), 0) AS stock_balance, COALESCE(SUM(stock), 0) AS stock_items, COUNT(*) AS total_items FROM website_ecommerce_products WHERE website_id = $1`, [website.id]),
       queryDb(`SELECT COUNT(*) AS total_branches FROM website_branches WHERE website_id = $1 AND is_active = TRUE`, [website.id]),
       queryDb(`SELECT COUNT(*) AS total_staff FROM website_users WHERE website_id = $1 AND is_active = TRUE`, [website.id]),
 
-      queryDb(`SELECT id, id AS order_id, invoice_no, customer_name, customer_phone, total_amount, paid_amount, due_amount, payment_type, order_status, created_at FROM website_sales WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
-      queryDb(`SELECT id, id AS payment_id, amount, payment_method, transaction_id, created_at FROM website_sale_payments WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
+      queryDb(`SELECT id, id AS order_id, invoice_no, customer_name, customer_phone, total_amount, paid_amount, due_amount, payment_type, order_status, created_at FROM website_ecommerce_orders WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
+      queryDb(`SELECT id, id AS payment_id, amount, payment_method, transaction_id, created_at FROM website_payments WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
       queryDb(`SELECT w.id, w.amount, w.payment_method, w.withdrawal_date, i.name AS investor_name FROM website_withdrawals w JOIN website_investors i ON i.id = w.investor_id WHERE w.website_id = $1 ORDER BY w.id DESC LIMIT 5`, [website.id]),
-      queryDb(`SELECT id, amount, payment_method, payment_date FROM website_purchase_payments WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
-      queryDb(`SELECT sp.id, sp.amount, sp.payment_month, u.name AS staff_name FROM website_salary_payments sp JOIN website_users u ON u.id = sp.staff_id WHERE sp.website_id = $1 ORDER BY sp.id DESC LIMIT 5`, [website.id]),
+      queryDb(`SELECT id, amount, payment_method, payment_date FROM website_ecommerce_purchase_payments WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id]),
+      queryDb(`SELECT sp.id, sp.amount, sp.payment_month, u.name AS staff_name FROM website_staff_salary_payments sp JOIN website_users u ON u.id = sp.staff_id WHERE sp.website_id = $1 ORDER BY sp.id DESC LIMIT 5`, [website.id]),
       queryDb(`SELECT id, id AS expense_id, title, category, total_amount, paid_amount, expense_date FROM website_expenses WHERE website_id = $1 ORDER BY id DESC LIMIT 5`, [website.id])
     ]);
 

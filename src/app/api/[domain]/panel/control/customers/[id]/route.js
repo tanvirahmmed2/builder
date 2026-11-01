@@ -40,7 +40,7 @@ export async function GET(request, context) {
     const ordersRes = await queryDb(
       `SELECT id, id AS order_id, invoice_no, total_amount, paid_amount, due_amount,
               payment_type, order_status, created_at
-       FROM website_sales
+       FROM website_ecommerce_orders
        WHERE (customer_id = $1 OR customer_phone = $2) AND website_id = $3
        ORDER BY id DESC
        LIMIT 50`,

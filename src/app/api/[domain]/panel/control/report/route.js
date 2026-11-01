@@ -14,13 +14,13 @@ export async function GET(request, context) {
                 COALESCE(SUM(paid_amount), 0) AS total_collected,
                 COALESCE(SUM(due_amount), 0) AS total_due,
                 COALESCE(SUM(discount_amount), 0) AS total_discounts
-         FROM website_sales
+         FROM website_ecommerce_orders
          WHERE website_id = $1 AND order_status != 'cancelled'`,
         [website.id]
       ),
       queryDb(
         `SELECT product_name, SUM(quantity) AS total_qty, SUM(subtotal) AS total_amount
-         FROM website_sale_items
+         FROM website_ecommerce_order_items
          WHERE website_id = $1
          GROUP BY product_name
          ORDER BY total_qty DESC
@@ -31,7 +31,7 @@ export async function GET(request, context) {
         `SELECT DATE(created_at) AS sale_date,
                 COUNT(*) AS order_count,
                 COALESCE(SUM(total_amount), 0) AS daily_revenue
-         FROM website_sales
+         FROM website_ecommerce_orders
          WHERE website_id = $1 AND order_status != 'cancelled'
          GROUP BY DATE(created_at)
          ORDER BY sale_date DESC

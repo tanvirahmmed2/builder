@@ -10,7 +10,7 @@ export async function GET(request, context) {
     const res = await queryDb(
       `SELECT id, id AS contact_id, website_id, name, email, phone, subject,
               message, status, reply, replied_at, created_at, updated_at
-       FROM website_contact
+       FROM website_contacts
        WHERE website_id = $1
        ORDER BY id DESC`,
       [website.id]

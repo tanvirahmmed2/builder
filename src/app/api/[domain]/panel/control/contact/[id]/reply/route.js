@@ -18,7 +18,7 @@ export async function POST(request, context) {
     }
 
     const res = await queryDb(
-      `UPDATE website_contact
+      `UPDATE website_contacts
        SET reply = $1,
            status = 'REPLIED',
            replied_at = NOW(),
