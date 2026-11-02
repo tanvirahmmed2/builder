@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 export const WebsiteContext = createContext(null);
 
@@ -120,28 +120,20 @@ export function useWebsite() {
 
 /**
  * Returns the proper link prefix for tenant storefronts:
- * - Empty string ('') when browsing on a subdomain (shop.disibin.com) or custom domain (mybrand.com)
- * - '/${domain}' when previewing directly on the base SaaS platform (localhost:3000/shop or disibin.com/shop)
+ * - Empty string ('') when browsing on a subdomain (shop) or custom domain (mybrand)
+ * - '/${domain}' when previewing directly via path (e.g. /shop/products)
  */
 export function useTenantBasePrefix() {
   const params = useParams();
-  const domain = params?.domain || '';
-  const [basePrefix, setBasePrefix] = useState(domain ? `/${domain}` : '');
+  const pathname = usePathname();
+  const domain = params?.domain ? String(params.domain) : '';
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname.toLowerCase();
-      const isBase =
-        host === 'disibin.com' ||
-        host === 'www.disibin.com' ||
-        host === 'localhost' ||
-        host === '127.0.0.1' ||
-        host === '0.0.0.0';
+  if (!domain) return '';
 
-      setBasePrefix(isBase ? (domain ? `/${domain}` : '') : '');
-    }
-  }, [domain]);
+  if (pathname && (pathname === `/${domain}` || pathname.startsWith(`/${domain}/`))) {
+    return `/${domain}`;
+  }
 
-  return basePrefix;
+  return '';
 }
 

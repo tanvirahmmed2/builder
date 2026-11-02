@@ -20,8 +20,8 @@ export default function StoreNavbar() {
   const domain = params?.domain || '';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const basePrefix = useTenantBasePrefix();
-  const siteName = website?.settings?.site_name || website?.name || 'Store';
-  const siteType = website?.website_type || 'ecommerce';
+  const siteName = website?.settings?.site_name ?? website?.name ?? 'Store';
+  const siteType = website?.website_type ?? 'ecommerce';
 
   const navLinks = [
     { label: 'Home', href: `${basePrefix}/` },

@@ -10,8 +10,8 @@ export default function StoreFooter() {
   const domain = params?.domain || '';
   const basePrefix = useTenantBasePrefix();
 
-  const siteName = website?.settings?.site_name || website?.name || 'Store';
-  const tagline = website?.settings?.tagline || 'Powered by Next-Gen Multi-Type SaaS Engine';
+  const siteName = website?.settings?.site_name ?? website?.name ?? 'Store';
+  const tagline = website?.settings?.tagline ?? 'Powered by Next-Gen Multi-Type SaaS Engine';
 
   return (
     <footer className="w-full border-t border-white/10 bg-slate-950 text-slate-400">

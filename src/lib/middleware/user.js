@@ -45,39 +45,39 @@ export function verifyWebsiteToken(token) {
  */
 export function normalizeDomain(domain) {
   if (!domain || typeof domain !== 'string') return '';
-  let clean = domain.trim().toLowerCase();
-  clean = clean.replace(/^https?:\/\//i, '');
-  clean = clean.split('/')[0].split('?')[0];
-  clean = clean.split(':')[0];
+  const clean = domain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//i, '')
+    .split('/')[0]
+    .split('?')[0]
+    .split(':')[0];
   return clean.trim();
 }
 
 /**
  * Checks if the given domain corresponds to the core SaaS platform.
- * (e.g., disibin.com, www.disibin.com, localhost, 127.0.0.1)
+ * (e.g., matching BASE_URL, localhost, 127.0.0.1)
  */
 export function isBaseSaasDomain(rawDomain, baseDomain = BASE_URL) {
   const norm = normalizeDomain(rawDomain);
-  const base = normalizeDomain(baseDomain) || 'disibin.com';
-
   if (!norm) return false;
 
-  // Exact match with configured base domain or www.baseDomain
-  if (norm === base || norm === `www.${base}`) return true;
-
-  // Strip leading www. for comparative check
-  const normWithoutWww = norm.replace(/^www\./, '');
-  const baseWithoutWww = base.replace(/^www\./, '');
-  if (normWithoutWww === baseWithoutWww) return true;
-
-  // Local development hostnames
-  if (
+  const isLocalHost = (
     norm === 'localhost' ||
     norm === '127.0.0.1' ||
     norm === '0.0.0.0' ||
     norm === '::1'
-  ) {
-    return true;
+  );
+  if (isLocalHost) return true;
+
+  const base = normalizeDomain(baseDomain);
+  if (base) {
+    if (norm === base || norm === `www.${base}`) return true;
+
+    const normWithoutWww = norm.replace(/^www\./, '');
+    const baseWithoutWww = base.replace(/^www\./, '');
+    if (normWithoutWww === baseWithoutWww) return true;
   }
 
   return false;
@@ -88,20 +88,20 @@ export function isBaseSaasDomain(rawDomain, baseDomain = BASE_URL) {
  */
 export function parseDomainInfo(rawHost, baseDomain = BASE_URL) {
   const norm = normalizeDomain(rawHost);
-  const base = normalizeDomain(baseDomain) || 'disibin.com';
-  const baseWithoutWww = base.replace(/^www\./, '');
-
   if (!norm) {
     return { isBaseDomain: false, isSubdomain: false, isCustomDomain: false, slug: null };
   }
+
+  const base = normalizeDomain(baseDomain);
+  const baseWithoutWww = base ? base.replace(/^www\./, '') : '';
 
   // Check if it's the core SaaS domain
   if (isBaseSaasDomain(norm, base)) {
     return { isBaseDomain: true, isSubdomain: false, isCustomDomain: false, slug: null };
   }
 
-  // Check if it's a subdomain of the base domain (e.g., shop.disibin.com)
-  if (norm.endsWith(`.${baseWithoutWww}`)) {
+  // Check if it's a subdomain of the base domain
+  if (baseWithoutWww && norm.endsWith(`.${baseWithoutWww}`)) {
     const sub = norm.slice(0, -(baseWithoutWww.length + 1)).toLowerCase();
     if (sub && sub !== 'www') {
       return { isBaseDomain: false, isSubdomain: true, isCustomDomain: false, slug: sub };
@@ -131,32 +131,56 @@ export function parseDomainInfo(rawHost, baseDomain = BASE_URL) {
 // 3. WEBSITE RESOLUTION
 // ============================================================================
 
+const RESERVED_SLUGS = new Set([
+  'localhost',
+  'www',
+  'admin',
+  'api',
+  'creator',
+  'developer',
+  'saas',
+]);
+
 export async function resolveWebsiteFromRequest(req, optionalSlug = null) {
   try {
-    const cleanBase = normalizeDomain(BASE_URL) || 'disibin.com';
+    const cleanBase = normalizeDomain(BASE_URL);
     let targetSlug = optionalSlug;
-
-    // 1. Check headers and URL if optionalSlug was not provided
     let reqHost = '';
+
+    // 1. Extract target slug and host from request
     if (req) {
       if (typeof req.headers?.get === 'function') {
-        // Standard Web Request / NextRequest
-        targetSlug = targetSlug || req.headers.get('x-domain') || req.headers.get('x-tenant-slug');
-        reqHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+        const headerDomain = req.headers.get('x-domain');
+        const headerSlug = req.headers.get('x-tenant-slug');
+        if (!targetSlug && headerDomain) targetSlug = headerDomain;
+        if (!targetSlug && headerSlug) targetSlug = headerSlug;
+
+        const fwdHost = req.headers.get('x-forwarded-host');
+        const stdHost = req.headers.get('host');
+        if (fwdHost) reqHost = fwdHost;
+        else if (stdHost) reqHost = stdHost;
       } else if (req.headers) {
-        // Node.js IncomingMessage or plain headers object
-        targetSlug = targetSlug || req.headers['x-domain'] || req.headers['x-tenant-slug'];
-        reqHost = req.headers['x-forwarded-host'] || req.headers['host'] || '';
+        const headerDomain = req.headers['x-domain'];
+        const headerSlug = req.headers['x-tenant-slug'];
+        if (!targetSlug && headerDomain) targetSlug = headerDomain;
+        if (!targetSlug && headerSlug) targetSlug = headerSlug;
+
+        const fwdHost = req.headers['x-forwarded-host'];
+        const stdHost = req.headers['host'];
+        if (fwdHost) reqHost = fwdHost;
+        else if (stdHost) reqHost = stdHost;
       }
 
       // Check query params if still unresolved
       if (!targetSlug && req.url) {
         try {
           const parsedUrl = new URL(req.url, 'http://localhost');
-          targetSlug =
-            parsedUrl.searchParams.get('slug') ||
-            parsedUrl.searchParams.get('subdomain') ||
-            parsedUrl.searchParams.get('domain');
+          const qSlug = parsedUrl.searchParams.get('slug');
+          const qSub = parsedUrl.searchParams.get('subdomain');
+          const qDomain = parsedUrl.searchParams.get('domain');
+          if (qSlug) targetSlug = qSlug;
+          else if (qSub) targetSlug = qSub;
+          else if (qDomain) targetSlug = qDomain;
         } catch (_) {}
       }
     }
@@ -186,17 +210,12 @@ export async function resolveWebsiteFromRequest(req, optionalSlug = null) {
     const cleanSlugWithoutWww = cleanSlug.replace(/^www\./, '');
 
     // Reserved system routes / base domains should never resolve as a website
-    if (
-      cleanSlug === cleanBase ||
-      cleanSlug === `www.${cleanBase}` ||
-      cleanSlug === 'localhost' ||
-      cleanSlug === 'www' ||
-      cleanSlug === 'admin' ||
-      cleanSlug === 'api' ||
-      cleanSlug === 'creator' ||
-      cleanSlug === 'developer' ||
-      cleanSlug === 'saas'
-    ) {
+    if (cleanBase) {
+      if (cleanSlug === cleanBase || cleanSlug === `www.${cleanBase}`) {
+        return null;
+      }
+    }
+    if (RESERVED_SLUGS.has(cleanSlug)) {
       return null;
     }
 

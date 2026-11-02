@@ -39,7 +39,7 @@ export const BKASH_APP_KEY = process.env.BKASH_APP_KEY;
 export const BKASH_APP_SECRET = process.env.BKASH_APP_SECRET;
 export const BKASH_USERNAME = process.env.BKASH_USERNAME;
 export const BKASH_PASSWORD = process.env.BKASH_PASSWORD;
-export const BKASH_BASE_URL = process.env.BKASH_BASE_URL || 'https://tokenized.sandbox.bka.sh/v1.2.0-beta';
+export const BKASH_BASE_URL = process.env.BKASH_BASE_URL;
 
 export const META_APP_ID = process.env.META_APP_ID;
 export const META_APP_SECRET = process.env.META_APP_SECRET;
@@ -53,4 +53,4 @@ export const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
 export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION;
 
 
-export const BASE_URL = process.env.BASE_URL || 'disibin.com';
+export const BASE_URL = process.env.BASE_URL;

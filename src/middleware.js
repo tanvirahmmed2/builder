@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
  * Next.js Edge Middleware for Multi-Tenant Routing
  * 
  * Routes incoming requests:
- * 1. Base SaaS domain (disibin.com, www.disibin.com, localhost) -> Main SaaS platform
- * 2. Subdomains (shop.disibin.com, shop.localhost) -> Rewrites to /[domain]
- * 3. Custom domains (myrestaurant.com, www.myrestaurant.com) -> Rewrites to /[domain]
+ * 1. Base SaaS domain (BASE_URL, localhost) -> Main SaaS platform
+ * 2. Subdomains (e.g. [subdomain].[BASE_URL]) -> Rewrites to /[domain]
+ * 3. Custom domains (e.g. [custom-domain]) -> Rewrites to /[domain]
  */
 
 export const config = {
@@ -38,28 +38,37 @@ export default function middleware(req) {
   const search = url.search;
 
   // 1. Extract and normalize requester host
-  const rawHost =
-    req.headers.get('x-forwarded-host') ||
-    req.headers.get('host') ||
-    '';
+  let rawHost = req.headers.get('x-forwarded-host');
+  if (!rawHost) {
+    rawHost = req.headers.get('host');
+  }
+  if (!rawHost) {
+    rawHost = '';
+  }
   const host = normalizeHost(rawHost);
 
-  // 2. Normalize BASE_URL
-  const rawBase = process.env.BASE_URL || 'disibin.com';
-  const cleanBase = normalizeHost(rawBase) || 'disibin.com';
-  const baseWithoutWww = cleanBase.replace(/^www\./, '');
+  // 2. Normalize BASE_URL from environment
+  const cleanBase = normalizeHost(process.env.BASE_URL);
+  const baseWithoutWww = cleanBase ? cleanBase.replace(/^www\./, '') : '';
 
   // 3. Determine if requester domain is the Base SaaS platform
-  const isBaseDomain =
-    !host ||
-    host === cleanBase ||
-    host === `www.${cleanBase}` ||
-    host === baseWithoutWww ||
-    host === `www.${baseWithoutWww}` ||
+  const isLocalHost = (
     host === 'localhost' ||
     host === '127.0.0.1' ||
     host === '0.0.0.0' ||
-    host === '::1';
+    host === '::1'
+  );
+
+  let isBaseDomain = !host || isLocalHost;
+  if (!isBaseDomain && cleanBase) {
+    if (
+      host === cleanBase ||
+      host === `www.${cleanBase}` ||
+      (baseWithoutWww && (host === baseWithoutWww || host === `www.${baseWithoutWww}`))
+    ) {
+      isBaseDomain = true;
+    }
+  }
 
   // 4. If request is on the Base SaaS domain:
   if (isBaseDomain) {
@@ -74,8 +83,8 @@ export default function middleware(req) {
   let tenantSlug = null;
   let isCustom = false;
 
-  // Check if it's a subdomain of the base domain (e.g., shop.disibin.com)
-  if (host.endsWith(`.${baseWithoutWww}`)) {
+  // Check if it's a subdomain of the base domain
+  if (baseWithoutWww && host.endsWith(`.${baseWithoutWww}`)) {
     const sub = host.slice(0, -(baseWithoutWww.length + 1)).toLowerCase();
     if (sub && sub !== 'www') {
       tenantSlug = sub;
@@ -91,8 +100,7 @@ export default function middleware(req) {
 
   // If not a recognized subdomain, treat as a custom domain
   if (!tenantSlug) {
-    // If it was www.disibin.com, treat as base domain
-    if (host === `www.${cleanBase}` || host === `www.${baseWithoutWww}`) {
+    if (cleanBase && (host === cleanBase || host === `www.${cleanBase}`)) {
       return NextResponse.next();
     }
     // Normalize custom domain by stripping leading www.
@@ -109,8 +117,12 @@ export default function middleware(req) {
   // If a user navigates to /creator or /developer on a tenant domain, redirect them
   // to the official SaaS domain so authentication cookies and sessions stay on the SaaS origin.
   if (pathname.startsWith('/creator') || pathname.startsWith('/developer')) {
-    const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-    const redirectUrl = new URL(pathname + search, `${protocol}://${cleanBase}`);
+    let protocol = req.headers.get('x-forwarded-proto');
+    if (!protocol) {
+      protocol = host.includes('localhost') ? 'http' : 'https';
+    }
+    const redirectTarget = cleanBase ? `${protocol}://${cleanBase}` : `${protocol}://${host}`;
+    const redirectUrl = new URL(pathname + search, redirectTarget);
     return NextResponse.redirect(redirectUrl);
   }
 

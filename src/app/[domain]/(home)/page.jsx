@@ -23,9 +23,9 @@ export default function TenantHomePage() {
   const [catalog, setCatalog] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const websiteType = website?.website_type || 'ecommerce';
-  const siteName = website?.settings?.site_name || website?.name || 'Welcome';
-  const tagline = website?.settings?.tagline || 'Experience unmatched quality and service.';
+  const websiteType = website?.website_type ?? 'ecommerce';
+  const siteName = website?.settings?.site_name ?? website?.name ?? 'Welcome';
+  const tagline = website?.settings?.tagline ?? 'Experience unmatched quality and service.';
 
   useEffect(() => {
     let isMounted = true;
