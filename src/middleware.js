@@ -17,9 +17,9 @@ export const config = {
      * 2. /_next/image (image optimization files)
      * 3. Static assets with extensions (.png, .jpg, .svg, .ico, etc.)
      * 4. /favicon.ico, /robots.txt, /sitemap.xml
-     * 5. /api/saas (core platform APIs)
+     * 5. /api/saas, /api/seed (core platform APIs & seed routes)
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|api/saas|.*\\.(?:jpg|jpeg|gif|png|webp|svg|ico|css|js|woff|woff2|ttf|eot|map|json|txt|xml|pdf)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|api/saas|api/seed|.*\\.(?:jpg|jpeg|gif|png|webp|svg|ico|css|js|woff|woff2|ttf|eot|map|json|txt|xml|pdf)$).*)',
   ],
 };
 

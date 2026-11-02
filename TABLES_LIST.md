@@ -34,6 +34,7 @@
 30. payment_transactions
 31. subscription
 32. websites
+3. website_modules
 33. tutorials
 34. reports
 35. leads
@@ -68,7 +69,6 @@
 ## 1. Universal Core Tenant & System Configuration
 1. website_settings
 2. website_themes
-3. website_modules
 4. website_navigation
 5. website_pages
 6. website_page_sections
